@@ -1,0 +1,710 @@
+{
+  "name": "🧠 SDR Claude Marka no Digital",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sdr-claude-marka",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook — Evolution API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 400],
+      "notes": "Endpoint: /webhook/sdr-claude-marka. Configure na Evolution API."
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json;\n\n// Ignora mensagens do próprio bot\nif (body.data?.key?.fromMe === true) return [];\n\n// Ignora grupos\nconst remoteJid = body.data?.key?.remoteJid || '';\nif (remoteJid.includes('@g.us')) return [];\n\nconst numero = remoteJid.replace('@s.whatsapp.net', '');\nconst tipoMensagem = body.data?.messageType || 'conversation';\nconst nomeContato = body.data?.pushName || 'Lead';\nconst messageKey = body.data?.key;\n\n// Extrai conteúdo baseado no tipo\nlet mensagem = '';\nlet caption = '';\nlet fileName = '';\nlet mimetype = '';\n\nswitch (tipoMensagem) {\n  case 'conversation':\n    mensagem = body.data?.message?.conversation || '';\n    break;\n  case 'extendedTextMessage':\n    mensagem = body.data?.message?.extendedTextMessage?.text || '';\n    break;\n  case 'audioMessage':\n    mimetype = body.data?.message?.audioMessage?.mimetype || 'audio/ogg; codecs=opus';\n    break;\n  case 'imageMessage':\n    caption = body.data?.message?.imageMessage?.caption || '';\n    mimetype = body.data?.message?.imageMessage?.mimetype || 'image/jpeg';\n    break;\n  case 'documentMessage':\n    fileName = body.data?.message?.documentMessage?.fileName || 'documento';\n    mimetype = body.data?.message?.documentMessage?.mimetype || 'application/pdf';\n    break;\n  default:\n    mensagem = body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || '';\n}\n\nconst temMidia = ['audioMessage', 'imageMessage', 'documentMessage'].includes(tipoMensagem);\n\nif (!mensagem && !temMidia) return [];\n\nreturn [{\n  json: {\n    numero, mensagem, nomeContato, tipoMensagem,\n    messageKey, caption, fileName, mimetype, temMidia,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "node-normaliza",
+      "name": "Normaliza Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 400]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "tableId": "agente_config",
+        "filterType": "string",
+        "options": {}
+      },
+      "id": "node-config",
+      "name": "Carrega Config",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [500, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst config = {};\nrows.forEach(row => { config[row.json.chave] = row.json.valor; });\n\nconst dados = $('Normaliza Mensagem').first().json;\n\nconst systemPrompt = `${config.prompt_sistema || ''}\n\nOBJETIVO: ${config.objetivo || ''}\nTONALIDADE: ${config.tonalidade || ''}\nINSTRUÇÕES: ${config.instrucoes_comunicacao || ''}\n\nCRITÉRIOS DE QUALIFICAÇÃO (mínimo 3):\n${config.criterios_qualificacao || ''}\n\nCAPACIDADES ESPECIAIS:\n- Você pode OUVIR ÁUDIOS: quando o lead enviar um áudio, você receberá a transcrição\n- Você pode VER IMAGENS: quando o lead enviar uma foto/imagem, você receberá a descrição detalhada\n- Você pode LER DOCUMENTOS: quando o lead enviar um PDF ou documento, você receberá o conteúdo extraído\n- Você pode PESQUISAR NA INTERNET: use a ferramenta busca_web para verificar legislação, jurisprudência e informações atualizadas\n- Sempre confirme o recebimento de mídias de forma natural\n\nQUANDO QUALIFICADO:\n- Responda: ${config.msg_qualificado || 'Vou encaminhar seu caso ao advogado.'}\n- Inclua JSON: \\`\\`\\`json\\n{\"qualificado\":true,\"nome\":\"...\",\"celular\":\"...\",\"tese\":\"...\",\"resumo\":\"...\"}\\n\\`\\`\\`\n\nQUANDO NÃO QUALIFICADO:\n- Responda: ${config.msg_desqualificado || 'Agradecemos o contato!'}\n- Inclua: \\`\\`\\`json\\n{\"qualificado\":false,\"motivo\":\"...\"}\\n\\`\\`\\`\n\nREGRAS:\n- Faça uma pergunta por vez\n- Nunca prometa resultado\n- Nunca dê consultoria jurídica\n- Consulte a base de conhecimento e a web antes de responder dúvidas`;\n\nreturn [{ json: { ...dados, config, systemPrompt } }];"
+      },
+      "id": "node-prompt",
+      "name": "Monta System Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 400]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "tableId": "sessoes",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "numero_whatsapp",
+              "keyValue": "={{ $('Normaliza Mensagem').first().json.numero }}"
+            }
+          ]
+        },
+        "options": { "limit": 1 }
+      },
+      "id": "node-historico",
+      "name": "Busca Histórico",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-midia",
+              "leftValue": "={{ $('Normaliza Mensagem').first().json.temMidia }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "node-if-midia",
+      "name": "Tem Mídia?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1250, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evolutionapi-evolution-api.yuhqmc.easypanel.host/chat/getBase64FromMediaMessage/TESTE",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: { key: $('Normaliza Mensagem').first().json.messageKey } }) }}",
+        "options": {}
+      },
+      "id": "node-download-midia",
+      "name": "Download Mídia (Evolution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "notes": "Baixa o arquivo de mídia (áudio/imagem/documento) da Evolution API como base64."
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "" },
+                "conditions": [{
+                  "leftValue": "={{ $('Normaliza Mensagem').first().json.tipoMensagem }}",
+                  "rightValue": "audioMessage",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "" },
+                "conditions": [{
+                  "leftValue": "={{ $('Normaliza Mensagem').first().json.tipoMensagem }}",
+                  "rightValue": "imageMessage",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "Imagem"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "" },
+                "conditions": [{
+                  "leftValue": "={{ $('Normaliza Mensagem').first().json.tipoMensagem }}",
+                  "rightValue": "documentMessage",
+                  "operator": { "type": "string", "operation": "equals" }
+                }]
+              },
+              "renameOutput": true,
+              "outputKey": "Documento"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-switch-tipo",
+      "name": "Tipo de Mídia",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1750, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mediaData = $input.first().json;\nconst normaliza = $('Normaliza Mensagem').first().json;\nconst mimetype = mediaData.mimetype || normaliza.mimetype || 'audio/ogg';\n\n// Converte base64 para binary no formato n8n\nreturn [{\n  json: { model: 'whisper-1', language: 'pt' },\n  binary: {\n    audio: {\n      data: mediaData.base64,\n      mimeType: mimetype,\n      fileName: 'audio.ogg'\n    }\n  }\n}];"
+      },
+      "id": "node-prepara-audio",
+      "name": "Prepara Áudio Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 100],
+      "notes": "Converte base64 do áudio para formato binário do n8n."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY || 'SUA_CHAVE_OPENAI_AQUI' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            { "parameterType": "formBinaryData", "name": "file", "inputDataFieldName": "audio" },
+            { "parameterType": "formData", "name": "model", "value": "whisper-1" },
+            { "parameterType": "formData", "name": "language", "value": "pt" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-whisper",
+      "name": "Transcreve Áudio (Whisper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2250, 100],
+      "notes": "OpenAI Whisper API. Configure OPENAI_API_KEY nas variáveis de ambiente do n8n ou substitua diretamente."
+    },
+    {
+      "parameters": {
+        "jsCode": "const whisperResult = $input.first().json;\nconst normaliza = $('Normaliza Mensagem').first().json;\nconst sessao = $('Busca Histórico').first().json;\n\nconst transcricao = whisperResult.text || 'Áudio não reconhecido';\n\nreturn [{\n  json: {\n    mensagemProcessada: `[Áudio do lead]: ${transcricao}`,\n    tipoOriginal: 'audioMessage',\n    numero: normaliza.numero,\n    sessaoRow: sessao\n  }\n}];"
+      },
+      "id": "node-set-audio",
+      "name": "Set Mensagem Áudio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2500, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mediaData = $input.first().json;\nconst normaliza = $('Normaliza Mensagem').first().json;\nconst mimetype = mediaData.mimetype || normaliza.mimetype || 'image/jpeg';\nconst caption = normaliza.caption || '';\n\n// Monta body para GPT-4o Vision\nconst requestBody = {\n  model: 'gpt-4o',\n  messages: [{\n    role: 'user',\n    content: [\n      {\n        type: 'text',\n        text: `Analise esta imagem com atenção. ${caption ? 'Legenda enviada: ' + caption + '. ' : ''}Se for um documento (carteira de trabalho, CNIS, carta do INSS, exame médico, etc.), extraia TODOS os dados visíveis de forma estruturada. Se for uma foto comum, descreva o que vê.`\n      },\n      {\n        type: 'image_url',\n        image_url: { url: `data:${mimetype};base64,${mediaData.base64}` }\n      }\n    ]\n  }],\n  max_tokens: 2000\n};\n\nreturn [{ json: { requestBody } }];"
+      },
+      "id": "node-prepara-vision",
+      "name": "Prepara Body Vision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY || 'SUA_CHAVE_OPENAI_AQUI' }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.requestBody) }}",
+        "options": {}
+      },
+      "id": "node-vision",
+      "name": "Analisa Imagem (GPT-4o Vision)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2250, 300],
+      "notes": "GPT-4o Vision para análise de imagens e fotos de documentos."
+    },
+    {
+      "parameters": {
+        "jsCode": "const visionResult = $input.first().json;\nconst normaliza = $('Normaliza Mensagem').first().json;\nconst sessao = $('Busca Histórico').first().json;\n\nconst descricao = visionResult.choices?.[0]?.message?.content || 'Imagem recebida mas não foi possível analisar';\n\nreturn [{\n  json: {\n    mensagemProcessada: `[Imagem enviada pelo lead]: ${descricao}`,\n    tipoOriginal: 'imageMessage',\n    numero: normaliza.numero,\n    sessaoRow: sessao\n  }\n}];"
+      },
+      "id": "node-set-imagem",
+      "name": "Set Mensagem Imagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mediaData = $input.first().json;\nconst normaliza = $('Normaliza Mensagem').first().json;\nconst sessao = $('Busca Histórico').first().json;\nconst fileName = normaliza.fileName || 'documento';\nconst mimetype = mediaData.mimetype || normaliza.mimetype || '';\n\nlet texto = '';\n\n// Tenta extrair texto básico do documento\ntry {\n  if (mimetype.includes('text/') || mimetype.includes('csv')) {\n    // Documentos de texto simples\n    texto = Buffer.from(mediaData.base64, 'base64').toString('utf8');\n  } else {\n    // Para PDFs e outros, tenta extrair texto legível\n    const buffer = Buffer.from(mediaData.base64, 'base64');\n    const raw = buffer.toString('latin1');\n    // Extrai strings entre parênteses (comum em PDFs)\n    const matches = raw.match(/\\(([^)]{2,})\\)/g) || [];\n    texto = matches\n      .map(m => m.slice(1, -1))\n      .filter(t => /[a-zA-ZÀ-ÿ0-9]/.test(t) && t.length > 2)\n      .join(' ')\n      .substring(0, 3000);\n  }\n} catch(e) {\n  texto = '';\n}\n\nif (!texto || texto.length < 20) {\n  texto = `Documento \"${fileName}\" recebido (${mimetype}). Não foi possível extrair texto automaticamente. Pergunte ao lead sobre o conteúdo do documento.`;\n} else {\n  texto = `Conteúdo extraído do documento \"${fileName}\": ${texto}`;\n}\n\nreturn [{\n  json: {\n    mensagemProcessada: `[Documento enviado]: ${texto}`,\n    tipoOriginal: 'documentMessage',\n    numero: normaliza.numero,\n    sessaoRow: sessao\n  }\n}];"
+      },
+      "id": "node-set-doc",
+      "name": "Processa Documento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 500],
+      "notes": "Extrai texto de documentos. Para PDFs complexos, a extração é básica. O agente pode pedir detalhes ao lead."
+    },
+    {
+      "parameters": {
+        "jsCode": "const normaliza = $('Normaliza Mensagem').first().json;\nconst sessao = $input.first().json;\n\nreturn [{\n  json: {\n    mensagemProcessada: normaliza.mensagem,\n    tipoOriginal: normaliza.tipoMensagem,\n    numero: normaliza.numero,\n    sessaoRow: sessao\n  }\n}];"
+      },
+      "id": "node-set-texto",
+      "name": "Set Mensagem Texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 600],
+      "notes": "Para mensagens de texto normal, passa direto."
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $('Monta System Prompt').first().json;\nconst item = $input.first().json;\n\nlet historico = [];\ntry {\n  historico = JSON.parse(item.sessaoRow?.historico || '[]');\n} catch(e) { historico = []; }\n\n// Adiciona a mensagem processada ao histórico\nhistorico.push({\n  role: 'user',\n  content: item.mensagemProcessada\n});\n\nconst historicoTexto = historico\n  .map(h => `${h.role === 'user' ? 'Lead' : 'Agente'}: ${h.content}`)\n  .join('\\n');\n\nreturn [{\n  json: {\n    ...dados,\n    mensagemProcessada: item.mensagemProcessada,\n    tipoOriginal: item.tipoOriginal,\n    historico,\n    historicoTexto\n  }\n}];"
+      },
+      "id": "node-monta-hist",
+      "name": "Monta Histórico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2750, 400]
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "=Histórico da conversa:\n{{ $json.historicoTexto }}\n\nNova mensagem do lead: {{ $json.mensagemProcessada }}",
+        "options": {
+          "systemMessage": "={{ $json.systemPrompt }}",
+          "maxIterations": 5
+        }
+      },
+      "id": "node-agente",
+      "name": "Agente SDR — Claude Marka",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [3000, 400],
+      "notes": "Agente principal com acesso a busca web (Serper.dev), base de conhecimento PDF e capacidade de entender áudios, imagens e documentos."
+    },
+    {
+      "parameters": {
+        "name": "busca_web",
+        "description": "Busca informações atualizadas na internet sobre legislação previdenciária, benefícios do INSS, jurisprudência, tabelas e notícias. Use quando precisar validar informações ou buscar dados atuais. Priorize gov.br, JusBrasil, STJ e TRF. Input: a consulta de busca em português.",
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-API-KEY", "value": "SUA_CHAVE_SERPER_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"q\": \"{query}\", \"gl\": \"br\", \"hl\": \"pt-br\", \"num\": 5}",
+        "options": {}
+      },
+      "id": "node-tool-serper",
+      "name": "Tool: Busca Web (Serper.dev)",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [2880, 640],
+      "notes": "Serper.dev — Google Search API. Crie sua chave em serper.dev (2.500 buscas grátis)."
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "base_conhecimento_pdf",
+        "toolDescription": "Consulta a base de conhecimento interna com PDFs de legislação, jurisprudência e tabelas previdenciárias. Use quando precisar de informações específicas dos documentos carregados.",
+        "tableName": "documentos_conhecimento",
+        "options": {}
+      },
+      "id": "node-tool-pdf",
+      "name": "Tool: Base de Conhecimento PDF",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [3120, 640],
+      "notes": "Supabase Vector Store com os PDFs do Workflow 2."
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "node-embeddings",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [3120, 820]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "node-llm",
+      "name": "LLM — GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [2880, 820],
+      "notes": "Configure a credencial OpenAI. Temperatura 0.3 para respostas consistentes."
+    },
+    {
+      "parameters": {
+        "jsCode": "const respostaAgente = $input.first().json.output || '';\nconst normaliza = $('Normaliza Mensagem').first().json;\nconst config = $('Monta System Prompt').first().json.config;\nconst tipoOriginal = $('Monta Histórico').first().json.tipoOriginal;\n\nlet dadosQualificacao = null;\nlet qualificado = null;\n\n// Extrai JSON da resposta\ntry {\n  const match = respostaAgente.match(/```json([\\s\\S]*?)```/);\n  if (match) {\n    dadosQualificacao = JSON.parse(match[1].trim());\n    qualificado = dadosQualificacao.qualificado === true;\n  }\n} catch(e) {}\n\n// Remove o JSON do texto que vai ao lead\nconst textoParaLead = respostaAgente.replace(/```json[\\s\\S]*?```/g, '').trim();\n\n// Monta relatório formatado\nlet relatorio = null;\nif (qualificado && dadosQualificacao) {\n  const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });\n  relatorio = `🟢 *LEAD QUALIFICADO — SDR CLAUDE MARKA*\\n\\n`\n    + `👤 *Nome:* ${dadosQualificacao.nome || 'Não informado'}\\n`\n    + `📱 *Celular:* ${dadosQualificacao.celular || normaliza.numero}\\n`\n    + `⚖️ *Tese:* ${dadosQualificacao.tese || 'Não identificada'}\\n`\n    + `📋 *Resumo:* ${dadosQualificacao.resumo || 'Ver histórico'}\\n`\n    + `🕐 *Atendimento:* ${agora}`;\n}\n\nreturn [{\n  json: {\n    numero: normaliza.numero,\n    textoParaLead,\n    qualificado,\n    dadosQualificacao,\n    relatorio,\n    tipoOriginal,\n    numeroDestino: config?.numero_destino\n  }\n}];"
+      },
+      "id": "node-processa-resp",
+      "name": "Processa Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3250, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendText/TESTE",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"number\": \"{{ $json.numero }}\", \"text\": \"{{ $json.textoParaLead }}\"}",
+        "options": {}
+      },
+      "id": "node-envia-texto",
+      "name": "Envia Resposta Texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3500, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-audio-resp",
+              "leftValue": "={{ $json.tipoOriginal }}",
+              "rightValue": "audioMessage",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "node-if-audio-resp",
+      "name": "Lead mandou áudio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3500, 440]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/speech",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY || 'SUA_CHAVE_OPENAI_AQUI' }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"model\": \"tts-1\", \"input\": \"{{ $('Processa Resposta').first().json.textoParaLead.substring(0, 4000) }}\", \"voice\": \"nova\", \"response_format\": \"mp3\"}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "node-tts",
+      "name": "Gera Áudio TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3750, 360],
+      "notes": "OpenAI TTS — voz 'nova' (feminina, natural). Converte a resposta em áudio MP3."
+    },
+    {
+      "parameters": {
+        "jsCode": "const binaryData = $input.first().binary?.data;\nconst numero = $('Processa Resposta').first().json.numero;\n\nif (!binaryData) {\n  return [{ json: { numero, erro: 'Sem dados de áudio' } }];\n}\n\nconst audioBase64 = binaryData.data;\n\nreturn [{\n  json: {\n    numero,\n    audioBase64\n  }\n}];"
+      },
+      "id": "node-prepara-envio-audio",
+      "name": "Prepara Envio Áudio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4000, 360]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendWhatsAppAudio/TESTE",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"number\": \"{{ $json.numero }}\", \"audio\": \"data:audio/mp3;base64,{{ $json.audioBase64 }}\", \"encoding\": true, \"delay\": 1200}",
+        "options": {}
+      },
+      "id": "node-envia-audio",
+      "name": "Envia Áudio (WhatsApp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [4250, 360],
+      "notes": "Envia resposta como áudio/voz no WhatsApp via Evolution API."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-qualificado",
+              "leftValue": "={{ $('Processa Resposta').first().json.qualificado }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equal" }
+            }
+          ]
+        }
+      },
+      "id": "node-if-qualificado",
+      "name": "Lead Qualificado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3500, 620]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendText/TESTE",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"number\": \"{{ $('Processa Resposta').first().json.numeroDestino }}\", \"text\": \"{{ $('Processa Resposta').first().json.relatorio }}\"}",
+        "options": {}
+      },
+      "id": "node-envia-advogado",
+      "name": "Envia Relatório ao Advogado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3750, 560]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "leads",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "numero_whatsapp", "fieldValue": "={{ $('Normaliza Mensagem').first().json.numero }}" },
+            { "fieldId": "nome", "fieldValue": "={{ $('Processa Resposta').first().json.dadosQualificacao?.nome || '' }}" },
+            { "fieldId": "celular", "fieldValue": "={{ $('Processa Resposta').first().json.dadosQualificacao?.celular || '' }}" },
+            { "fieldId": "tese", "fieldValue": "={{ $('Processa Resposta').first().json.dadosQualificacao?.tese || '' }}" },
+            { "fieldId": "resumo", "fieldValue": "={{ $('Processa Resposta').first().json.dadosQualificacao?.resumo || $('Processa Resposta').first().json.dadosQualificacao?.motivo || '' }}" },
+            { "fieldId": "qualificado", "fieldValue": "={{ $('Processa Resposta').first().json.qualificado }}" },
+            { "fieldId": "motivo_desqualificacao", "fieldValue": "={{ $('Processa Resposta').first().json.dadosQualificacao?.motivo || '' }}" }
+          ]
+        }
+      },
+      "id": "node-salva-lead",
+      "name": "Salva Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3750, 720]
+    },
+    {
+      "parameters": {
+        "jsCode": "const historico = $('Monta Histórico').first().json.historico;\nconst respostaAgente = $('Agente SDR — Claude Marka').first().json.output || '';\nconst numero = $('Normaliza Mensagem').first().json.numero;\n\nhistorico.push({ role: 'assistant', content: respostaAgente });\nconst historicoTrimmed = historico.slice(-30);\n\nreturn [{\n  json: {\n    numero_whatsapp: numero,\n    historico: JSON.stringify(historicoTrimmed),\n    atualizado_em: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "node-prepara-sessao",
+      "name": "Prepara Sessão",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3500, 860]
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "tableId": "sessoes",
+        "dataToSend": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "numero_whatsapp", "fieldValue": "={{ $json.numero_whatsapp }}" },
+            { "fieldId": "historico", "fieldValue": "={{ $json.historico }}" },
+            { "fieldId": "atualizado_em", "fieldValue": "={{ $json.atualizado_em }}" }
+          ]
+        },
+        "filters": {
+          "conditions": [{ "keyName": "numero_whatsapp", "keyValue": "={{ $json.numero_whatsapp }}" }]
+        }
+      },
+      "id": "node-salva-sessao",
+      "name": "Salva Sessão",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3750, 860]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"status\":\"ok\"}",
+        "options": {}
+      },
+      "id": "node-ok",
+      "name": "Responde 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [4000, 600]
+    }
+  ],
+  "connections": {
+    "Webhook — Evolution API": {
+      "main": [[{ "node": "Normaliza Mensagem", "type": "main", "index": 0 }]]
+    },
+    "Normaliza Mensagem": {
+      "main": [[{ "node": "Carrega Config", "type": "main", "index": 0 }]]
+    },
+    "Carrega Config": {
+      "main": [[{ "node": "Monta System Prompt", "type": "main", "index": 0 }]]
+    },
+    "Monta System Prompt": {
+      "main": [[{ "node": "Busca Histórico", "type": "main", "index": 0 }]]
+    },
+    "Busca Histórico": {
+      "main": [[{ "node": "Tem Mídia?", "type": "main", "index": 0 }]]
+    },
+    "Tem Mídia?": {
+      "main": [
+        [{ "node": "Download Mídia (Evolution)", "type": "main", "index": 0 }],
+        [{ "node": "Set Mensagem Texto", "type": "main", "index": 0 }]
+      ]
+    },
+    "Download Mídia (Evolution)": {
+      "main": [[{ "node": "Tipo de Mídia", "type": "main", "index": 0 }]]
+    },
+    "Tipo de Mídia": {
+      "main": [
+        [{ "node": "Prepara Áudio Binary", "type": "main", "index": 0 }],
+        [{ "node": "Prepara Body Vision", "type": "main", "index": 0 }],
+        [{ "node": "Processa Documento", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepara Áudio Binary": {
+      "main": [[{ "node": "Transcreve Áudio (Whisper)", "type": "main", "index": 0 }]]
+    },
+    "Transcreve Áudio (Whisper)": {
+      "main": [[{ "node": "Set Mensagem Áudio", "type": "main", "index": 0 }]]
+    },
+    "Set Mensagem Áudio": {
+      "main": [[{ "node": "Monta Histórico", "type": "main", "index": 0 }]]
+    },
+    "Prepara Body Vision": {
+      "main": [[{ "node": "Analisa Imagem (GPT-4o Vision)", "type": "main", "index": 0 }]]
+    },
+    "Analisa Imagem (GPT-4o Vision)": {
+      "main": [[{ "node": "Set Mensagem Imagem", "type": "main", "index": 0 }]]
+    },
+    "Set Mensagem Imagem": {
+      "main": [[{ "node": "Monta Histórico", "type": "main", "index": 0 }]]
+    },
+    "Processa Documento": {
+      "main": [[{ "node": "Monta Histórico", "type": "main", "index": 0 }]]
+    },
+    "Set Mensagem Texto": {
+      "main": [[{ "node": "Monta Histórico", "type": "main", "index": 0 }]]
+    },
+    "Monta Histórico": {
+      "main": [[{ "node": "Agente SDR — Claude Marka", "type": "main", "index": 0 }]]
+    },
+    "Tool: Busca Web (Serper.dev)": {
+      "ai_tool": [[{ "node": "Agente SDR — Claude Marka", "type": "ai_tool", "index": 0 }]]
+    },
+    "Tool: Base de Conhecimento PDF": {
+      "ai_tool": [[{ "node": "Agente SDR — Claude Marka", "type": "ai_tool", "index": 0 }]]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [[{ "node": "Tool: Base de Conhecimento PDF", "type": "ai_embedding", "index": 0 }]]
+    },
+    "LLM — GPT-4o": {
+      "ai_languageModel": [[{ "node": "Agente SDR — Claude Marka", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Agente SDR — Claude Marka": {
+      "main": [[{ "node": "Processa Resposta", "type": "main", "index": 0 }]]
+    },
+    "Processa Resposta": {
+      "main": [[
+        { "node": "Envia Resposta Texto", "type": "main", "index": 0 },
+        { "node": "Lead mandou áudio?", "type": "main", "index": 0 },
+        { "node": "Lead Qualificado?", "type": "main", "index": 0 },
+        { "node": "Prepara Sessão", "type": "main", "index": 0 }
+      ]]
+    },
+    "Envia Resposta Texto": {
+      "main": [[{ "node": "Responde 200 OK", "type": "main", "index": 0 }]]
+    },
+    "Lead mandou áudio?": {
+      "main": [
+        [{ "node": "Gera Áudio TTS", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Gera Áudio TTS": {
+      "main": [[{ "node": "Prepara Envio Áudio", "type": "main", "index": 0 }]]
+    },
+    "Prepara Envio Áudio": {
+      "main": [[{ "node": "Envia Áudio (WhatsApp)", "type": "main", "index": 0 }]]
+    },
+    "Lead Qualificado?": {
+      "main": [
+        [
+          { "node": "Envia Relatório ao Advogado", "type": "main", "index": 0 },
+          { "node": "Salva Lead", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Salva Lead", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Envia Relatório ao Advogado": {
+      "main": [[{ "node": "Responde 200 OK", "type": "main", "index": 0 }]]
+    },
+    "Prepara Sessão": {
+      "main": [[{ "node": "Salva Sessão", "type": "main", "index": 0 }]]
+    },
+    "Salva Sessão": {
+      "main": [[{ "node": "Responde 200 OK", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "tags": ["sdr", "claude", "marka", "whatsapp", "audio", "vision", "multimidia"],
+  "meta": {
+    "description": "SDR Claude Marka no Digital — Agente completo com suporte a áudio (Whisper), imagens (GPT-4o Vision), documentos, busca web (Serper.dev) e resposta em áudio (TTS). Para escritórios de advocacia previdenciária.",
+    "version": "4.0.0"
+  }
+}
