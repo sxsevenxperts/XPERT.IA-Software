@@ -270,7 +270,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendText/{{ $json.evoInstance }}",
+        "url": "=https://evo.sevenxperts.solutions/message/sendText/{{ $json.evoInstance }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -518,7 +518,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendWhatsAppAudio/{{ $json.evoInstance }}",
+        "url": "=https://evo.sevenxperts.solutions/message/sendWhatsAppAudio/{{ $json.evoInstance }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -546,7 +546,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendText/{{ $json.evoInstance }}",
+        "url": "=https://evo.sevenxperts.solutions/message/sendText/{{ $json.evoInstance }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -649,7 +649,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evolutionapi-evolution-api.yuhqmc.easypanel.host/message/sendText/{{ $('Processa resposta e qualificação').first().json.evoInstance }}",
+        "url": "=https://evo.sevenxperts.solutions/message/sendText/{{ $('Processa resposta e qualificação').first().json.evoInstance }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
