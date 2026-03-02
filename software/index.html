@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SDR Previdenciário — Painel</title>
+  <title>XPERT.IA — Painel</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,9 +76,13 @@
     .stat-card .sub { font-size: 12px; color: #666; margin-top: 2px; }
     .loading { color: #888; font-size: 13px; }
     .pdf-list { margin-top: 12px; }
-    .pdf-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+    .pdf-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; margin-bottom: 8px; font-size: 13px; }
+    .pdf-item > span:first-child { flex: 1; color: #444; }
     .pdf-item span { color: #444; }
-    .pdf-badge { background: #e0e7ff; color: #4f46e5; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .pdf-badge { background: #e0e7ff; color: #4f46e5; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .pdf-chunks { color: #9ca3af; font-size: 11px; white-space: nowrap; }
+    .btn-delete-pdf { background: none; border: none; cursor: pointer; font-size: 15px; padding: 2px 4px; border-radius: 4px; opacity: 0.6; transition: opacity 0.2s; }
+    .btn-delete-pdf:hover { opacity: 1; background: #fee2e2; }
     .upload-btn { padding: 10px 20px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 12px; }
     .upload-btn:disabled { background: #a5b4fc; }
     .progress-bar { height: 4px; background: #e5e7eb; border-radius: 4px; margin-top: 12px; overflow: hidden; display: none; }
@@ -88,6 +92,87 @@
     .upload-area input[type=file] { display: none; }
     .upload-area p { color: #666; font-size: 14px; margin-top: 8px; }
 
+    /* TOGGLE SWITCH */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; }
+    .toggle-row .toggle-info { flex: 1; }
+    .toggle-row .toggle-label { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+    .toggle-row .toggle-desc { font-size: 13px; color: #888; margin-top: 2px; }
+    .toggle-switch { position: relative; width: 50px; height: 28px; flex-shrink: 0; margin-left: 16px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #d1d5db; border-radius: 28px; transition: 0.3s; }
+    .toggle-slider:before { content: ''; position: absolute; width: 22px; height: 22px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+    .toggle-switch input:checked + .toggle-slider { background: #4f46e5; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
+    .audio-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #f3e8ff; color: #7c3aed; font-weight: 600; margin-left: 6px; vertical-align: middle; }
+
+    /* MSG AUDIO ICONS */
+    .msg-audio-tag { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: #7c3aed; background: #f3e8ff; padding: 2px 8px; border-radius: 10px; margin-bottom: 4px; font-weight: 600; }
+
+    /* ===================== CRM KANBAN ===================== */
+    .crm-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
+    .crm-board-wrap { overflow-x:auto; padding-bottom:16px; }
+    .crm-board { display:flex; gap:14px; min-height:560px; width:max-content; }
+    .crm-col { width:260px; background:#f8fafc; border-radius:14px; padding:12px; flex-shrink:0; display:flex; flex-direction:column; }
+    .crm-col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:4px 2px; }
+    .crm-col-title { font-size:13px; font-weight:700; color:#1a1a2e; display:flex; align-items:center; gap:6px; }
+    .crm-col-count { background:#e5e7eb; color:#555; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
+    .crm-cards { flex:1; min-height:80px; border-radius:10px; transition:background 0.15s; }
+    .crm-cards.dragover { background:#e0e7ff; outline:2px dashed #4f46e5; outline-offset:2px; }
+    .crm-card { background:#fff; border-radius:10px; padding:14px 14px 12px; margin-bottom:10px; cursor:grab; box-shadow:0 1px 4px rgba(0,0,0,0.08); border-left:4px solid #e5e7eb; transition:box-shadow 0.15s, opacity 0.15s; user-select:none; }
+    .crm-card:active { cursor:grabbing; opacity:0.65; box-shadow:0 4px 12px rgba(0,0,0,0.15); }
+    .crm-card:hover { box-shadow:0 3px 10px rgba(0,0,0,0.12); }
+    .crm-card[data-stage="novo_contato"]     { border-left-color:#f59e0b; }
+    .crm-card[data-stage="em_atendimento"]   { border-left-color:#3b82f6; }
+    .crm-card[data-stage="qualificado"]      { border-left-color:#16a34a; }
+    .crm-card[data-stage="nao_qualificado"]  { border-left-color:#dc2626; }
+    .crm-card[data-stage="convertido"]       { border-left-color:#7c3aed; }
+    .crm-card[data-stage="perdido"]          { border-left-color:#9ca3af; }
+    .crm-card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; }
+    .crm-card-name { font-size:13px; font-weight:700; color:#1a1a2e; }
+    .crm-card-aniv { font-size:14px; cursor:default; }
+    .crm-card-tese { font-size:12px; color:#555; margin-bottom:4px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .crm-card-assunto { font-size:11px; color:#7c3aed; background:#f3e8ff; padding:2px 7px; border-radius:8px; display:inline-block; margin-bottom:8px; font-weight:600; }
+    .crm-card-footer { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#888; border-top:1px solid #f1f5f9; padding-top:8px; margin-top:4px; }
+    .crm-card-tasks { display:flex; align-items:center; gap:3px; }
+    .crm-card-tasks.has-pending { color:#f59e0b; font-weight:700; }
+    /* Column left-border colors */
+    .crm-col[data-stage="novo_contato"]    .crm-col-count { background:#fef9c3; color:#92400e; }
+    .crm-col[data-stage="em_atendimento"]  .crm-col-count { background:#dbeafe; color:#1e40af; }
+    .crm-col[data-stage="qualificado"]     .crm-col-count { background:#dcfce7; color:#166534; }
+    .crm-col[data-stage="nao_qualificado"] .crm-col-count { background:#fee2e2; color:#991b1b; }
+    .crm-col[data-stage="convertido"]      .crm-col-count { background:#f3e8ff; color:#5b21b6; }
+    .crm-col[data-stage="perdido"]         .crm-col-count { background:#f1f5f9; color:#64748b; }
+    /* CRM Modal */
+    .crm-modal-box { width:600px; max-width:95vw; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; }
+    .crm-modal-tabs { display:flex; gap:0; border-bottom:2px solid #e5e7eb; margin:-32px -32px 24px; padding:0 32px; }
+    .crm-tab { padding:12px 18px; font-size:13px; font-weight:600; color:#888; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+    .crm-tab.active { color:#4f46e5; border-bottom-color:#4f46e5; }
+    .crm-tab-content { display:none; overflow-y:auto; flex:1; }
+    .crm-tab-content.active { display:block; }
+    .tarefa-item { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f1f5f9; }
+    .tarefa-item input[type=checkbox] { width:16px; height:16px; cursor:pointer; accent-color:#4f46e5; }
+    .tarefa-item .tarefa-desc { flex:1; font-size:13px; }
+    .tarefa-item .tarefa-desc.done { text-decoration:line-through; color:#aaa; }
+    .tarefa-item .tarefa-date { font-size:11px; color:#888; flex-shrink:0; }
+    .tarefa-item .tarefa-del { background:none; border:none; color:#ef4444; cursor:pointer; font-size:16px; padding:0 2px; }
+    .btn-entrar-conversa { width:100%; padding:13px; background:#25d366; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; }
+    .btn-entrar-conversa:hover { background:#1ebe5b; }
+    .btn-add-tarefa { padding:9px 16px; background:#f0f2f5; color:#444; border:1.5px solid #e0e0e0; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
+    .btn-add-tarefa:hover { background:#e5e7eb; }
+    /* Gerenciar Colunas */
+    .stages-list { display:flex; flex-direction:column; gap:8px; margin:16px 0; max-height:380px; overflow-y:auto; }
+    .stage-row { display:flex; align-items:center; gap:10px; background:#f8fafc; border-radius:10px; padding:10px 12px; cursor:grab; border:1.5px solid #e5e7eb; }
+    .stage-row:active { cursor:grabbing; opacity:0.7; }
+    .stage-row.drag-over { border-color:#4f46e5; background:#eef2ff; }
+    .stage-drag-handle { color:#ccc; font-size:16px; cursor:grab; flex-shrink:0; }
+    .stage-color-dot { width:14px; height:14px; border-radius:50%; flex-shrink:0; border:2px solid rgba(0,0,0,0.1); cursor:pointer; }
+    .stage-name-input { flex:1; border:none; background:transparent; font-size:14px; font-weight:600; color:#1a1a2e; outline:none; padding:2px 4px; border-radius:4px; }
+    .stage-name-input:focus { background:#fff; border:1.5px solid #4f46e5; padding:1px 3px; }
+    .stage-del-btn { background:none; border:none; color:#d1d5db; cursor:pointer; font-size:16px; padding:0 2px; flex-shrink:0; }
+    .stage-del-btn:hover { color:#ef4444; }
+    .color-palette { display:flex; flex-wrap:wrap; gap:6px; padding:8px; background:#fff; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.15); position:absolute; z-index:2000; }
+    .color-swatch { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+    .color-swatch:hover, .color-swatch.selected { border-color:#1a1a2e; transform:scale(1.15); }
     /* WHATSAPP PAGE */
     .wa-status-bar { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; font-weight: 600; font-size: 15px; }
     .wa-status-bar.connected { background: #dcfce7; color: #16a34a; border: 1.5px solid #bbf7d0; }
@@ -199,6 +284,69 @@
     .btn-success { padding:7px 16px; background:rgba(22,163,74,.1); color:#16a34a; border:1.5px solid rgba(22,163,74,.3); border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
     .billing-actions { display:flex; gap:8px; flex-wrap:wrap; }
 
+    /* CRÉDITOS / TOKENS */
+    .credits-balance { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; border-radius: 16px; padding: 24px 28px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .credits-balance h3 { font-size: 13px; font-weight: 600; opacity: 0.7; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .5px; }
+    .credits-balance .tokens-value { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+    .credits-balance .tokens-sub { font-size: 12px; opacity: 0.6; margin-top: 2px; }
+    .credits-balance .tokens-box { background: rgba(255,255,255,0.12); padding: 14px 20px; border-radius: 12px; text-align: center; min-width: 120px; }
+    .credits-balance .tokens-box .leads-num { font-size: 28px; font-weight: 800; }
+    .credits-balance .tokens-box .leads-label { font-size: 11px; opacity: 0.7; margin-top: 2px; }
+    .pricing-section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .pricing-card { background: #fff; border-radius: 14px; padding: 24px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.07); border: 2px solid #e5e7eb; position: relative; transition: all .2s; }
+    .pricing-card:hover { border-color: #4f46e5; box-shadow: 0 6px 24px rgba(79,70,229,.15); transform: translateY(-2px); }
+    .pricing-card.popular { border-color: #4f46e5; box-shadow: 0 4px 24px rgba(79,70,229,.2); }
+    .pricing-card .pop-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #4f46e5; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 14px; border-radius: 20px; white-space: nowrap; }
+    .pricing-card .pkg-name { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+    .pricing-card .pkg-leads { font-size: 12px; color: #888; margin-bottom: 14px; }
+    .pricing-card .pkg-price { font-size: 34px; font-weight: 800; color: #4f46e5; letter-spacing: -1px; line-height: 1; }
+    .pricing-card .pkg-price sup { font-size: 16px; font-weight: 600; vertical-align: super; }
+    .pricing-card .pkg-price sub { font-size: 13px; font-weight: 400; color: #888; }
+    .pricing-card .pkg-tokens { font-size: 12px; color: #888; margin: 8px 0 14px; }
+    .pkg-features { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .pkg-features li { font-size: 12px; color: #555; display: flex; align-items: center; gap: 6px; }
+    .pkg-features li::before { content: '✓'; color: #16a34a; font-weight: 700; flex-shrink: 0; }
+    .pricing-card .btn-buy { width: 100%; padding: 11px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .2s; }
+    .pricing-card .btn-buy:hover { background: #4338ca; }
+    .buy-modal-pkg-info { background: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1.5px solid #e5e7eb; }
+    .buy-modal-pkg-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .buy-modal-pkg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #555; margin-top: 12px; }
+    .pedidos-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .pedidos-badge.pendente { background: #fef9c3; color: #ca8a04; }
+    .pedidos-badge.aprovado { background: #dcfce7; color: #16a34a; }
+    .pedidos-badge.recusado { background: #fee2e2; color: #dc2626; }
+
+    /* POPUP TOKENS BAIXOS */
+    .token-alert-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(3px); animation:fadeIn .25s ease; }
+    .token-alert-backdrop.open { display:flex; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .token-alert-box { background:#fff; border-radius:20px; width:460px; max-width:94vw; box-shadow:0 24px 64px rgba(0,0,0,0.22); overflow:hidden; animation:slideUp .3s ease; }
+    @keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+    .token-alert-header { background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%); padding:28px 28px 20px; text-align:center; position:relative; }
+    .token-alert-header.warning { background:linear-gradient(135deg,#ea580c 0%,#c2410c 100%); }
+    .token-alert-icon { font-size:48px; display:block; margin-bottom:10px; animation:shake .5s ease .3s both; }
+    @keyframes shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-8deg)} 40%{transform:rotate(8deg)} 60%{transform:rotate(-5deg)} 80%{transform:rotate(5deg)} }
+    .token-alert-header h2 { color:#fff; font-size:20px; font-weight:800; margin-bottom:4px; }
+    .token-alert-header p { color:rgba(255,255,255,0.85); font-size:13px; }
+    .token-alert-saldo { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.2); border-radius:30px; padding:6px 16px; margin-top:10px; color:#fff; font-size:13px; font-weight:700; }
+    .token-alert-body { padding:24px 28px; }
+    .token-alert-pkg { background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%); border:2px solid #4f46e5; border-radius:14px; padding:20px 22px; margin-bottom:20px; position:relative; }
+    .token-alert-pkg .pop-label { position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:#4f46e5; color:#fff; font-size:11px; font-weight:800; padding:4px 16px; border-radius:20px; white-space:nowrap; letter-spacing:.3px; }
+    .token-alert-pkg-row { display:flex; justify-content:space-between; align-items:center; }
+    .token-alert-pkg-name { font-size:18px; font-weight:800; color:#1a1a2e; }
+    .token-alert-pkg-price { font-size:28px; font-weight:900; color:#4f46e5; letter-spacing:-1px; }
+    .token-alert-pkg-price sup { font-size:14px; font-weight:700; vertical-align:super; }
+    .token-alert-pkg-features { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .token-alert-pkg-features span { background:#fff; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:600; color:#4f46e5; border:1px solid #c7d2fe; }
+    .token-alert-urgency { display:flex; align-items:center; gap:8px; background:#fef9c3; border:1px solid #fde68a; border-radius:10px; padding:10px 14px; margin-bottom:16px; font-size:13px; color:#78350f; font-weight:600; }
+    .btn-token-alert-buy { width:100%; padding:15px; background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%); color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:800; cursor:pointer; letter-spacing:.3px; transition:all .2s; box-shadow:0 4px 16px rgba(79,70,229,.4); }
+    .btn-token-alert-buy:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(79,70,229,.5); }
+    .btn-token-alert-later { width:100%; padding:10px; background:transparent; color:#aaa; border:none; cursor:pointer; font-size:13px; margin-top:8px; transition:color .2s; }
+    .btn-token-alert-later:hover { color:#666; }
+    .token-progress-bar { height:8px; background:#fee2e2; border-radius:8px; margin:12px 0 4px; overflow:hidden; }
+    .token-progress-fill { height:100%; border-radius:8px; transition:width .5s ease; }
+
     /* FLOW DESIGNER */
     .flow-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
     .flow-toolbar input { flex:1; min-width:200px; padding:9px 14px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:14px; }
@@ -236,7 +384,7 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-box">
-    <h1>⚖️ SDR Previdenciário</h1>
+    <h1>🤖 XPERT.IA</h1>
     <p>Painel de administração do agente IA</p>
     <div class="form-group">
       <label>E-mail</label>
@@ -255,7 +403,7 @@
 <div id="dashboard-page">
   <div class="sidebar">
     <div class="logo">
-      <h2>⚖️ SDR Previdenciário</h2>
+      <h2>🤖 XPERT.IA</h2>
       <p>Painel de Administração</p>
     </div>
     <div style="padding: 8px 0; flex: 1;">
@@ -270,6 +418,9 @@
       </div>
       <div class="nav-item" onclick="showPage('batepapo', this)">
         <span class="icon">💬</span> Bate-Papo ao Vivo
+      </div>
+      <div class="nav-item" onclick="showPage('crm', this)">
+        <span class="icon">🗂️</span> CRM — Pipeline
       </div>
       <div class="nav-section">Configuração</div>
       <div class="nav-item" onclick="showPage('agente', this)">
@@ -316,7 +467,7 @@
     <div class="page active" id="page-overview">
       <div class="page-header">
         <h1>Visão Geral</h1>
-        <p>Resumo do desempenho do agente SDR</p>
+        <p>Resumo do desempenho do agente XPERT.IA</p>
       </div>
       <div class="stats-grid">
         <div class="stat-card">
@@ -362,7 +513,7 @@
             <div style="font-weight:700;margin-bottom:8px;color:#1a1a2e;">📋 Informações da Instância</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <div><strong>Instância:</strong> <code id="wa-instance-display" style="background:#e0e7ff;color:#4f46e5;padding:2px 6px;border-radius:4px;">—</code></div>
-              <div><strong>Servidor:</strong> <code style="background:#e0e7ff;color:#4f46e5;padding:2px 6px;border-radius:4px;font-size:11px;">evolutionapi-evolution-api.yuhqmc.easypanel.host</code></div>
+              <div><strong>Servidor:</strong> <code style="background:#e0e7ff;color:#4f46e5;padding:2px 6px;border-radius:4px;font-size:11px;">Proxy Seguro (evo-proxy)</code></div>
             </div>
           </div>
         </div>
@@ -389,7 +540,7 @@
           <div class="qr-step"><div class="qr-step-num">2</div><div>No seu celular, abra o <strong>WhatsApp</strong> e vá em <strong>Configurações → Dispositivos conectados</strong></div></div>
           <div class="qr-step"><div class="qr-step-num">3</div><div>Toque em <strong>"Conectar um dispositivo"</strong> e aponte a câmera para o QR Code</div></div>
           <div class="qr-step"><div class="qr-step-num">4</div><div>Aguarde a confirmação — o status acima ficará <strong style="color:#16a34a;">🟢 Conectado</strong></div></div>
-          <div class="qr-step"><div class="qr-step-num">5</div><div>O agente SDR começará a responder mensagens automaticamente pelo número conectado</div></div>
+          <div class="qr-step"><div class="qr-step-num">5</div><div>O agente XPERT.IA começará a responder mensagens automaticamente pelo número conectado</div></div>
         </div>
       </div>
     </div>
@@ -476,6 +627,125 @@
       </div>
     </div>
 
+    <!-- CRM -->
+    <div class="page" id="page-crm">
+      <div class="page-header"><h1>🗂️ CRM — Pipeline de Leads</h1><p>Acompanhe cada lead do primeiro contato até a conversão</p></div>
+      <div class="crm-toolbar">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="loadCRM()">🔄 Atualizar</button>
+          <button class="btn-secondary" style="padding:9px 18px;font-size:13px;" onclick="openNewLeadModal()">➕ Novo Lead</button>
+          <button class="btn-secondary" style="padding:9px 18px;font-size:13px;" onclick="openStagesModal()">⚙️ Colunas</button>
+        </div>
+        <div style="font-size:12px;color:#888;">Arraste os cards entre as colunas para atualizar o estágio</div>
+      </div>
+      <div class="crm-board-wrap">
+        <div class="crm-board" id="crm-board">
+          <div style="padding:40px;color:#aaa;font-size:14px;">Carregando CRM...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CRM: DETALHES DO LEAD -->
+    <div class="modal-backdrop" id="modal-crm-lead" onclick="if(event.target===this)closeCRMModal()">
+      <div class="modal-box crm-modal-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0;">
+          <h2 id="crm-modal-title" style="font-size:16px;font-weight:700;">Lead</h2>
+          <button onclick="closeCRMModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;padding:0;">✕</button>
+        </div>
+        <div class="crm-modal-tabs">
+          <div class="crm-tab active" onclick="switchCRMTab('dados',this)">📋 Dados</div>
+          <div class="crm-tab" onclick="switchCRMTab('tarefas',this)">☑️ Tarefas</div>
+          <div class="crm-tab" onclick="switchCRMTab('notas',this)">📝 Notas</div>
+          <div class="crm-tab" onclick="switchCRMTab('conversa',this)">💬 Conversa</div>
+        </div>
+        <!-- TAB DADOS -->
+        <div class="crm-tab-content active" id="crm-tab-dados">
+          <input type="hidden" id="crm-lead-id" />
+          <input type="hidden" id="crm-lead-numero" />
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div class="field-group" style="margin:0;"><label>Nome</label><input type="text" id="crm-nome" placeholder="Nome do lead" /></div>
+            <div class="field-group" style="margin:0;"><label>Celular</label><input type="text" id="crm-celular" placeholder="5511999999999" /></div>
+            <div class="field-group" style="margin:0;"><label>Tese jurídica</label><input type="text" id="crm-tese" placeholder="Ex: Aposentadoria por invalidez" /></div>
+            <div class="field-group" style="margin:0;"><label>Assunto</label><input type="text" id="crm-assunto" placeholder="Ex: Aguardando documentos" /></div>
+            <div class="field-group" style="margin:0;"><label>Data de aniversário</label><input type="date" id="crm-aniversario" /></div>
+            <div class="field-group" style="margin:0;"><label>Estágio no CRM</label>
+              <select id="crm-stage">
+                <option value="novo_contato">🆕 Novo Contato</option>
+                <option value="em_atendimento">💬 Em Atendimento</option>
+                <option value="qualificado">✅ Qualificado</option>
+                <option value="nao_qualificado">❌ Não Qualificado</option>
+                <option value="convertido">🎉 Convertido</option>
+                <option value="perdido">🚪 Perdido</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group" style="margin-top:14px 0 0;"><label>Resumo da triagem</label><textarea id="crm-resumo" style="min-height:70px" placeholder="Resumo gerado pelo agente"></textarea></div>
+          <div class="modal-actions" style="margin-top:16px;">
+            <button class="btn-save" onclick="saveLeadDetails()">💾 Salvar dados</button>
+            <span class="save-status" id="crm-save-status"></span>
+          </div>
+        </div>
+        <!-- TAB TAREFAS -->
+        <div class="crm-tab-content" id="crm-tab-tarefas">
+          <div id="crm-tarefas-list" style="margin-bottom:16px;min-height:60px;"></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;border-top:1px solid #f1f5f9;padding-top:14px;margin-top:4px;">
+            <div class="field-group" style="flex:1;margin:0;"><label>Nova tarefa</label><input type="text" id="nova-tarefa-desc" placeholder="Ex: Ligar para confirmar documentos" /></div>
+            <div class="field-group" style="margin:0;width:140px;"><label>Vencimento</label><input type="date" id="nova-tarefa-data" /></div>
+            <button class="btn-add-tarefa" onclick="addTarefa()" style="margin-bottom:0;flex-shrink:0;">➕ Adicionar</button>
+          </div>
+        </div>
+        <!-- TAB NOTAS -->
+        <div class="crm-tab-content" id="crm-tab-notas">
+          <div class="field-group"><label>Anotações sobre o lead</label>
+            <textarea id="crm-notas" style="min-height:180px" placeholder="Qualquer observação relevante: informações adicionais, preferências, contexto do caso..."></textarea>
+          </div>
+          <button class="btn-save" onclick="saveLeadNotas()">💾 Salvar notas</button>
+          <span class="save-status" id="crm-notas-status"></span>
+        </div>
+        <!-- TAB CONVERSA -->
+        <div class="crm-tab-content" id="crm-tab-conversa">
+          <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:16px;font-size:13px;color:#555;line-height:1.6;">
+            <strong>💬 Entrar na conversa</strong> abre o Bate-Papo com este lead e <strong>pausa o agente automaticamente</strong>. Você assume o controle diretamente. Quando quiser que o agente retome, clique em "▶️ Retomar agente" no Bate-Papo — ele saberá exatamente onde parou e continuará o atendimento.
+          </div>
+          <button class="btn-entrar-conversa" onclick="entrarNaConversa()">
+            💬 Entrar na conversa (pausa o agente)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CRM: NOVO LEAD MANUAL -->
+    <div class="modal-backdrop" id="modal-novo-lead" onclick="if(event.target===this)closeNewLeadModal()">
+      <div class="modal-box" style="width:460px;">
+        <h2>➕ Novo Lead Manual</h2>
+        <div class="field-group"><label>Nome</label><input type="text" id="nl-nome" placeholder="Nome do contato" /></div>
+        <div class="field-group"><label>WhatsApp (com DDI+DDD)</label><input type="text" id="nl-numero" placeholder="5511999999999" /></div>
+        <div class="field-group"><label>Assunto</label><input type="text" id="nl-assunto" placeholder="Ex: Quer saber sobre aposentadoria" /></div>
+        <div class="modal-actions">
+          <button class="btn-save" onclick="createManualLead()">✅ Criar lead</button>
+          <button class="btn-secondary" onclick="closeNewLeadModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: GERENCIAR COLUNAS -->
+    <div class="modal-backdrop" id="modal-gerenciar-colunas" onclick="if(event.target===this)closeStagesModal()">
+      <div class="modal-box" style="width:480px;position:relative;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h2 style="font-size:16px;font-weight:700;">⚙️ Gerenciar Colunas</h2>
+          <button onclick="closeStagesModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;padding:0;">✕</button>
+        </div>
+        <p style="font-size:12px;color:#999;margin-bottom:8px;">Arraste para reordenar · Clique na bolinha para trocar a cor · Edite o nome diretamente</p>
+        <div class="stages-list" id="stages-list"></div>
+        <div id="color-palette-popup" class="color-palette" style="display:none;"></div>
+        <div style="display:flex;gap:10px;margin-top:8px;border-top:1px solid #f1f5f9;padding-top:14px;">
+          <button class="btn-secondary" onclick="addNewStage()" style="flex:1;padding:10px;">➕ Nova coluna</button>
+          <button class="btn-save" onclick="saveCRMStages()" style="flex:1;padding:10px;">💾 Salvar</button>
+        </div>
+        <span class="save-status" id="stages-save-status" style="display:block;text-align:center;margin-top:8px;min-height:18px;"></span>
+      </div>
+    </div>
+
     <!-- COMUNICAÇÃO -->
     <div class="page" id="page-comunicacao">
       <div class="page-header"><h1>🗣️ Comunicação</h1><p>Defina como o agente deve se comunicar</p></div>
@@ -496,7 +766,23 @@
         <div class="field-group"><label>Mensagem quando lead NÃO é qualificado</label>
           <textarea id="cfg-msg_desqualificado" placeholder="Ex: Obrigado pelo contato! No momento não identificamos um caso que atendemos."></textarea></div>
       </div>
-      <button class="btn-save" onclick="saveConfigs(['tonalidade','instrucoes_comunicacao','msg_qualificado','msg_desqualificado'])">💾 Salvar</button>
+      <div class="card">
+        <h3>🔊 Resposta em Áudio</h3>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Responder em áudio no WhatsApp</div>
+            <div class="toggle-desc">Quando ativado, o agente envia a resposta como mensagem de voz. Áudios recebidos são sempre transcritos independentemente desta opção.</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cfg-responder_em_audio" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="margin-top:8px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;">
+          💡 <strong>Custo:</strong> ~R$0,003 por mensagem de áudio enviada (OpenAI TTS). Transcrição de áudio recebido: ~R$0,003 por áudio de 30s (Whisper).
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveConfigs(['tonalidade','instrucoes_comunicacao','msg_qualificado','msg_desqualificado','responder_em_audio'])">💾 Salvar</button>
       <span class="save-status" id="save-comunicacao"></span>
     </div>
 
@@ -561,29 +847,33 @@
     <div class="page" id="page-faturamento">
       <div class="page-header"><h1>💳 Faturamento</h1><p>Gerencie sua assinatura e histórico de pagamentos</p></div>
 
-      <!-- Hero da assinatura (cliente e admin vêem info do próprio plano) -->
+      <!-- Hero da assinatura -->
       <div class="billing-hero" id="billing-hero">
         <div>
-          <h2>SDR Agente Único</h2>
-          <p>Atendimento automático 24/7 via WhatsApp com IA</p>
+          <h2>🤖 XPERT.IA — Plano Mensal</h2>
+          <p>O único agente IA que <strong>ouve áudios, pesquisa na web e recebe arquivos</strong> no WhatsApp</p>
           <div id="billing-status-badge" class="billing-status-badge trial">⏳ Período de teste</div>
+          <div style="margin-top:12px;font-size:13px;opacity:.8;">
+            ✅ &nbsp;IA WhatsApp 24/7 &nbsp;|&nbsp; ✅ &nbsp;5M tokens/mês &nbsp;|&nbsp; 🔊 &nbsp;Áudio &nbsp;|&nbsp; 🌐 &nbsp;Pesquisa Web &nbsp;|&nbsp; 📎 &nbsp;Arquivos
+          </div>
         </div>
         <div style="text-align:right">
-          <div class="price"><sup>R$</sup>397<sub>/mês</sub></div>
+          <div class="price"><sup>R$</sup>497<sub>/mês</sub></div>
           <div style="opacity:.75;font-size:13px;margin-top:4px" id="billing-next-date">Próxima cobrança: —</div>
+          <div style="margin-top:8px;font-size:12px;opacity:.65;">Precisa de mais? Compre tokens extras abaixo</div>
         </div>
       </div>
 
       <div class="billing-info-grid">
         <div class="billing-info-card">
           <div class="label">Plano</div>
-          <div class="value">Agente Único</div>
-          <div class="sub">1 número WhatsApp</div>
+          <div class="value">Mensal</div>
+          <div class="sub">5M tokens inclusos/mês</div>
         </div>
         <div class="billing-info-card">
           <div class="label">Status</div>
           <div class="value" id="billing-status-text">—</div>
-          <div class="sub" id="billing-cycle-text">Mensal</div>
+          <div class="sub" id="billing-cycle-text">Cobrança mensal</div>
         </div>
         <div class="billing-info-card">
           <div class="label">Vencimento</div>
@@ -592,10 +882,108 @@
         </div>
       </div>
 
+      <!-- SALDO DE CRÉDITOS -->
+      <div class="credits-balance" id="credits-balance-card">
+        <div>
+          <h3>💰 Saldo de Tokens</h3>
+          <div class="tokens-value" id="saldo-tokens-display">—</div>
+          <div class="tokens-sub">tokens disponíveis para atendimento</div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div class="tokens-box">
+            <div class="leads-num" id="saldo-leads-display">—</div>
+            <div class="leads-label">leads restantes</div>
+          </div>
+          <div class="tokens-box" style="background:rgba(34,197,94,0.2);">
+            <div class="leads-num" id="saldo-usado-display">—</div>
+            <div class="leads-label">usados este mês</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPRAR TOKENS EXTRAS -->
+      <div class="pricing-section-title">⚡ Comprar Tokens Extras</div>
+      <p style="font-size:13px;color:#888;margin-bottom:16px;margin-top:-8px;">
+        Seu plano já inclui <strong>5M tokens/mês</strong>. Precisa atender mais leads? Adicione tokens extras a qualquer momento.
+      </p>
+      <div class="pricing-grid">
+        <!-- Mini -->
+        <div class="pricing-card">
+          <div class="pkg-name">➕ Mini</div>
+          <div class="pkg-leads">+135 leads extras</div>
+          <div class="pkg-price"><sup>R$</sup>97</div>
+          <div class="pkg-tokens">+5 milhões de tokens</div>
+          <ul class="pkg-features">
+            <li>+135 atendimentos</li>
+            <li>Soma ao saldo atual</li>
+            <li>Sem prazo de validade</li>
+          </ul>
+          <button class="btn-buy" onclick="showBuyModal('mini')">Adicionar</button>
+        </div>
+        <!-- Médio -->
+        <div class="pricing-card popular">
+          <div class="pop-badge">⭐ Mais Popular</div>
+          <div class="pkg-name">➕➕ Médio</div>
+          <div class="pkg-leads">+270 leads extras</div>
+          <div class="pkg-price"><sup>R$</sup>177</div>
+          <div class="pkg-tokens">+10 milhões de tokens</div>
+          <ul class="pkg-features">
+            <li>+270 atendimentos</li>
+            <li>Soma ao saldo atual</li>
+            <li>Sem prazo de validade</li>
+            <li>Melhor custo/benefício</li>
+          </ul>
+          <button class="btn-buy" onclick="showBuyModal('medio')">Adicionar</button>
+        </div>
+        <!-- Grande -->
+        <div class="pricing-card">
+          <div class="pkg-name">🚀 Grande</div>
+          <div class="pkg-leads">+540 leads extras</div>
+          <div class="pkg-price"><sup>R$</sup>297</div>
+          <div class="pkg-tokens">+20 milhões de tokens</div>
+          <ul class="pkg-features">
+            <li>+540 atendimentos</li>
+            <li>Soma ao saldo atual</li>
+            <li>Sem prazo de validade</li>
+            <li>Suporte prioritário</li>
+          </ul>
+          <button class="btn-buy" onclick="showBuyModal('grande')">Adicionar</button>
+        </div>
+        <!-- Ilimitado -->
+        <div class="pricing-card">
+          <div class="pkg-name">💼 Max</div>
+          <div class="pkg-leads">+1.350 leads extras</div>
+          <div class="pkg-price"><sup>R$</sup>597</div>
+          <div class="pkg-tokens">+50 milhões de tokens</div>
+          <ul class="pkg-features">
+            <li>+1.350 atendimentos</li>
+            <li>Soma ao saldo atual</li>
+            <li>Sem prazo de validade</li>
+            <li>Suporte dedicado</li>
+          </ul>
+          <button class="btn-buy" onclick="showBuyModal('max')">Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Pedidos pendentes do cliente -->
+      <div class="card" id="pedidos-cliente-card" style="margin-bottom:20px;">
+        <h3>📦 Meus Pedidos</h3>
+        <div id="pedidos-cliente-table"><p class="loading">Carregando...</p></div>
+      </div>
+
       <!-- Histórico de cobranças (cliente) -->
       <div class="card" id="billing-history-card">
         <h3>🧾 Histórico de Cobranças</h3>
         <div id="billing-history-table"><p class="loading">Carregando...</p></div>
+      </div>
+
+      <!-- Admin: pedidos de créditos -->
+      <div class="card admin-only" id="admin-pedidos-card" style="margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">📦 Pedidos de Créditos</h3>
+          <button class="btn-save" style="padding:8px 16px;font-size:13px" onclick="loadAdminPedidos()">🔄 Atualizar</button>
+        </div>
+        <div id="admin-pedidos-table"><p class="loading">Carregando...</p></div>
       </div>
 
       <!-- Admin: gerenciar assinaturas de todos os clientes -->
@@ -669,6 +1057,125 @@
   </div>
 </div>
 
+<!-- POPUP ALERTA TOKENS BAIXOS -->
+<div class="token-alert-backdrop" id="token-alert-popup">
+  <div class="token-alert-box">
+    <div class="token-alert-header" id="token-alert-header">
+      <span class="token-alert-icon" id="token-alert-icon">⚠️</span>
+      <h2 id="token-alert-title">Seus tokens estão acabando!</h2>
+      <p id="token-alert-subtitle">O agente pode parar de atender novos leads em breve.</p>
+      <div class="token-alert-saldo">
+        <span>🔢</span>
+        <span id="token-alert-saldo-txt">—</span>
+        <span>tokens restantes</span>
+      </div>
+    </div>
+    <div class="token-alert-body">
+      <!-- Barra de progresso do saldo -->
+      <div style="font-size:12px;color:#888;margin-bottom:4px;display:flex;justify-content:space-between;">
+        <span>Saldo atual</span>
+        <span id="token-alert-pct-txt">—</span>
+      </div>
+      <div class="token-progress-bar">
+        <div class="token-progress-fill" id="token-alert-progress" style="width:0%;background:#ef4444;"></div>
+      </div>
+      <div style="font-size:11px;color:#aaa;text-align:right;margin-bottom:16px;">
+        de 5.000.000 tokens do plano base
+      </div>
+
+      <!-- Urgência -->
+      <div class="token-alert-urgency" id="token-alert-urgency">
+        ⏳ <span id="token-alert-urgency-txt">Recarregue agora para não perder atendimentos!</span>
+      </div>
+
+      <!-- Pacote recomendado -->
+      <div class="token-alert-pkg">
+        <div class="pop-label">⭐ RECOMENDADO PARA VOCÊ</div>
+        <div class="token-alert-pkg-row">
+          <div>
+            <div class="token-alert-pkg-name">➕➕ Médio</div>
+            <div style="font-size:12px;color:#666;margin-top:2px;">+270 atendimentos extras</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="token-alert-pkg-price"><sup>R$</sup>177</div>
+            <div style="font-size:11px;color:#888;">pagamento via PIX</div>
+          </div>
+        </div>
+        <div class="token-alert-pkg-features">
+          <span>+10M tokens</span>
+          <span>+270 leads</span>
+          <span>Sem prazo de validade</span>
+          <span>Crédito em até 2h</span>
+        </div>
+      </div>
+
+      <button class="btn-token-alert-buy" onclick="buyFromAlert()">
+        ⚡ Quero adicionar tokens agora
+      </button>
+      <button class="btn-token-alert-later" onclick="dismissTokenAlert()">
+        Lembrar mais tarde
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPRAR CRÉDITOS -->
+<div class="modal-backdrop" id="modal-buy-credits" onclick="if(event.target===this)closeBuyModal()">
+  <div class="modal-box">
+    <h2 id="buy-modal-title">🛒 Comprar Créditos</h2>
+    <div class="buy-modal-pkg-info">
+      <div class="buy-modal-pkg-row">
+        <span id="buy-pkg-name" style="font-weight:700;font-size:16px;"></span>
+        <span id="buy-pkg-price" style="font-size:22px;font-weight:800;color:#4f46e5;"></span>
+      </div>
+      <div class="buy-modal-pkg-grid">
+        <div id="buy-pkg-leads"></div>
+        <div id="buy-pkg-tokens"></div>
+        <div>🤖 IA ativa 24/7</div>
+        <div>📊 Relatórios completos</div>
+      </div>
+    </div>
+    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
+      <div style="font-weight:700;font-size:13px;color:#16a34a;margin-bottom:6px;">📲 Como pagar</div>
+      <div style="font-size:12px;color:#374151;line-height:1.7;">
+        1. Clique em <strong>Confirmar Pedido</strong> abaixo<br>
+        2. Aguarde o contato do administrador com a chave PIX<br>
+        3. Após confirmação do pagamento, os tokens serão adicionados em até 2h
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="btn-confirm-buy" onclick="confirmBuy()">✅ Confirmar Pedido</button>
+      <button class="btn-secondary" onclick="closeBuyModal()">Cancelar</button>
+    </div>
+    <div id="buy-modal-error" class="error-msg" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR CRÉDITOS (admin) -->
+<div class="modal-backdrop" id="modal-add-credits" onclick="if(event.target===this)closeAddCreditsModal()">
+  <div class="modal-box">
+    <h2>💰 Adicionar Créditos ao Cliente</h2>
+    <div class="field-group">
+      <label>Cliente</label>
+      <div id="add-credits-client-name" style="font-weight:700;font-size:15px;padding:8px 0;"></div>
+    </div>
+    <div class="field-group">
+      <label>Tokens a adicionar</label>
+      <input type="number" id="add-credits-tokens" placeholder="Ex: 10000000" min="1000000" step="1000000" />
+      <div style="font-size:12px;color:#888;margin-top:4px;">Referência: 10M tokens ≈ 270 leads</div>
+    </div>
+    <div class="field-group">
+      <label>Observação (opcional)</label>
+      <input type="text" id="add-credits-obs" placeholder="Ex: Pacote Pro — $68" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="btn-confirm-add-credits" onclick="confirmAddCredits()">✅ Adicionar Créditos</button>
+      <button class="btn-secondary" onclick="closeAddCreditsModal()">Cancelar</button>
+    </div>
+    <div id="add-credits-error" class="error-msg" style="margin-top:10px;"></div>
+  </div>
+</div>
+
 <!-- MODAL CRIAR CLIENTE -->
 <div class="modal-backdrop" id="modal-backdrop" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
@@ -704,10 +1211,28 @@
   const SUPABASE_URL = 'https://vyvdrbkcrvklcaombjqu.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY';
   const MANAGE_CLIENTS_URL = `${SUPABASE_URL}/functions/v1/manage-clients`;
-  const N8N_UPLOAD_WEBHOOK = 'https://sx-n8n.yuhqmc.easypanel.host/webhook/upload-pdf-sdr';
-  const EVO_URL = 'https://evolutionapi-evolution-api.yuhqmc.easypanel.host';
-  const EVO_KEY = '32AEB8FC2DE4-4F79-A823-E620A11C224F';
-  const EVO_INSTANCE_DEFAULT = 'TESTE'; // fallback se perfil não tiver instância
+  const PROCESS_PDF_URL    = `${SUPABASE_URL}/functions/v1/process-pdf`;
+  // Evolution API — chamadas via Edge Function proxy (chave segura no servidor)
+  const EVO_PROXY_URL = `${SUPABASE_URL}/functions/v1/evo-proxy`;
+
+  // Helper: chama Evolution API via proxy autenticado (nunca expõe a chave)
+  async function evoProxy(action, body = null) {
+    const session = (await db.auth.getSession()).data.session;
+    if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+    const opts = {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY,
+        ...(body ? { 'Content-Type': 'application/json' } : {})
+      },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    };
+    const res = await fetch(`${EVO_PROXY_URL}?action=${action}`, opts);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    return data;
+  }
 
   const { createClient } = supabase;
   const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -719,9 +1244,7 @@
   let qrCountdownInterval = null;
   let currentProfile = null; // { id, role, display_name, evo_instance, active }
 
-  function getEvoInstance() {
-    return (currentProfile?.evo_instance) || EVO_INSTANCE_DEFAULT;
-  }
+  // getEvoInstance removido — o proxy evo-proxy resolve a instância automaticamente pelo JWT
 
   // =====================
   // PROMPT PADRÃO
@@ -829,7 +1352,7 @@
 
       // Atualiza nome/instância na sidebar
       const instEl = document.getElementById('wa-instance-display');
-      if (instEl) instEl.textContent = getEvoInstance();
+      if (instEl) instEl.textContent = currentProfile?.evo_instance || 'Não configurada';
       const nameEl = document.getElementById('sidebar-user-name');
       if (nameEl) nameEl.textContent = profile?.display_name || user.email;
       const roleEl = document.getElementById('sidebar-user-role');
@@ -837,6 +1360,7 @@
     }
 
     loadConfigs(); loadStats(); loadOverviewLeads(); loadPDFList();
+    loadCredits(); // verifica saldo e dispara alerta se necessário
     checkWAStatus();
     waStatusInterval = setInterval(checkWAStatus, 15000);
   }
@@ -850,12 +1374,16 @@
     document.getElementById('page-' + name).classList.add('active');
     el.classList.add('active');
     if (name === 'leads') loadLeads();
+    if (name === 'crm') loadCRM();
     if (name === 'clientes') { loadClients(); loadTokenUsageAdmin(); }
     if (name === 'faturamento') {
       loadBilling();
+      loadCredits();
       if (currentProfile?.role === 'admin') {
         document.getElementById('billing-admin-card').classList.add('visible');
+        document.getElementById('admin-pedidos-card').classList.add('visible');
         loadAdminBilling();
+        loadAdminPedidos();
       }
     }
     if (name === 'fluxos') {
@@ -879,10 +1407,7 @@
     const dot = document.getElementById('nav-wa-dot');
     const btnDesc = document.getElementById('btn-desconectar');
     try {
-      const res = await fetch(`${EVO_URL}/instance/connectionState/${getEvoInstance()}`, {
-        headers: { 'apikey': EVO_KEY }
-      });
-      const data = await res.json();
+      const data = await evoProxy('status');
       const state = data?.instance?.state || data?.state || 'close';
       if (state === 'open') {
         bar.className = 'wa-status-bar connected';
@@ -910,10 +1435,7 @@
     const timer = document.getElementById('qr-timer');
     btn.disabled = true; btn.innerHTML = '<span>⏳</span> Gerando...';
     try {
-      const res = await fetch(`${EVO_URL}/instance/connect/${getEvoInstance()}`, {
-        headers: { 'apikey': EVO_KEY }
-      });
-      const data = await res.json();
+      const data = await evoProxy('connect');
       const base64 = data?.base64 || data?.qrcode?.base64 || data?.code;
       if (base64) {
         placeholder.style.display = 'none';
@@ -962,9 +1484,7 @@
   async function disconnectWA() {
     if (!confirm('Deseja desconectar o WhatsApp? O agente para de responder.')) return;
     try {
-      await fetch(`${EVO_URL}/instance/logout/${getEvoInstance()}`, {
-        method: 'DELETE', headers: { 'apikey': EVO_KEY }
-      });
+      await evoProxy('logout');
       setTimeout(checkWAStatus, 1000);
     } catch(e) { alert('Erro ao desconectar: ' + e.message); }
   }
@@ -1072,8 +1592,12 @@
     }
     el.innerHTML = hist.map(msg => {
       const isUser = msg.role === 'user';
+      const isAudio = msg.type === 'audio';
+      const audioTag = isAudio
+        ? `<div class="msg-audio-tag">${isUser ? '🎤 Áudio transcrito' : '🔊 Resposta em áudio'}</div>`
+        : '';
       return `<div class="msg-row ${isUser ? 'user' : 'assistant'}">
-        <div class="msg-bubble">${escapeHtml(msg.content || '')}</div>
+        <div class="msg-bubble">${audioTag}${escapeHtml(msg.content || '')}</div>
       </div>`;
     }).join('');
     el.scrollTop = el.scrollHeight;
@@ -1095,11 +1619,7 @@
     const btn = document.getElementById('btn-send');
     btn.disabled = true; input.value = ''; input.style.height = 'auto';
     try {
-      await fetch(`${EVO_URL}/message/sendText/${getEvoInstance()}`, {
-        method: 'POST',
-        headers: { 'apikey': EVO_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: selectedConv, text: msg })
-      });
+      await evoProxy('send-text', { number: selectedConv, text: msg });
       // Atualiza histórico local
       await loadConversations();
     } catch(e) {
@@ -1111,7 +1631,7 @@
   async function clearSession() {
     if (!selectedConv) return;
     if (!confirm(`Reiniciar a conversa com ${formatPhone(selectedConv)}? O histórico será apagado.`)) return;
-    await db.from('sessoes').delete().eq('numero_whatsapp', selectedConv);
+    await db.from('sessoes').delete().eq('numero_whatsapp', selectedConv).eq('user_id', currentProfile.id);
     selectedConv = null;
     document.getElementById('chat-placeholder').style.display = 'flex';
     document.getElementById('chat-active').style.display = 'none';
@@ -1146,6 +1666,440 @@
   }
 
   // =====================
+  // CRM KANBAN
+  // =====================
+  const CRM_STAGES = [
+    { id: 'novo_contato',    label: '🆕 Novo Contato',      color: '#f59e0b' },
+    { id: 'em_atendimento',  label: '💬 Em Atendimento',    color: '#3b82f6' },
+    { id: 'qualificado',     label: '✅ Qualificado',        color: '#16a34a' },
+    { id: 'nao_qualificado', label: '❌ Não Qualificado',   color: '#dc2626' },
+    { id: 'convertido',      label: '🎉 Convertido',         color: '#7c3aed' },
+    { id: 'perdido',         label: '🚪 Perdido',            color: '#9ca3af' }
+  ];
+
+  let crmLeads = [];
+  let crmStages = [...CRM_STAGES];
+  let crmOpenLeadId = null;
+
+  async function loadCRM() {
+    const board = document.getElementById('crm-board');
+    board.innerHTML = '<div style="padding:40px;color:#aaa;font-size:14px;">Carregando...</div>';
+    await loadCRMStages();
+    const { data, error } = await db.from('leads')
+      .select('*, lead_tarefas(id, concluida)')
+      .order('atualizado_em', { ascending: false });
+    if (error || !data) { board.innerHTML = '<div style="padding:40px;color:#ef4444;">Erro ao carregar CRM</div>'; return; }
+    crmLeads = data;
+    renderKanban(data);
+  }
+
+  function renderKanban(leads) {
+    const board = document.getElementById('crm-board');
+    const byStage = {};
+    crmStages.forEach(s => byStage[s.id] = []);
+    leads.forEach(l => {
+      const s = l.stage || crmStages[0]?.id || 'novo_contato';
+      if (!byStage[s]) byStage[crmStages[0]?.id || 'novo_contato'].push(l);
+      else byStage[s].push(l);
+    });
+    board.innerHTML = crmStages.map(stage => {
+      const cols = byStage[stage.id] || [];
+      return `<div class="crm-col" data-stage="${stage.id}" style="border-top:3px solid ${stage.color};">
+        <div class="crm-col-header">
+          <span class="crm-col-title">${stage.label}</span>
+          <span class="crm-col-count">${cols.length}</span>
+        </div>
+        <div class="crm-cards" data-stage="${stage.id}"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="dropCard(event,this)">
+          ${cols.map(l => renderCard(l, stage.color)).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderCard(lead, stageColor) {
+    const tasks = lead.lead_tarefas || [];
+    const pendentes = tasks.filter(t => !t.concluida).length;
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    let anivIcon = '';
+    if (lead.data_aniversario) {
+      const aniv = new Date(lead.data_aniversario + 'T00:00:00');
+      aniv.setFullYear(hoje.getFullYear());
+      const diff = Math.round((aniv - hoje) / 86400000);
+      if (diff === 0) anivIcon = '<span class="crm-card-aniv" title="Aniversário hoje! 🎂">🎂</span>';
+      else if (diff === 1) anivIcon = '<span class="crm-card-aniv" title="Aniversário amanhã">🎁</span>';
+    }
+    const stg = lead.stage || crmStages[0]?.id || 'novo_contato';
+    const color = stageColor || crmStages.find(s => s.id === stg)?.color || '#e5e7eb';
+    return `<div class="crm-card" data-lead-id="${lead.id}" data-stage="${stg}"
+      style="border-left-color:${color};"
+      draggable="true"
+      ondragstart="dragCard(event,this)"
+      onclick="openLeadModal(${lead.id})">
+      <div class="crm-card-top">
+        <span class="crm-card-name">${escapeHtml(lead.nome || lead.numero_whatsapp || '—')}</span>
+        ${anivIcon}
+      </div>
+      ${lead.tese ? `<div class="crm-card-tese">${escapeHtml(lead.tese)}</div>` : ''}
+      ${lead.assunto ? `<div class="crm-card-assunto">${escapeHtml(lead.assunto)}</div>` : ''}
+      <div class="crm-card-footer">
+        <span class="crm-card-tasks ${pendentes > 0 ? 'has-pending' : ''}">
+          ${pendentes > 0 ? `📋 ${pendentes} tarefa${pendentes>1?'s':''} pendente${pendentes>1?'s':''}` : tasks.length > 0 ? `✅ ${tasks.length} tarefa${tasks.length>1?'s':''}` : ''}
+        </span>
+        <span class="crm-card-date">${lead.atualizado_em ? timeAgo(lead.atualizado_em) : '—'}</span>
+      </div>
+    </div>`;
+  }
+
+  // ---- Drag & Drop ----
+  let dragLeadId = null;
+  function dragCard(event, el) {
+    dragLeadId = el.dataset.leadId;
+    event.dataTransfer.effectAllowed = 'move';
+  }
+  async function dropCard(event, dropZone) {
+    event.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (!dragLeadId) return;
+    const newStage = dropZone.dataset.stage;
+    const card = document.querySelector(`.crm-card[data-lead-id="${dragLeadId}"]`);
+    if (card) { card.dataset.stage = newStage; dropZone.appendChild(card); }
+    await updateLeadStage(dragLeadId, newStage);
+    dragLeadId = null;
+    // Atualiza contador das colunas
+    crmStages.forEach(s => {
+      const col = document.querySelector(`.crm-col[data-stage="${s.id}"]`);
+      if (col) col.querySelector('.crm-col-count').textContent = col.querySelectorAll('.crm-card').length;
+    });
+  }
+  async function updateLeadStage(leadId, stage) {
+    await db.from('leads').update({ stage, atualizado_em: new Date().toISOString() }).eq('id', leadId);
+    const l = crmLeads.find(x => String(x.id) === String(leadId));
+    if (l) l.stage = stage;
+  }
+
+  // ---- Modal de detalhes ----
+  async function openLeadModal(leadId) {
+    crmOpenLeadId = leadId;
+    const lead = crmLeads.find(x => x.id === leadId) || {};
+    document.getElementById('crm-lead-id').value = leadId;
+    document.getElementById('crm-lead-numero').value = lead.numero_whatsapp || '';
+    document.getElementById('crm-modal-title').textContent = lead.nome || lead.numero_whatsapp || 'Lead';
+    document.getElementById('crm-nome').value = lead.nome || '';
+    document.getElementById('crm-celular').value = lead.celular || '';
+    document.getElementById('crm-tese').value = lead.tese || '';
+    document.getElementById('crm-assunto').value = lead.assunto || '';
+    document.getElementById('crm-aniversario').value = lead.data_aniversario || '';
+    // Popula select de estágio dinamicamente
+    const stgSel = document.getElementById('crm-stage');
+    stgSel.innerHTML = crmStages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+    stgSel.value = lead.stage || crmStages[0]?.id || 'novo_contato';
+    document.getElementById('crm-resumo').value = lead.resumo || '';
+    document.getElementById('crm-notas').value = lead.notas || '';
+    switchCRMTab('dados', document.querySelector('.crm-tab'));
+    document.getElementById('modal-crm-lead').classList.add('open');
+    await loadTarefas(leadId);
+  }
+
+  function closeCRMModal() {
+    document.getElementById('modal-crm-lead').classList.remove('open');
+    crmOpenLeadId = null;
+  }
+
+  function switchCRMTab(tab, el) {
+    document.querySelectorAll('.crm-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.crm-tab-content').forEach(t => t.classList.remove('active'));
+    if (el) el.classList.add('active');
+    else { const tabs = document.querySelectorAll('.crm-tab'); if(tabs.length) tabs[0].classList.add('active'); }
+    document.getElementById('crm-tab-' + tab).classList.add('active');
+  }
+
+  async function saveLeadDetails() {
+    const id = crmOpenLeadId;
+    if (!id) return;
+    const st = document.getElementById('crm-save-status');
+    st.textContent = 'Salvando...'; st.style.color = '#888';
+    await db.from('leads').update({
+      nome: document.getElementById('crm-nome').value,
+      celular: document.getElementById('crm-celular').value,
+      tese: document.getElementById('crm-tese').value,
+      assunto: document.getElementById('crm-assunto').value,
+      data_aniversario: document.getElementById('crm-aniversario').value || null,
+      stage: document.getElementById('crm-stage').value,
+      resumo: document.getElementById('crm-resumo').value,
+      atualizado_em: new Date().toISOString()
+    }).eq('id', id);
+    st.textContent = '✅ Salvo!'; st.style.color = '#16a34a';
+    setTimeout(() => st.textContent = '', 3000);
+    // Atualiza local e re-renderiza card
+    const lead = crmLeads.find(x => x.id === id);
+    if (lead) {
+      lead.nome = document.getElementById('crm-nome').value;
+      lead.tese = document.getElementById('crm-tese').value;
+      lead.assunto = document.getElementById('crm-assunto').value;
+      lead.stage = document.getElementById('crm-stage').value;
+      lead.data_aniversario = document.getElementById('crm-aniversario').value || null;
+      const card = document.querySelector(`.crm-card[data-lead-id="${id}"]`);
+      if (card) {
+        card.outerHTML = renderCard(lead);
+      }
+      document.getElementById('crm-modal-title').textContent = lead.nome || lead.numero_whatsapp || 'Lead';
+    }
+  }
+
+  async function saveLeadNotas() {
+    const id = crmOpenLeadId; if (!id) return;
+    const st = document.getElementById('crm-notas-status');
+    st.textContent = 'Salvando...'; st.style.color = '#888';
+    await db.from('leads').update({ notas: document.getElementById('crm-notas').value, atualizado_em: new Date().toISOString() }).eq('id', id);
+    st.textContent = '✅ Salvo!'; st.style.color = '#16a34a';
+    setTimeout(() => st.textContent = '', 2500);
+  }
+
+  // ---- Tarefas ----
+  async function loadTarefas(leadId) {
+    const { data } = await db.from('lead_tarefas').select('*').eq('lead_id', leadId).order('criado_em');
+    renderTarefas(data || []);
+    // Atualiza count no lead local
+    const lead = crmLeads.find(x => x.id === leadId);
+    if (lead) lead.lead_tarefas = data || [];
+  }
+
+  function renderTarefas(tarefas) {
+    const el = document.getElementById('crm-tarefas-list');
+    if (!tarefas.length) { el.innerHTML = '<div style="color:#aaa;font-size:13px;padding:8px 0;">Nenhuma tarefa ainda. Adicione abaixo.</div>'; return; }
+    el.innerHTML = tarefas.map(t => `<div class="tarefa-item" data-tarefa-id="${t.id}">
+      <input type="checkbox" ${t.concluida?'checked':''} onchange="toggleTarefa('${t.id}',this.checked)" />
+      <span class="tarefa-desc ${t.concluida?'done':''}">${escapeHtml(t.descricao)}</span>
+      ${t.data_vencimento ? `<span class="tarefa-date">📅 ${new Date(t.data_vencimento+'T00:00:00').toLocaleDateString('pt-BR')}</span>` : ''}
+      <button class="tarefa-del" onclick="deleteTarefa('${t.id}')" title="Excluir">✕</button>
+    </div>`).join('');
+  }
+
+  async function addTarefa() {
+    const desc = document.getElementById('nova-tarefa-desc').value.trim();
+    if (!desc || !crmOpenLeadId) return;
+    const { data: { user } } = await db.auth.getUser();
+    const dataVenc = document.getElementById('nova-tarefa-data').value || null;
+    await db.from('lead_tarefas').insert({ lead_id: crmOpenLeadId, user_id: user.id, descricao: desc, data_vencimento: dataVenc });
+    document.getElementById('nova-tarefa-desc').value = '';
+    document.getElementById('nova-tarefa-data').value = '';
+    await loadTarefas(crmOpenLeadId);
+  }
+
+  async function toggleTarefa(tarefaId, concluida) {
+    await db.from('lead_tarefas').update({ concluida }).eq('id', tarefaId);
+    const el = document.querySelector(`.tarefa-item[data-tarefa-id="${tarefaId}"] .tarefa-desc`);
+    if (el) el.classList.toggle('done', concluida);
+    await loadTarefas(crmOpenLeadId);
+  }
+
+  async function deleteTarefa(tarefaId) {
+    await db.from('lead_tarefas').delete().eq('id', tarefaId);
+    await loadTarefas(crmOpenLeadId);
+  }
+
+  // ---- Entrar na conversa (pausa agente) ----
+  async function entrarNaConversa() {
+    const numero = document.getElementById('crm-lead-numero').value;
+    if (!numero) { alert('Este lead não tem número de WhatsApp registrado.'); return; }
+    closeCRMModal();
+    // Navega para Bate-Papo
+    const navBatepapo = document.querySelector('.nav-item[onclick*="batepapo"]');
+    showPage('batepapo', navBatepapo);
+    // Espera carregar e seleciona a conversa
+    setTimeout(async () => {
+      await loadConversations();
+      setTimeout(async () => {
+        selectConv(numero);
+        // Pausa o agente automaticamente
+        const { data: conv } = await db.from('sessoes').select('agente_pausado').eq('numero_whatsapp', numero).eq('user_id', currentProfile?.id).single();
+        if (conv && !conv.agente_pausado) {
+          await db.from('sessoes').update({ agente_pausado: true, pausado_em: new Date().toISOString() }).eq('numero_whatsapp', numero).eq('user_id', currentProfile?.id);
+          updateAgentePausadoUI(true);
+        }
+      }, 600);
+    }, 400);
+  }
+
+  // ---- Novo lead manual ----
+  function openNewLeadModal() { document.getElementById('modal-novo-lead').classList.add('open'); }
+  function closeNewLeadModal() { document.getElementById('modal-novo-lead').classList.remove('open'); }
+
+  async function createManualLead() {
+    const numero = document.getElementById('nl-numero').value.replace(/\D/g,'');
+    const nome   = document.getElementById('nl-nome').value.trim();
+    const assunto = document.getElementById('nl-assunto').value.trim();
+    if (!numero) { alert('Informe o número de WhatsApp'); return; }
+    const { data: { user } } = await db.auth.getUser();
+    await db.from('leads').insert({ numero_whatsapp: numero, nome, assunto, user_id: user.id, stage: 'novo_contato', atualizado_em: new Date().toISOString() });
+    closeNewLeadModal();
+    document.getElementById('nl-nome').value = '';
+    document.getElementById('nl-numero').value = '';
+    document.getElementById('nl-assunto').value = '';
+    await loadCRM();
+  }
+
+  // =====================
+  // GERENCIAR COLUNAS CRM
+  // =====================
+  const STAGE_COLORS = [
+    '#f59e0b','#3b82f6','#16a34a','#dc2626','#7c3aed','#9ca3af',
+    '#f97316','#ec4899','#06b6d4','#84cc16','#64748b','#8b5cf6',
+    '#0891b2','#b45309','#15803d','#be123c'
+  ];
+  let stagesDragSrc = null;
+  let colorPaletteTarget = null;
+
+  async function loadCRMStages() {
+    try {
+      const { data } = await db.from('agente_config')
+        .select('valor').eq('chave','crm_stages').maybeSingle();
+      if (data?.valor) {
+        const parsed = JSON.parse(data.valor);
+        if (Array.isArray(parsed) && parsed.length) { crmStages = parsed; return crmStages; }
+      }
+    } catch {}
+    crmStages = [...CRM_STAGES];
+    return crmStages;
+  }
+
+  async function openStagesModal() {
+    await loadCRMStages();
+    renderStagesList();
+    document.getElementById('stages-save-status').textContent = '';
+    document.getElementById('modal-gerenciar-colunas').classList.add('open');
+  }
+
+  function closeStagesModal() {
+    document.getElementById('modal-gerenciar-colunas').classList.remove('open');
+    hideColorPalette();
+  }
+
+  function renderStagesList() {
+    const list = document.getElementById('stages-list');
+    list.innerHTML = crmStages.map((s, i) => `
+      <div class="stage-row" data-idx="${i}"
+        draggable="true"
+        ondragstart="stageRowDragStart(event,this)"
+        ondragover="stageRowDragOver(event,this)"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="stageRowDrop(event,this)"
+        ondragend="stageRowDragEnd(this)">
+        <span class="stage-drag-handle" title="Arrastar para reordenar">⠿</span>
+        <span class="stage-color-dot" style="background:${s.color};" onclick="showColorPalette(event,${i})" title="Trocar cor"></span>
+        <input class="stage-name-input" type="text" value="${s.label.replace(/"/g,'&quot;')}" placeholder="Nome da coluna" />
+        <button class="stage-del-btn" onclick="deleteStageRow(${i})" title="Remover coluna">✕</button>
+      </div>`).join('');
+  }
+
+  function stageRowDragStart(e, el) {
+    stagesDragSrc = el;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => el.style.opacity = '0.45', 0);
+  }
+  function stageRowDragOver(e, el) {
+    e.preventDefault();
+    document.querySelectorAll('.stage-row').forEach(r => r.classList.remove('drag-over'));
+    if (el !== stagesDragSrc) el.classList.add('drag-over');
+  }
+  function stageRowDragEnd(el) {
+    el.style.opacity = '';
+    document.querySelectorAll('.stage-row').forEach(r => r.classList.remove('drag-over'));
+  }
+  function stageRowDrop(e, el) {
+    e.stopPropagation();
+    el.classList.remove('drag-over');
+    if (!stagesDragSrc || stagesDragSrc === el) { stagesDragSrc = null; return; }
+    // Lê labels atuais antes de reordenar
+    syncStageLabelsFromDOM();
+    const list = document.getElementById('stages-list');
+    const rows = [...list.querySelectorAll('.stage-row')];
+    const srcIdx = rows.indexOf(stagesDragSrc);
+    const dstIdx = rows.indexOf(el);
+    if (srcIdx < 0 || dstIdx < 0) { stagesDragSrc = null; return; }
+    const [moved] = crmStages.splice(srcIdx, 1);
+    crmStages.splice(dstIdx, 0, moved);
+    stagesDragSrc.style.opacity = '';
+    stagesDragSrc = null;
+    renderStagesList();
+  }
+
+  function syncStageLabelsFromDOM() {
+    const inputs = document.querySelectorAll('#stages-list .stage-name-input');
+    inputs.forEach((inp, i) => { if (crmStages[i]) crmStages[i].label = inp.value.trim() || crmStages[i].label; });
+  }
+
+  function addNewStage() {
+    syncStageLabelsFromDOM();
+    crmStages.push({ id: 'custom_' + Date.now(), label: 'Nova coluna', color: '#64748b' });
+    renderStagesList();
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('#stages-list .stage-name-input');
+      if (inputs.length) { const last = inputs[inputs.length - 1]; last.focus(); last.select(); }
+    }, 50);
+  }
+
+  function deleteStageRow(idx) {
+    if (crmStages.length <= 1) { alert('Mantenha ao menos uma coluna.'); return; }
+    syncStageLabelsFromDOM();
+    crmStages.splice(idx, 1);
+    renderStagesList();
+  }
+
+  async function saveCRMStages() {
+    syncStageLabelsFromDOM();
+    const st = document.getElementById('stages-save-status');
+    st.textContent = 'Salvando...'; st.style.color = '#888';
+    const { data: { user } } = await db.auth.getUser();
+    const { error } = await db.from('agente_config').upsert(
+      { user_id: user.id, chave: 'crm_stages', valor: JSON.stringify(crmStages) },
+      { onConflict: 'user_id,chave' }
+    );
+    if (error) { st.textContent = '❌ Erro ao salvar'; st.style.color = '#ef4444'; return; }
+    st.textContent = '✅ Colunas salvas!'; st.style.color = '#16a34a';
+    setTimeout(() => { closeStagesModal(); renderKanban(crmLeads); }, 900);
+  }
+
+  // ---- Color palette ----
+  function showColorPalette(e, stageIdx) {
+    e.stopPropagation();
+    colorPaletteTarget = stageIdx;
+    const popup = document.getElementById('color-palette-popup');
+    popup.innerHTML = STAGE_COLORS.map(c =>
+      `<span class="color-swatch ${crmStages[stageIdx]?.color===c?'selected':''}"
+        style="background:${c};" onclick="pickStageColor('${c}')"></span>`
+    ).join('');
+    // Posição relativa ao modal-box
+    const dot = e.currentTarget;
+    const dotRect = dot.getBoundingClientRect();
+    const mbox = document.querySelector('#modal-gerenciar-colunas .modal-box');
+    const mRect = mbox.getBoundingClientRect();
+    popup.style.display = 'flex';
+    popup.style.top  = (dotRect.bottom - mRect.top + 6) + 'px';
+    popup.style.left = (dotRect.left   - mRect.left) + 'px';
+    popup.style.position = 'absolute';
+    setTimeout(() => document.addEventListener('click', hideColorPaletteOutside, { once: true }), 30);
+  }
+
+  function pickStageColor(color) {
+    if (colorPaletteTarget !== null && crmStages[colorPaletteTarget]) {
+      crmStages[colorPaletteTarget].color = color;
+      renderStagesList();
+    }
+    hideColorPalette();
+  }
+
+  function hideColorPalette() {
+    const p = document.getElementById('color-palette-popup');
+    if (p) p.style.display = 'none';
+    colorPaletteTarget = null;
+  }
+  function hideColorPaletteOutside() { hideColorPalette(); }
+
+  // =====================
   // CONFIGURAÇÕES
   // =====================
   async function loadConfigs() {
@@ -1159,7 +2113,12 @@
     if (!data) return;
     data.forEach(row => {
       const el = document.getElementById('cfg-' + row.chave);
-      if (el && row.valor) el.value = row.valor;
+      if (!el) return;
+      if (el.type === 'checkbox') {
+        el.checked = row.valor === 'true' || row.valor === true;
+      } else if (row.valor) {
+        el.value = row.valor;
+      }
     });
   }
 
@@ -1180,8 +2139,9 @@
     for (const key of keys) {
       const el = document.getElementById('cfg-' + key);
       if (!el) continue;
+      const valor = el.type === 'checkbox' ? String(el.checked) : el.value;
       await db.from('agente_config').upsert(
-        { chave: key, valor: el.value, user_id: user.id, atualizado_em: new Date().toISOString() },
+        { chave: key, valor, user_id: user.id, atualizado_em: new Date().toISOString() },
         { onConflict: 'user_id,chave' }
       );
     }
@@ -1247,36 +2207,71 @@
     const btn = document.getElementById('btn-upload-pdf');
     const status = document.getElementById('upload-status');
     if (!nome || !file) { alert('Preencha o nome e selecione um PDF.'); return; }
-    btn.disabled = true; btn.textContent = 'Enviando...'; status.textContent = '';
+    if (!file.name.endsWith('.pdf') && file.type !== 'application/pdf') {
+      alert('Apenas arquivos PDF são suportados.'); return;
+    }
+    btn.disabled = true; btn.textContent = '⏳ Processando...'; status.textContent = '';
     const formData = new FormData();
-    formData.append('Nome do documento', nome);
-    formData.append('Categoria', categoria);
-    formData.append('Arquivo PDF', file);
-    // Envia user_id para isolamento de dados por cliente (multi-tenancy)
-    const { data: { user: uploadUser } } = await db.auth.getUser();
-    if (uploadUser) formData.append('user_id', uploadUser.id);
+    formData.append('nome', nome);
+    formData.append('categoria', categoria);
+    formData.append('file', file);
     try {
-      await fetch(N8N_UPLOAD_WEBHOOK, { method: 'POST', body: formData });
-      status.textContent = '✅ PDF enviado para processamento!'; status.style.color = '#16a34a';
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+      const res = await fetch(PROCESS_PDF_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': SUPABASE_KEY
+        },
+        body: formData
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Erro desconhecido');
+      status.textContent = `✅ PDF processado! ${result.chunks} chunks indexados (${result.chars} chars).`;
+      status.style.color = '#16a34a';
+      document.getElementById('pdf-nome').value = '';
+      document.getElementById('pdf-file').value = '';
+      document.getElementById('pdf-filename').textContent = 'Clique para selecionar um PDF';
       loadPDFList();
-    } catch {
-      status.textContent = '❌ Erro ao enviar. Verifique se o Workflow 2 está ativo.'; status.style.color = '#ef4444';
+    } catch(e) {
+      status.textContent = '❌ Erro: ' + e.message; status.style.color = '#ef4444';
     }
     btn.disabled = false; btn.textContent = '⬆️ Enviar para o agente';
-    setTimeout(() => status.textContent = '', 4000);
+    setTimeout(() => status.textContent = '', 6000);
   }
 
   async function loadPDFList() {
-    const { data } = await db.from('documentos_conhecimento').select('metadata').limit(30);
+    const { data } = await db.from('documentos_conhecimento').select('metadata').order('id', { ascending: false }).limit(200);
     const el = document.getElementById('pdf-list');
     if (!data || !data.length) {
       el.innerHTML = '<p class="empty-state">Nenhum PDF na base ainda.</p>'; return;
     }
+    // Agrupa por nome (cada doc pode ter vários chunks)
     const unique = {};
-    data.forEach(d => { const k = (d.metadata?.nome || 'Sem nome'); unique[k] = d.metadata; });
-    el.innerHTML = '<div class="pdf-list">' + Object.values(unique).map(meta =>
-      `<div class="pdf-item"><span>📄 ${meta.nome || 'Documento'}</span><span class="pdf-badge">${meta.categoria || 'Geral'}</span></div>`
+    data.forEach(d => {
+      const k = d.metadata?.nome || 'Sem nome';
+      if (!unique[k]) unique[k] = { ...d.metadata, chunks: 0 };
+      unique[k].chunks++;
+    });
+    el.innerHTML = '<div class="pdf-list">' + Object.entries(unique).map(([nome, meta]) =>
+      `<div class="pdf-item">
+        <span>📄 ${meta.nome || nome}</span>
+        <span class="pdf-badge">${meta.categoria || 'Geral'}</span>
+        <span class="pdf-chunks">${meta.chunks} chunks</span>
+        <button class="btn-delete-pdf" onclick="deletePDF('${nome.replace(/'/g,"\\'")}')" title="Remover da base de conhecimento">🗑️</button>
+      </div>`
     ).join('') + '</div>';
+  }
+
+  async function deletePDF(nome) {
+    if (!confirm(`Remover "${nome}" da base de conhecimento?\n\nTodos os chunks serão excluídos permanentemente.`)) return;
+    const { error } = await db
+      .from('documentos_conhecimento')
+      .delete()
+      .contains('metadata', { nome });
+    if (error) { alert('Erro ao remover: ' + error.message); return; }
+    loadPDFList();
   }
 
   // =====================
@@ -1307,19 +2302,33 @@
     if (!profiles.length) {
       el.innerHTML = '<p class="empty-state">Nenhum cliente cadastrado ainda.</p>'; return;
     }
+    // Carrega saldos de tokens
+    const { data: saldos } = await db.from('tokens_creditos').select('user_id, saldo_tokens');
+    const saldoMap = {};
+    (saldos || []).forEach(s => { saldoMap[s.user_id] = s.saldo_tokens; });
+
     el.innerHTML = `<table>
-      <thead><tr><th>Nome</th><th>Tipo</th><th>Instância WA</th><th>Status</th><th>Criado</th><th>Ações</th></tr></thead>
-      <tbody>${profiles.map(p => `<tr>
-        <td style="font-weight:600">${escapeHtml(p.display_name || '—')}</td>
-        <td><span class="badge ${p.role === 'admin' ? 'badge-purple' : 'badge-blue'}">${p.role === 'admin' ? '🔑 Admin' : '👤 Cliente'}</span></td>
-        <td><code style="background:#f0f2f5;padding:2px 7px;border-radius:4px;font-size:12px;">${escapeHtml(p.evo_instance || '—')}</code></td>
-        <td><span class="badge ${p.active ? 'badge-green' : 'badge-red'}">${p.active ? '✅ Ativo' : '❌ Inativo'}</span></td>
-        <td style="color:#888;font-size:12px;">${p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—'}</td>
-        <td>
-          ${p.role !== 'admin' ? `<button onclick="toggleClient('${p.id}', ${p.active})" style="padding:5px 12px;font-size:12px;" class="btn-secondary">${p.active ? 'Desativar' : 'Ativar'}</button>` : '<span style="color:#bbb;font-size:12px;">—</span>'}
-        </td>
-      </tr>`).join('')}</tbody>
-    </table>`;
+      <thead><tr><th>Nome</th><th>Tipo</th><th>Instância WA</th><th>Status</th><th>Tokens</th><th>Leads rest.</th><th>Ações</th></tr></thead>
+      <tbody>${profiles.map(p => {
+        const saldo = saldoMap[p.id] || 0;
+        const leads = Math.floor(saldo / TOKENS_POR_LEAD);
+        const cor = saldo === 0 ? '#dc2626' : saldo < 3000000 ? '#ca8a04' : '#16a34a';
+        return `<tr>
+          <td style="font-weight:600">${escapeHtml(p.display_name || '—')}</td>
+          <td><span class="badge ${p.role==='admin'?'badge-purple':'badge-blue'}">${p.role==='admin'?'🔑 Admin':'👤 Cliente'}</span></td>
+          <td><code style="background:#f0f2f5;padding:2px 7px;border-radius:4px;font-size:12px;">${escapeHtml(p.evo_instance||'—')}</code></td>
+          <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'✅ Ativo':'❌ Inativo'}</span></td>
+          <td style="font-weight:700;color:${cor};font-size:13px;">${(saldo/1000000).toFixed(1)}M</td>
+          <td style="font-size:13px;color:#555;">${leads.toLocaleString('pt-BR')}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${p.role !== 'admin' ? `
+              <button onclick="toggleClient('${p.id}',${p.active})" style="padding:5px 10px;font-size:12px;" class="btn-secondary">${p.active?'Desativar':'Ativar'}</button>
+              <button onclick="openAddCreditsModal('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-success">💰 Créditos</button>
+            ` : '<span style="color:#bbb;font-size:12px;">—</span>'}
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`
   }
 
   function openCreateClientModal() {
@@ -1364,6 +2373,257 @@
   async function toggleClient(userId, currentActive) {
     await adminFetch('PATCH', { user_id: userId, active: !currentActive });
     loadClients();
+  }
+
+  // =====================
+  // CRÉDITOS / TOKENS
+  // =====================
+  const TOKENS_POR_LEAD = 37037; // média real: 10M tokens = 270 pessoas
+
+  // Plano base inclui 5M tokens/mês (R$ 497/mês)
+  const TOKENS_PLANO_BASE = 5000000; // inclusos na assinatura mensal
+  const PRECO_PLANO_BASE_BRL = 497;
+
+  // Pacotes de tokens EXTRAS (soma ao saldo)
+  const PACOTES_CREDITOS = {
+    mini:   { nome: '➕ Mini',    leads: 135,   tokens: 5000000,   preco_brl: 97,  moeda: 'BRL' },
+    medio:  { nome: '➕➕ Médio', leads: 270,   tokens: 10000000,  preco_brl: 177, moeda: 'BRL' },
+    grande: { nome: '🚀 Grande',  leads: 540,   tokens: 20000000,  preco_brl: 297, moeda: 'BRL' },
+    max:    { nome: '💼 Max',     leads: 1350,  tokens: 50000000,  preco_brl: 597, moeda: 'BRL' },
+  };
+
+  let buyPacoteAtual = null;
+  let addCreditsUserId = null;
+
+  async function loadCredits() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    const { data } = await db.from('tokens_creditos').select('*').eq('user_id', user.id).single();
+    const saldo = data?.saldo_tokens || 0;
+    const usadoMes = data?.tokens_usados_mes || 0;
+    const leads = Math.floor(saldo / TOKENS_POR_LEAD);
+    const leadsUsados = Math.floor(usadoMes / TOKENS_POR_LEAD);
+    const saldoEl = document.getElementById('saldo-tokens-display');
+    const leadsEl = document.getElementById('saldo-leads-display');
+    const usadoEl = document.getElementById('saldo-usado-display');
+    if (saldoEl) saldoEl.textContent = saldo.toLocaleString('pt-BR');
+    if (leadsEl) leadsEl.textContent = leads.toLocaleString('pt-BR');
+    if (usadoEl) usadoEl.textContent = leadsUsados.toLocaleString('pt-BR');
+    // Verifica se deve mostrar alerta de tokens baixos
+    checkTokenAlert(saldo);
+    // Carrega pedidos do cliente
+    loadMeusPedidos(user.id);
+  }
+
+  async function loadMeusPedidos(userId) {
+    const el = document.getElementById('pedidos-cliente-table');
+    if (!el) return;
+    const { data } = await db.from('pedidos_creditos').select('*').eq('user_id', userId).order('criado_em', { ascending: false }).limit(10);
+    if (!data || !data.length) {
+      el.innerHTML = '<p class="empty-state" style="padding:20px;">Nenhum pedido realizado ainda.</p>'; return;
+    }
+    el.innerHTML = `<table>
+      <thead><tr><th>Data</th><th>Pacote</th><th>Tokens</th><th>Valor</th><th>Status</th></tr></thead>
+      <tbody>${data.map(p => `<tr>
+        <td style="font-size:12px;color:#888">${new Date(p.criado_em).toLocaleDateString('pt-BR')}</td>
+        <td style="font-weight:600">${PACOTES_CREDITOS[p.pacote]?.nome || p.pacote}</td>
+        <td>${(p.tokens/1000000).toFixed(1)}M tokens</td>
+        <td style="font-weight:700;color:#4f46e5">${p.preco_brl ? 'R$ '+p.preco_brl : p.preco_usd ? '$'+p.preco_usd : '—'}</td>
+        <td><span class="pedidos-badge ${p.status}">${p.status === 'pendente' ? '⏳ Pendente' : p.status === 'aprovado' ? '✅ Aprovado' : '❌ Recusado'}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  // =====================
+  // POPUP ALERTA TOKENS BAIXOS
+  // =====================
+  const TOKENS_ALERTA_BAIXO    = 2000000; // < 2M → alerta laranja (~54 leads)
+  const TOKENS_ALERTA_CRITICO  = 500000;  // < 500k → alerta vermelho (~13 leads)
+  const TOKENS_BASE_PLANO      = 5000000; // referência do plano base
+
+  function checkTokenAlert(saldo) {
+    // Só mostra 1x por sessão e só para clientes
+    if (currentProfile?.role === 'admin') return;
+    if (sessionStorage.getItem('token_alert_dismissed')) return;
+    if (saldo >= TOKENS_ALERTA_BAIXO) return;
+
+    const popup   = document.getElementById('token-alert-popup');
+    const header  = document.getElementById('token-alert-header');
+    const icon    = document.getElementById('token-alert-icon');
+    const title   = document.getElementById('token-alert-title');
+    const sub     = document.getElementById('token-alert-subtitle');
+    const saldoTx = document.getElementById('token-alert-saldo-txt');
+    const progress= document.getElementById('token-alert-progress');
+    const pctTxt  = document.getElementById('token-alert-pct-txt');
+    const urgTxt  = document.getElementById('token-alert-urgency-txt');
+
+    const leads   = Math.floor(saldo / TOKENS_POR_LEAD);
+    const pct     = Math.max(2, Math.round((saldo / TOKENS_BASE_PLANO) * 100));
+
+    saldoTx.textContent = saldo.toLocaleString('pt-BR');
+    pctTxt.textContent  = `${pct}% restante`;
+    progress.style.width = `${pct}%`;
+
+    if (saldo <= TOKENS_ALERTA_CRITICO) {
+      // CRÍTICO — vermelho
+      header.className    = 'token-alert-header';
+      icon.textContent    = '🚨';
+      title.textContent   = 'Tokens esgotados! Agente parado!';
+      sub.textContent     = 'O agente não está mais conseguindo atender novos leads.';
+      progress.style.background = '#dc2626';
+      urgTxt.textContent  = `Restam apenas ${leads} atendimento${leads !== 1 ? 's' : ''}. Recarregue AGORA!`;
+    } else {
+      // BAIXO — laranja
+      header.className    = 'token-alert-header warning';
+      icon.textContent    = '⚠️';
+      title.textContent   = 'Seus tokens estão acabando!';
+      sub.textContent     = `Restam apenas ~${leads} atendimentos. Recarregue para não perder leads.`;
+      progress.style.background = '#ea580c';
+      urgTxt.textContent  = `Com ~${leads} tokens restantes, você pode perder novos leads em breve!`;
+    }
+
+    // Mostra com delay de 1.5s para não ser intrusivo no login
+    setTimeout(() => popup.classList.add('open'), 1500);
+  }
+
+  function dismissTokenAlert() {
+    document.getElementById('token-alert-popup').classList.remove('open');
+    sessionStorage.setItem('token_alert_dismissed', '1');
+  }
+
+  function buyFromAlert() {
+    dismissTokenAlert();
+    // Navega para faturamento e abre modal do Médio diretamente
+    showPage('faturamento', document.querySelector('.nav-item[onclick*="faturamento"]'));
+    setTimeout(() => showBuyModal('medio'), 400);
+  }
+
+  // Fecha ao clicar fora
+  document.getElementById('token-alert-popup').addEventListener('click', function(e) {
+    if (e.target === this) dismissTokenAlert();
+  });
+
+  function showBuyModal(pacoteId) {
+    const pkg = PACOTES_CREDITOS[pacoteId];
+    if (!pkg) return;
+    buyPacoteAtual = pacoteId;
+    const precoFmt = pkg.moeda === 'BRL'
+      ? `R$ ${pkg.preco_brl}`
+      : `$${pkg.preco_usd}`;
+    document.getElementById('buy-modal-title').textContent = `⚡ Adicionar ${pkg.nome}`;
+    document.getElementById('buy-pkg-name').textContent = pkg.nome;
+    document.getElementById('buy-pkg-price').textContent = precoFmt;
+    document.getElementById('buy-pkg-leads').textContent = `👥 +${pkg.leads.toLocaleString('pt-BR')} atendimentos`;
+    document.getElementById('buy-pkg-tokens').textContent = `🔢 +${(pkg.tokens/1000000).toFixed(0)}M tokens`;
+    document.getElementById('buy-modal-error').textContent = '';
+    document.getElementById('btn-confirm-buy').disabled = false;
+    document.getElementById('btn-confirm-buy').textContent = '✅ Confirmar Pedido';
+    document.getElementById('modal-buy-credits').classList.add('open');
+  }
+
+  function closeBuyModal() {
+    document.getElementById('modal-buy-credits').classList.remove('open');
+    buyPacoteAtual = null;
+  }
+
+  async function confirmBuy() {
+    if (!buyPacoteAtual) return;
+    const pkg = PACOTES_CREDITOS[buyPacoteAtual];
+    const btn = document.getElementById('btn-confirm-buy');
+    const errEl = document.getElementById('buy-modal-error');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    const { data: { user } } = await db.auth.getUser();
+    const { error } = await db.from('pedidos_creditos').insert({
+      user_id: user.id, pacote: buyPacoteAtual,
+      tokens: pkg.tokens,
+      preco_usd: pkg.preco_usd || null,
+      preco_brl: pkg.preco_brl || null,
+      status: 'pendente'
+    });
+    if (error) {
+      errEl.textContent = 'Erro ao enviar pedido. Tente novamente.';
+      btn.disabled = false; btn.textContent = '✅ Confirmar Pedido'; return;
+    }
+    closeBuyModal();
+    const precoFmt = pkg.preco_brl ? `R$ ${pkg.preco_brl}` : `$${pkg.preco_usd}`;
+    alert(`✅ Pedido enviado!\n\nPacote: ${pkg.nome}\nValor: ${precoFmt}\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os tokens serão creditados em até 2h.`);
+    loadCredits();
+  }
+
+  // Admin: abrir modal de adicionar créditos
+  function openAddCreditsModal(userId, clientName) {
+    addCreditsUserId = userId;
+    document.getElementById('add-credits-client-name').textContent = clientName;
+    document.getElementById('add-credits-tokens').value = '10000000';
+    document.getElementById('add-credits-obs').value = '';
+    document.getElementById('add-credits-error').textContent = '';
+    document.getElementById('btn-confirm-add-credits').disabled = false;
+    document.getElementById('btn-confirm-add-credits').textContent = '✅ Adicionar Créditos';
+    document.getElementById('modal-add-credits').classList.add('open');
+  }
+
+  function closeAddCreditsModal() {
+    document.getElementById('modal-add-credits').classList.remove('open');
+    addCreditsUserId = null;
+  }
+
+  async function confirmAddCredits() {
+    if (!addCreditsUserId) return;
+    const tokens = parseInt(document.getElementById('add-credits-tokens').value);
+    const obs = document.getElementById('add-credits-obs').value;
+    const btn = document.getElementById('btn-confirm-add-credits');
+    const errEl = document.getElementById('add-credits-error');
+    if (!tokens || tokens < 1000000) { errEl.textContent = 'Mínimo 1.000.000 tokens.'; return; }
+    btn.disabled = true; btn.textContent = 'Adicionando...';
+    // Upsert créditos: soma ao saldo atual
+    const { data: atual } = await db.from('tokens_creditos').select('saldo_tokens').eq('user_id', addCreditsUserId).single();
+    const novoSaldo = (atual?.saldo_tokens || 0) + tokens;
+    const { error } = await db.from('tokens_creditos').upsert({
+      user_id: addCreditsUserId, saldo_tokens: novoSaldo,
+      atualizado_em: new Date().toISOString()
+    }, { onConflict: 'user_id' });
+    if (error) { errEl.textContent = 'Erro: ' + error.message; btn.disabled = false; btn.textContent = '✅ Adicionar Créditos'; return; }
+    // Registra no histórico e aprova pedido pendente
+    if (obs) {
+      await db.from('pedidos_creditos')
+        .update({ status: 'aprovado', obs_admin: obs })
+        .eq('user_id', addCreditsUserId).eq('status', 'pendente');
+    }
+    closeAddCreditsModal();
+    alert(`✅ ${(tokens/1000000).toFixed(1)}M tokens adicionados com sucesso!\nNovo saldo: ${novoSaldo.toLocaleString('pt-BR')} tokens`);
+    loadAdminPedidos();
+  }
+
+  async function loadAdminPedidos() {
+    const el = document.getElementById('admin-pedidos-table');
+    if (!el) return;
+    const { data } = await db.from('pedidos_creditos')
+      .select('*, profiles(display_name, evo_instance)')
+      .order('criado_em', { ascending: false }).limit(50);
+    if (!data || !data.length) { el.innerHTML = '<p class="empty-state">Nenhum pedido ainda.</p>'; return; }
+    el.innerHTML = `<table>
+      <thead><tr><th>Data</th><th>Cliente</th><th>Pacote</th><th>Tokens</th><th>Valor</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody>${data.map(p => `<tr>
+        <td style="font-size:12px;color:#888">${new Date(p.criado_em).toLocaleDateString('pt-BR')}</td>
+        <td style="font-weight:600">${escapeHtml(p.profiles?.display_name || '—')}</td>
+        <td>${PACOTES_CREDITOS[p.pacote]?.nome || p.pacote}</td>
+        <td>${(p.tokens/1000000).toFixed(1)}M tokens</td>
+        <td style="font-weight:700;color:#4f46e5">${p.preco_brl ? 'R$ '+p.preco_brl : p.preco_usd ? '$'+p.preco_usd : '—'}</td>
+        <td><span class="pedidos-badge ${p.status}">${p.status === 'pendente' ? '⏳ Pendente' : p.status === 'aprovado' ? '✅ Aprovado' : '❌ Recusado'}</span></td>
+        <td>
+          ${p.status === 'pendente' ? `
+            <button class="btn-success" style="font-size:12px;padding:5px 12px;" onclick="openAddCreditsModal('${p.user_id}','${escapeHtml(p.profiles?.display_name || '')}')">✅ Aprovar</button>
+            <button class="btn-danger" style="font-size:12px;padding:5px 12px;margin-left:4px;" onclick="recusarPedido('${p.id}')">❌ Recusar</button>
+          ` : '—'}
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  }
+
+  async function recusarPedido(pedidoId) {
+    if (!confirm('Recusar este pedido?')) return;
+    await db.from('pedidos_creditos').update({ status: 'recusado' }).eq('id', pedidoId);
+    loadAdminPedidos();
   }
 
   // =====================
@@ -1440,7 +2700,7 @@
         <td><code style="background:#f0f2f5;padding:2px 7px;border-radius:4px;font-size:12px;">${escapeHtml(a.profiles?.evo_instance || '—')}</code></td>
         <td><span class="badge ${a.status === 'ativa' ? 'badge-green' : a.status === 'inadimplente' ? 'badge-red' : a.status === 'trial' ? 'badge-yellow' : 'badge-blue'}">${STATUS_LABELS[a.status] || a.status}</span></td>
         <td style="font-size:13px">${a.proxima_cobranca ? new Date(a.proxima_cobranca+'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-        <td style="font-weight:700">R$ ${Number(a.valor || 397).toFixed(2).replace('.',',')}</td>
+        <td style="font-weight:700">R$ ${Number(a.valor || 497).toFixed(2).replace('.',',')}</td>
         <td>
           <div class="billing-actions">
             ${a.status !== 'ativa' ? `<button class="btn-success" onclick="setBillingStatus('${a.user_id}','ativa')">✅ Ativar</button>` : ''}
@@ -1601,42 +2861,39 @@
     if (!el) return;
     el.innerHTML = '<p class="loading">Carregando...</p>';
 
-    // Busca via service role (usa manage-billing como proxy ou direto com service role)
-    // Como não temos RLS para admin na token_usage, usamos a abordagem de RPC ou
-    // consultamos via manage-billing estendido. Por ora, mostramos apenas os dados
-    // do próprio usuário como demonstração (integração completa requer RPC)
-    const inicio = new Date(); inicio.setDate(1); inicio.setHours(0,0,0,0);
-    const { data } = await db
-      .from('token_usage')
-      .select('modelo,tokens_input,tokens_output,tokens_total,criado_em')
-      .gte('criado_em', inicio.toISOString())
-      .order('criado_em', { ascending: false });
+    // Usa RPC admin_get_all_tokens para ver saldo de TODOS os clientes
+    const { data, error } = await db.rpc('admin_get_all_tokens');
 
+    if (error) {
+      el.innerHTML = '<p class="empty-state">Erro ao carregar: ' + error.message + '</p>'; return;
+    }
     if (!data || !data.length) {
-      el.innerHTML = '<p class="empty-state">Nenhum uso de tokens registrado este mês.</p>'; return;
+      el.innerHTML = '<p class="empty-state">Nenhum cliente com dados de tokens.</p>'; return;
     }
 
-    const totalInput = data.reduce((s,r) => s + (r.tokens_input||0), 0);
-    const totalOutput = data.reduce((s,r) => s + (r.tokens_output||0), 0);
-    const totalAll = data.reduce((s,r) => s + (r.tokens_total||0), 0);
-    const custo = (totalAll / 1000000 * 5).toFixed(4); // ~$5/1M tokens gpt-4o
+    const totalSaldo = data.reduce((s,r) => s + (r.saldo_tokens||0), 0);
+    const totalUsado = data.reduce((s,r) => s + (r.tokens_usados_mes||0), 0);
+    const totalComprado = data.reduce((s,r) => s + (r.total_comprado||0), 0);
 
     el.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-        <div class="billing-info-card"><div class="label">Tokens Input</div><div class="value">${totalInput.toLocaleString('pt-BR')}</div></div>
-        <div class="billing-info-card"><div class="label">Tokens Output</div><div class="value">${totalOutput.toLocaleString('pt-BR')}</div></div>
-        <div class="billing-info-card"><div class="label">Total Tokens</div><div class="value">${totalAll.toLocaleString('pt-BR')}</div></div>
-        <div class="billing-info-card"><div class="label">Custo Est. (USD)</div><div class="value" style="font-size:16px">$${custo}</div><div class="sub">GPT-4o ~$5/1M tkn</div></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+        <div class="billing-info-card"><div class="label">Saldo Total (todos)</div><div class="value">${totalSaldo.toLocaleString('pt-BR')}</div></div>
+        <div class="billing-info-card"><div class="label">Usados no Mês (todos)</div><div class="value">${totalUsado.toLocaleString('pt-BR')}</div></div>
+        <div class="billing-info-card"><div class="label">Total Comprado (todos)</div><div class="value">${totalComprado.toLocaleString('pt-BR')}</div></div>
       </div>
       <table>
-        <thead><tr><th>Data</th><th>Modelo</th><th>Input</th><th>Output</th><th>Total</th></tr></thead>
-        <tbody>${data.slice(0,50).map(r => `<tr>
-          <td style="font-size:12px;color:#888">${new Date(r.criado_em).toLocaleString('pt-BR')}</td>
-          <td><code style="background:#f0f2f5;padding:2px 7px;border-radius:4px;font-size:11px">${r.modelo}</code></td>
-          <td>${(r.tokens_input||0).toLocaleString('pt-BR')}</td>
-          <td>${(r.tokens_output||0).toLocaleString('pt-BR')}</td>
-          <td style="font-weight:700">${(r.tokens_total||0).toLocaleString('pt-BR')}</td>
-        </tr>`).join('')}</tbody>
+        <thead><tr><th>Cliente</th><th>Email</th><th>Saldo Tokens</th><th>Usado no Mês</th><th>Total Comprado</th><th>Mês Ref.</th></tr></thead>
+        <tbody>${data.map(r => {
+          const cor = r.saldo_tokens > 2000000 ? '#22c55e' : r.saldo_tokens > 500000 ? '#f59e0b' : '#ef4444';
+          return '<tr>' +
+            '<td style="font-weight:600">' + (r.display_name||'—') + '</td>' +
+            '<td style="font-size:12px;color:#888">' + (r.email||'—') + '</td>' +
+            '<td style="font-weight:700;color:' + cor + '">' + (r.saldo_tokens||0).toLocaleString('pt-BR') + '</td>' +
+            '<td>' + (r.tokens_usados_mes||0).toLocaleString('pt-BR') + '</td>' +
+            '<td>' + (r.total_comprado||0).toLocaleString('pt-BR') + '</td>' +
+            '<td style="font-size:12px">' + (r.mes_referencia||'—') + '</td>' +
+          '</tr>';
+        }).join('')}</tbody>
       </table>`;
   }
 </script>
