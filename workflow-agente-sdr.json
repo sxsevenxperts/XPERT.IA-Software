@@ -20,7 +20,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const body = $input.first().json;\n\n// Ignora mensagens enviadas pelo próprio bot\nif (body.data?.key?.fromMe === true) return [];\n\n// Ignora mensagens de grupos\nconst remoteJid = body.data?.key?.remoteJid || '';\nif (remoteJid.includes('@g.us')) return [];\n\nconst numero = remoteJid.replace('@s.whatsapp.net', '');\nconst mensagem = body.data?.message?.conversation\n  || body.data?.message?.extendedTextMessage?.text\n  || '';\nconst nomeContato = body.data?.pushName || 'Lead';\nconst tipoMensagem = body.data?.messageType || 'conversation';\nconst temArquivo = ['imageMessage', 'documentMessage', 'audioMessage'].includes(tipoMensagem);\nconst ehAudio = tipoMensagem === 'audioMessage';\n\n// Extrai dados de áudio se for audioMessage\nlet audioBase64 = null;\nlet audioUrl = null;\nlet audioMimetype = null;\nlet audioDuration = 0;\nif (ehAudio) {\n  const am = body.data?.message?.audioMessage || {};\n  audioBase64 = am.base64 || null;\n  audioUrl = am.url || null;\n  audioMimetype = am.mimetype || 'audio/ogg';\n  audioDuration = am.seconds || 0;\n}\n\n// Imagem\nlet ehImagem = tipoMensagem === 'imageMessage';\nlet imagemUrl = null;\nlet imagemBase64 = null;\nlet imagemMimetype = 'image/jpeg';\nlet imagemCaption = '';\nif (ehImagem) {\n  const im = body.data?.message?.imageMessage || {};\n  imagemUrl = im.url || null;\n  imagemBase64 = im.base64 || null;\n  imagemMimetype = im.mimetype || 'image/jpeg';\n  imagemCaption = im.caption || '';\n}\n// Documento\nlet ehDocumento = ['documentMessage','documentWithCaptionMessage'].includes(tipoMensagem);\nlet docUrl = null;\nlet docBase64 = null;\nlet docMimetype = 'application/octet-stream';\nlet docFileName = 'documento';\nif (ehDocumento) {\n  const dm = body.data?.message?.documentMessage\n            || body.data?.message?.documentWithCaptionMessage?.message?.documentMessage\n            || {};\n  docUrl = dm.url || null;\n  docBase64 = dm.base64 || null;\n  docMimetype = dm.mimetype || 'application/octet-stream';\n  docFileName = dm.fileName || 'documento';\n}\n\nconst instanceName = body.instance || body.instanceName || body.data?.instance || '';\n\nif (!mensagem && !temArquivo) return [];\n\nreturn [{ json: { numero, mensagem, nomeContato, tipoMensagem, temArquivo, ehAudio, audioBase64, audioUrl, audioMimetype, audioDuration, ehImagem, imagemUrl, imagemBase64, imagemMimetype, imagemCaption, ehDocumento, docUrl, docBase64, docMimetype, docFileName, instanceName, timestamp: new Date().toISOString() } }];"
+        "jsCode": "const body = $input.first().json;\n\n// Ignora mensagens enviadas pelo próprio bot\nif (body.data?.key?.fromMe === true) return [];\n\n// Ignora mensagens de grupos\nconst remoteJid = body.data?.key?.remoteJid || '';\nif (remoteJid.includes('@g.us')) return [];\n\n// Ignora tipos de sistema sem conteúdo útil\nconst tipoMensagem = body.data?.messageType || body.data?.type || 'conversation';\nconst TIPOS_IGNORADOS = ['senderKeyDistributionMessage','protocolMessage','reactionMessage','pollUpdateMessage','callLogMessag'];\nif (TIPOS_IGNORADOS.includes(tipoMensagem)) return [];\n\nconst numero = remoteJid.replace('@s.whatsapp.net', '');\n\n// Extrai texto — múltiplos caminhos para compatibilidade com diferentes versões da Evolution API\nconst mensagem = body.data?.message?.conversation\n  || body.data?.message?.extendedTextMessage?.text\n  || body.data?.message?.buttonsResponseMessage?.selectedDisplayText\n  || body.data?.message?.listResponseMessage?.title\n  || body.data?.message?.templateButtonReplyMessage?.selectedDisplayText\n  || body.data?.message?.imageMessage?.caption\n  || body.data?.message?.videoMessage?.caption\n  || body.data?.message?.documentMessage?.caption\n  || body.data?.text\n  || body.data?.body\n  || '';\n\nconst nomeContato = body.data?.pushName || 'Lead';\nconst temArquivo = ['imageMessage', 'documentMessage', 'audioMessage', 'videoMessage', 'stickerMessage'].includes(tipoMensagem);\nconst ehAudio = tipoMensagem === 'audioMessage';\n\n// Extrai dados de áudio se for audioMessage\nlet audioBase64 = null;\nlet audioUrl = null;\nlet audioMimetype = null;\nlet audioDuration = 0;\nif (ehAudio) {\n  const am = body.data?.message?.audioMessage || {};\n  audioBase64 = am.base64 || null;\n  audioUrl = am.url || null;\n  audioMimetype = am.mimetype || 'audio/ogg';\n  audioDuration = am.seconds || 0;\n}\n\n// Imagem\nlet ehImagem = tipoMensagem === 'imageMessage';\nlet imagemUrl = null;\nlet imagemBase64 = null;\nlet imagemMimetype = 'image/jpeg';\nlet imagemCaption = '';\nif (ehImagem) {\n  const im = body.data?.message?.imageMessage || {};\n  imagemUrl = im.url || null;\n  imagemBase64 = im.base64 || null;\n  imagemMimetype = im.mimetype || 'image/jpeg';\n  imagemCaption = im.caption || '';\n}\n\n// Documento\nlet ehDocumento = ['documentMessage','documentWithCaptionMessage'].includes(tipoMensagem);\nlet docUrl = null;\nlet docBase64 = null;\nlet docMimetype = 'application/octet-stream';\nlet docFileName = 'documento';\nif (ehDocumento) {\n  const dm = body.data?.message?.documentMessage\n            || body.data?.message?.documentWithCaptionMessage?.message?.documentMessage\n            || {};\n  docUrl = dm.url || null;\n  docBase64 = dm.base64 || null;\n  docMimetype = dm.mimetype || 'application/octet-stream';\n  docFileName = dm.fileName || 'documento';\n}\n\nconst instanceName = body.instance || body.instanceName || body.data?.instance || '';\n\nif (!mensagem && !temArquivo) return [];\n\nreturn [{ json: { numero, mensagem, nomeContato, tipoMensagem, temArquivo, ehAudio, audioBase64, audioUrl, audioMimetype, audioDuration, ehImagem, imagemUrl, imagemBase64, imagemMimetype, imagemCaption, ehDocumento, docUrl, docBase64, docMimetype, docFileName, instanceName, timestamp: new Date().toISOString() } }];"
       },
       "id": "node-normaliza",
       "name": "Normaliza e filtra mensagem",
@@ -276,7 +276,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "SUA_CHAVE_EVO_API_AQUI"
+              "value": "2ae3Y0xQFNxIcng27ufbAaHzioCDfReN"
             }
           ]
         },
@@ -360,22 +360,46 @@
       "notes": "Configure a credencial OpenAI."
     },
     {
-      "parameters": {},
+      "parameters": {
+        "toolDescription": "Busca informações atualizadas na web. Use para buscar notícias, leis, jurisprudência ou qualquer informação recente que não esteja na base de conhecimento interna.",
+        "method": "GET",
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $fromAI('query', 'O que pesquisar na web') }}"
+            },
+            {
+              "name": "api_key",
+              "value": "265bc2130412d8df13b09e6e01acac17f95496ad5fd03c141101a192a532baa0"
+            },
+            {
+              "name": "hl",
+              "value": "pt"
+            },
+            {
+              "name": "gl",
+              "value": "br"
+            },
+            {
+              "name": "num",
+              "value": "5"
+            }
+          ]
+        },
+        "sendHeaders": false,
+        "options": {}
+      },
       "id": "node-tool-serpapi",
       "name": "Tool: Busca na Web (SerpAPI)",
-      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
-      "typeVersion": 1,
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
       "position": [
         2960,
         760
-      ],
-      "credentials": {
-        "serpApi": {
-          "id": "CONFIGURE_SERPAPI_CREDENTIAL",
-          "name": "SerpAPI account"
-        }
-      },
-      "notes": "Configure a credencial SerpAPI em Settings → Credentials do n8n."
+      ]
     },
     {
       "parameters": {
@@ -524,7 +548,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "SUA_CHAVE_EVO_API_AQUI"
+              "value": "2ae3Y0xQFNxIcng27ufbAaHzioCDfReN"
             }
           ]
         },
@@ -552,7 +576,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "SUA_CHAVE_EVO_API_AQUI"
+              "value": "2ae3Y0xQFNxIcng27ufbAaHzioCDfReN"
             }
           ]
         },
@@ -655,7 +679,7 @@
           "parameters": [
             {
               "name": "apikey",
-              "value": "SUA_CHAVE_EVO_API_AQUI"
+              "value": "2ae3Y0xQFNxIcng27ufbAaHzioCDfReN"
             }
           ]
         },
