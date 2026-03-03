@@ -239,7 +239,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_user_id: $json.userId }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: $('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id }) }}",
         "options": {}
       },
       "id": "node-verifica-saldo",
@@ -254,7 +254,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const saldoArr = $input.first().json; // Array retornado pelo RPC\nconst saldo = Array.isArray(saldoArr) ? saldoArr[0] : saldoArr;\nconst dadosConfig = $('Monta system prompt com config').first().json;\nconst saldoTokens = saldo?.saldo_tokens || 0;\n\n// Se saldo <= 0, bloqueia e avisa o lead\nif (saldoTokens <= 0) {\n  return [{ json: { ...dadosConfig, saldoTokens, tokensBloqueado: true, textoParaLead: '⚠️ Olá! No momento nosso sistema está temporariamente indisponível. Por favor, tente novamente mais tarde ou entre em contato pelo número do escritório. Pedimos desculpas pelo inconveniente.' } }];\n}\n\nreturn [{ json: { ...dadosConfig, saldoTokens, tokensBloqueado: false } }];"
+        "jsCode": "const saldoArr = $input.first().json; // Array retornado pelo RPC\nconst saldo = Array.isArray(saldoArr) ? saldoArr[0] : saldoArr;\nconst dadosConfig = $('Monta system prompt com config').first().json;\n\n// saldo_tokens pode ser: numero, string, undefined, null\n// Se get_token_balance retornou [] (usuario sem registro), saldo = undefined → assume disponível\nconst saldoRaw = saldo?.saldo_tokens;\nconst saldoTokens = (saldoRaw !== undefined && saldoRaw !== null) ? Number(saldoRaw) : 1000000;\n\n// Se saldo <= 0, bloqueia e avisa o lead\nif (saldoTokens <= 0) {\n  return [{ json: { ...dadosConfig, saldoTokens, tokensBloqueado: true, textoParaLead: '⚠️ Olá! No momento nosso sistema está temporariamente indisponível. Por favor, tente novamente mais tarde ou entre em contato pelo número do escritório. Pedimos desculpas pelo inconveniente.' } }];\n}\n\nreturn [{ json: { ...dadosConfig, saldoTokens, tokensBloqueado: false } }];"
       },
       "id": "node-check-saldo",
       "name": "Tokens disponíveis?",
