@@ -1197,7 +1197,7 @@
       <input type="text" id="new-client-instance" placeholder="EscritorioPereira" />
     </div>
     <div class="modal-actions">
-      <button class="btn-save" id="btn-create-client" onclick="createClient()">✅ Criar conta</button>
+      <button class="btn-save" id="btn-create-client" onclick="criarCliente()">✅ Criar conta</button>
       <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
     </div>
     <div id="create-client-error" class="error-msg" style="margin-top:10px;text-align:left;"></div>
@@ -2345,7 +2345,7 @@
     document.getElementById('modal-backdrop').classList.remove('open');
   }
 
-  async function createClient() {
+  async function criarCliente() {
     const name     = document.getElementById('new-client-name').value.trim();
     const email    = document.getElementById('new-client-email').value.trim();
     const password = document.getElementById('new-client-password').value;
