@@ -242,6 +242,11 @@
     .tarefa-item .tarefa-desc.done { text-decoration:line-through; color:#6e7681; }
     .tarefa-item .tarefa-date { font-size:11px; color:#6e7681; flex-shrink:0; }
     .tarefa-item .tarefa-del { background:none; border:none; color:#ef4444; cursor:pointer; font-size:16px; padding:0 2px; }
+    /* Funil filter */
+    .crm-funil-btn { padding:5px 13px; border-radius:20px; border:1.5px solid #30363d; background:#1c2128; color:#8b949e; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+    .crm-funil-btn:hover { border-color:#a3e635; color:#a3e635; }
+    .crm-funil-btn.active { border-color:#a3e635; background:#1a2e00; color:#a3e635; }
+    .crm-card-funil { font-size:10px; color:#8b949e; background:#0d1117; padding:2px 7px; border-radius:8px; display:inline-block; margin-bottom:6px; font-weight:600; letter-spacing:0.3px; }
     .btn-entrar-conversa { width:100%; padding:13px; background:#25d366; color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; margin-top:16px; }
     .btn-entrar-conversa:hover { background:#1ebe5b; }
     .btn-add-tarefa { padding:9px 16px; background:#0d1117; color:#c9d1d9; border:1.5px solid #e0e0e0; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
@@ -720,12 +725,18 @@
     <div class="page" id="page-crm">
       <div class="page-header"><h1>🗂️ CRM — Pipeline de Leads</h1><p>Acompanhe cada lead do primeiro contato até a conversão</p></div>
       <div class="crm-toolbar">
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="loadCRM()">🔄 Atualizar</button>
           <button class="btn-secondary" style="padding:9px 18px;font-size:13px;" onclick="openNewLeadModal()">➕ Novo Lead</button>
           <button class="btn-secondary" style="padding:9px 18px;font-size:13px;" onclick="openStagesModal()">⚙️ Colunas</button>
         </div>
         <div style="font-size:12px;color:#6e7681;">Arraste os cards entre as colunas para atualizar o estágio</div>
+      </div>
+      <!-- Filtro por funil/fluxo -->
+      <div id="crm-funil-filter" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
+        <span style="font-size:12px;color:#8b949e;font-weight:600;">🔀 Funil:</span>
+        <button class="crm-funil-btn active" data-fluxo="all" onclick="filterCRMByFluxo('all',this)">Todos</button>
+        <span id="crm-funil-buttons"><!-- botões de fluxo inseridos por JS --></span>
       </div>
       <div class="crm-board-wrap">
         <div class="crm-board" id="crm-board">
@@ -765,6 +776,11 @@
                 <option value="nao_qualificado">❌ Não Qualificado</option>
                 <option value="convertido">🎉 Convertido</option>
                 <option value="perdido">🚪 Perdido</option>
+              </select>
+            </div>
+            <div class="field-group" style="margin:0;"><label>🔀 Funil / Fluxo</label>
+              <select id="crm-fluxo-id">
+                <option value="">— Sem funil —</option>
               </select>
             </div>
           </div>
@@ -1349,7 +1365,8 @@
 
   let selectedConv = null;
   let allConversations = [];
-  let chatRefreshInterval = null;
+  let chatRefreshInterval = null;   // mantido para compatibilidade, não usado mais
+  let chatRealtimeChannel = null;   // canal Supabase Realtime para Bate-Papo
   let waStatusInterval = null;
   let qrCountdownInterval = null;
   let currentProfile = null; // { id, role, display_name, evo_instance, active }
@@ -1431,6 +1448,7 @@
   async function logout() {
     clearInterval(chatRefreshInterval);
     clearInterval(waStatusInterval);
+    teardownRealtimeChat();
     await db.auth.signOut();
     document.getElementById('dashboard-page').style.display = 'none';
     document.getElementById('login-page').style.display = 'flex';
@@ -1501,10 +1519,9 @@
     }
     if (name === 'batepapo') {
       loadConversations();
-      clearInterval(chatRefreshInterval);
-      chatRefreshInterval = setInterval(loadConversations, 5000);
+      setupRealtimeChat();
     } else {
-      clearInterval(chatRefreshInterval);
+      teardownRealtimeChat();
     }
   }
 
@@ -1602,6 +1619,69 @@
   // =====================
   // BATE-PAPO AO VIVO
   // =====================
+
+  /** Ativa sincronização em tempo real via Supabase Realtime */
+  async function setupRealtimeChat() {
+    teardownRealtimeChat();
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    chatRealtimeChannel = db.channel('chat-realtime-' + user.id)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'sessoes',
+        filter: `user_id=eq.${user.id}`
+      }, (payload) => {
+        // Atualiza lista e conversa aberta em tempo real
+        const updated = payload.new || payload.old;
+        if (payload.eventType === 'DELETE') {
+          allConversations = allConversations.filter(c => c.numero_whatsapp !== (payload.old?.numero_whatsapp));
+          renderConvList(allConversations);
+        } else if (payload.eventType === 'INSERT') {
+          allConversations.unshift(payload.new);
+          renderConvList(allConversations);
+        } else {
+          // UPDATE — atualiza conversa existente
+          const idx = allConversations.findIndex(c => c.numero_whatsapp === updated?.numero_whatsapp);
+          if (idx >= 0) {
+            allConversations[idx] = { ...allConversations[idx], ...payload.new };
+            // Move para o topo (mais recente)
+            const conv = allConversations.splice(idx, 1)[0];
+            allConversations.unshift(conv);
+          } else {
+            allConversations.unshift(payload.new);
+          }
+          renderConvList(allConversations);
+          // Se for a conversa aberta, atualiza mensagens automaticamente
+          if (selectedConv && selectedConv === updated?.numero_whatsapp) {
+            const convAtual = allConversations.find(c => c.numero_whatsapp === selectedConv);
+            if (convAtual) renderMessages(convAtual);
+          }
+        }
+        // Atualiza contador
+        document.getElementById('conv-count').textContent = allConversations.length + ' conversa(s)';
+      })
+      .subscribe((status) => {
+        const badge = document.querySelector('.auto-refresh-badge');
+        if (badge) {
+          if (status === 'SUBSCRIBED') {
+            badge.innerHTML = '<span class="auto-refresh-dot"></span> Ao vivo';
+            badge.style.background = '#052e16'; badge.style.color = '#4ade80';
+          } else {
+            badge.innerHTML = '<span class="auto-refresh-dot" style="background:#f59e0b"></span> Conectando...';
+            badge.style.background = '#2d2000'; badge.style.color = '#facc15';
+          }
+        }
+      });
+  }
+
+  function teardownRealtimeChat() {
+    if (chatRealtimeChannel) {
+      db.removeChannel(chatRealtimeChannel);
+      chatRealtimeChannel = null;
+    }
+  }
+
   async function loadConversations() {
     const { data } = await db.from('sessoes')
       .select('*').order('atualizado_em', { ascending: false });
@@ -1790,17 +1870,51 @@
   let crmLeads = [];
   let crmStages = [...CRM_STAGES];
   let crmOpenLeadId = null;
+  let crmFluxos = [];          // lista de fluxos do usuário
+  let crmFluxoFilter = 'all';  // 'all' ou UUID do fluxo
 
   async function loadCRM() {
     const board = document.getElementById('crm-board');
     board.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;">Carregando...</div>';
     await loadCRMStages();
-    const { data, error } = await db.from('leads')
-      .select('*, lead_tarefas(id, concluida)')
-      .order('atualizado_em', { ascending: false });
+    // Carrega fluxos e monta filtros
+    await loadCRMFluxos();
+    // Carrega leads (com filtro de fluxo se ativo)
+    let query = db.from('leads').select('*, lead_tarefas(id, concluida)').order('atualizado_em', { ascending: false });
+    if (crmFluxoFilter !== 'all') {
+      query = query.eq('fluxo_id', crmFluxoFilter);
+    }
+    const { data, error } = await query;
     if (error || !data) { board.innerHTML = '<div style="padding:40px;color:#ef4444;">Erro ao carregar CRM</div>'; return; }
     crmLeads = data;
     renderKanban(data);
+  }
+
+  async function loadCRMFluxos() {
+    const { data } = await db.from('fluxos').select('id,nome').order('atualizado_em', { ascending: false });
+    crmFluxos = data || [];
+    // Monta botões de filtro
+    const container = document.getElementById('crm-funil-buttons');
+    if (!container) return;
+    container.innerHTML = crmFluxos.map(f =>
+      `<button class="crm-funil-btn ${crmFluxoFilter === f.id ? 'active' : ''}" data-fluxo="${f.id}" onclick="filterCRMByFluxo('${f.id}',this)">
+        🔀 ${escapeHtml(f.nome)}
+      </button>`
+    ).join('');
+    // Popula select do modal de lead
+    const sel = document.getElementById('crm-fluxo-id');
+    if (sel) {
+      const current = sel.value;
+      sel.innerHTML = '<option value="">— Sem funil —</option>' +
+        crmFluxos.map(f => `<option value="${f.id}" ${current === f.id ? 'selected' : ''}>${escapeHtml(f.nome)}</option>`).join('');
+    }
+  }
+
+  function filterCRMByFluxo(fluxoId, btn) {
+    crmFluxoFilter = fluxoId;
+    document.querySelectorAll('.crm-funil-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    loadCRM();
   }
 
   function renderKanban(leads) {
@@ -1843,6 +1957,7 @@
     }
     const stg = lead.stage || crmStages[0]?.id || 'novo_contato';
     const color = stageColor || crmStages.find(s => s.id === stg)?.color || '#e5e7eb';
+    const fluxo = lead.fluxo_id ? crmFluxos.find(f => f.id === lead.fluxo_id) : null;
     return `<div class="crm-card" data-lead-id="${lead.id}" data-stage="${stg}"
       style="border-left-color:${color};"
       draggable="true"
@@ -1852,6 +1967,7 @@
         <span class="crm-card-name">${escapeHtml(lead.nome || lead.numero_whatsapp || '—')}</span>
         ${anivIcon}
       </div>
+      ${fluxo ? `<div class="crm-card-funil">🔀 ${escapeHtml(fluxo.nome)}</div>` : ''}
       ${lead.tese ? `<div class="crm-card-tese">${escapeHtml(lead.tese)}</div>` : ''}
       ${lead.assunto ? `<div class="crm-card-assunto">${escapeHtml(lead.assunto)}</div>` : ''}
       <div class="crm-card-footer">
@@ -1906,6 +2022,11 @@
     const stgSel = document.getElementById('crm-stage');
     stgSel.innerHTML = crmStages.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
     stgSel.value = lead.stage || crmStages[0]?.id || 'novo_contato';
+    // Popula select de funil/fluxo
+    const flxSel = document.getElementById('crm-fluxo-id');
+    flxSel.innerHTML = '<option value="">— Sem funil —</option>' +
+      crmFluxos.map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('');
+    flxSel.value = lead.fluxo_id || '';
     document.getElementById('crm-resumo').value = lead.resumo || '';
     document.getElementById('crm-notas').value = lead.notas || '';
     switchCRMTab('dados', document.querySelector('.crm-tab'));
@@ -1931,6 +2052,7 @@
     if (!id) return;
     const st = document.getElementById('crm-save-status');
     st.textContent = 'Salvando...'; st.style.color = '#888';
+    const flxVal = document.getElementById('crm-fluxo-id').value;
     await db.from('leads').update({
       nome: document.getElementById('crm-nome').value,
       celular: document.getElementById('crm-celular').value,
@@ -1938,6 +2060,7 @@
       assunto: document.getElementById('crm-assunto').value,
       data_aniversario: document.getElementById('crm-aniversario').value || null,
       stage: document.getElementById('crm-stage').value,
+      fluxo_id: flxVal || null,
       resumo: document.getElementById('crm-resumo').value,
       atualizado_em: new Date().toISOString()
     }).eq('id', id);
@@ -1950,6 +2073,7 @@
       lead.tese = document.getElementById('crm-tese').value;
       lead.assunto = document.getElementById('crm-assunto').value;
       lead.stage = document.getElementById('crm-stage').value;
+      lead.fluxo_id = document.getElementById('crm-fluxo-id').value || null;
       lead.data_aniversario = document.getElementById('crm-aniversario').value || null;
       const card = document.querySelector(`.crm-card[data-lead-id="${id}"]`);
       if (card) {
