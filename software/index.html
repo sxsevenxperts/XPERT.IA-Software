@@ -903,8 +903,17 @@
         <h3>📲 WhatsApp de Destino</h3>
         <div class="field-group"><label>Número que recebe os relatórios dos leads qualificados</label>
           <input type="text" id="cfg-numero_destino" placeholder="5511999999999 (DDI+DDD+número, sem espaços)" /></div>
+        <div class="field-group" style="margin-top:14px;">
+          <label>📢 Grupo de Destino <span style="font-weight:400;color:#8b949e;">(opcional)</span></label>
+          <input type="text" id="cfg-grupo_destino" placeholder="Ex: 120363XXXXXXXXXX@g.us" style="font-family:monospace;font-size:13px;" />
+          <p style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.6;">
+            O relatório também será enviado ao grupo <strong style="color:#c9d1d9;">somente se o lead for participante</strong>.<br>
+            Cole o <strong style="color:#c9d1d9;">JID do grupo</strong> (formato: <code style="background:#1c2128;padding:1px 5px;border-radius:4px;">XXXXXXXXXXX@g.us</code>).<br>
+            Obtenha pelo Evolution API: <code style="background:#1c2128;padding:1px 5px;border-radius:4px;">GET /group/fetchAllGroups/{instância}</code>
+          </p>
+        </div>
       </div>
-      <button class="btn-save" onclick="saveConfigs(['criterios_qualificacao','numero_destino'])">💾 Salvar</button>
+      <button class="btn-save" onclick="saveConfigs(['criterios_qualificacao','numero_destino','grupo_destino'])">💾 Salvar</button>
       <span class="save-status" id="save-qualificacao"></span>
     </div>
 
@@ -1426,7 +1435,8 @@
     criterios_qualificacao: '1. Vínculo INSS — Contribuiu ao INSS ou é dependente de quem contribuiu\n2. Benefício identificável — Existe um benefício previdenciário aplicável ao caso\n3. Indeferimento ou pendência — Benefício foi negado, cancelado ou ainda não foi requerido\n4. Tese jurídica — É possível identificar uma tese/fundamento legal para o caso\n5. Documentação mínima — Possui ao menos algum documento ou sabe como obtê-lo',
     msg_qualificado: 'Ótimo! Com base no que você me contou, acredito que o nosso advogado pode te ajudar. Vou encaminhar as informações do seu caso para ele agora. Em breve ele entrará em contato com você. Alguma dúvida ou informação adicional que queira que eu repasse?',
     msg_desqualificado: 'Obrigado por entrar em contato! Infelizmente, com base nas informações que você compartilhou, não identificamos uma situação que se encaixe nos casos que atendemos no momento. Caso sua situação mude ou surja algum documento novo, fique à vontade para nos contatar novamente. Desejamos tudo de bom para você!',
-    numero_destino: ''
+    numero_destino: '',
+    grupo_destino: ''
   };
 
   // =====================
