@@ -470,6 +470,184 @@
     .flow-saved-item:hover { border-color:#a3e635; background:#1a2e00; }
     .flow-empty-canvas { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#6e7681; gap:8px; pointer-events:none; }
     .flow-empty-canvas .icon { font-size:48px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN SYSTEM v2  —  World-class refinements
+       ═══════════════════════════════════════════════════════════ */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+
+    /* ── Cards ────────────────────────────────────────────────── */
+    .card {
+      border:1px solid rgba(255,255,255,0.07) !important;
+      background:#12171f !important;
+      box-shadow:0 1px 3px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04) !important;
+      border-radius:14px !important;
+      position:relative; overflow:hidden;
+      transition:box-shadow .2s,border-color .2s;
+    }
+    .card:hover { border-color:rgba(255,255,255,.1) !important; box-shadow:0 4px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05) !important; }
+    .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,rgba(163,230,53,.55) 0%,rgba(163,230,53,.08) 45%,transparent 70%); pointer-events:none; z-index:1; }
+    .card > * { position:relative; z-index:2; }
+    .card h3 { font-size:14px !important; font-weight:700 !important; letter-spacing:-.1px; }
+
+    /* ── Stat cards ───────────────────────────────────────────── */
+    .stat-card { border:1px solid rgba(255,255,255,.07) !important; background:#12171f !important; border-radius:14px !important; box-shadow:0 1px 3px rgba(0,0,0,.35) !important; position:relative; overflow:hidden; }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,rgba(163,230,53,.4),transparent 60%); }
+    .stat-card .value { font-size:30px !important; font-weight:800 !important; letter-spacing:-1.5px; }
+    .stat-card .label { font-size:11px !important; font-weight:700 !important; text-transform:uppercase; letter-spacing:.6px; }
+
+    /* ── Page headers ─────────────────────────────────────────── */
+    .page-header h1 { font-size:22px; font-weight:800; letter-spacing:-.5px; }
+    .page-header p { font-size:13px; color:#6e7681; margin-top:5px; line-height:1.6; }
+
+    /* ── Field labels ─────────────────────────────────────────── */
+    .field-group label { font-size:11px !important; font-weight:700 !important; text-transform:uppercase; letter-spacing:.55px; color:#525a65 !important; margin-bottom:8px !important; display:flex; align-items:center; gap:5px; }
+
+    /* ── Inputs ───────────────────────────────────────────────── */
+    .field-group input:not([type=checkbox]):not([type=radio]),
+    .field-group textarea, .field-group select {
+      border-radius:9px !important; border:1.5px solid #1e2530 !important;
+      padding:11px 14px !important; font-size:14px !important; font-family:inherit !important;
+      background:#0d1117 !important; transition:border-color .18s,box-shadow .18s !important;
+    }
+    .field-group input:focus, .field-group textarea:focus, .field-group select:focus {
+      border-color:var(--lime) !important; box-shadow:0 0 0 3px rgba(163,230,53,.1) !important; outline:none !important;
+    }
+
+    /* ── Primary button ───────────────────────────────────────── */
+    .btn-save {
+      background:linear-gradient(135deg,#a3e635 0%,#78c013 100%) !important;
+      color:#071a00 !important; font-weight:700 !important; font-size:13px !important;
+      letter-spacing:.1px; border-radius:9px !important; padding:11px 22px !important;
+      border:none !important; box-shadow:0 1px 3px rgba(0,0,0,.2),0 0 0 1px rgba(163,230,53,.15) !important;
+      transition:all .18s !important; cursor:pointer;
+    }
+    .btn-save:hover { background:linear-gradient(135deg,#b8f542 0%,#88d120 100%) !important; transform:translateY(-1px); box-shadow:0 4px 14px rgba(163,230,53,.35),0 0 0 1px rgba(163,230,53,.2) !important; }
+    .btn-save:active { transform:translateY(0) !important; }
+
+    /* ── Sidebar ──────────────────────────────────────────────── */
+    .sidebar { background:linear-gradient(180deg,#070a0e 0%,#090c12 100%) !important; border-right:1px solid rgba(255,255,255,.05) !important; }
+    .nav-item { border-radius:8px; margin:2px 12px; padding:10px 12px; border-left:3px solid transparent !important; position:relative; transition:all .15s !important; }
+    .nav-item.active { background:rgba(163,230,53,.1) !important; }
+    .nav-item .icon { font-size:17px !important; }
+    .sidebar .logo h2 { font-size:16px; font-weight:800; letter-spacing:-.3px; }
+    /* Powered by */
+    .sidebar-powered { padding:12px 24px 8px; font-size:10px; color:#2a3040; font-weight:600; letter-spacing:.4px; text-align:center; }
+    .sidebar-powered span { color:#3a4555; }
+
+    /* ── Tables ───────────────────────────────────────────────── */
+    table th { font-size:10px !important; font-weight:700 !important; text-transform:uppercase; letter-spacing:.5px; padding:10px 14px !important; }
+    table td { padding:12px 14px !important; font-size:13px !important; }
+
+    /* ── Badges ───────────────────────────────────────────────── */
+    .badge { border-radius:6px !important; font-size:10px !important; font-weight:700 !important; letter-spacing:.3px; padding:3px 8px !important; }
+
+    /* ════════════════════════════════════════════════════════════
+       QUALIFICAÇÃO PAGE  —  Premium
+       ════════════════════════════════════════════════════════════ */
+    .qual-hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:28px; flex-wrap:wrap; }
+    .qual-eyebrow { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#525a65; margin-bottom:8px; }
+    .qual-hdr-left h1 { font-size:26px; font-weight:900; letter-spacing:-.6px; margin:0 0 6px; }
+    .qual-hdr-left p { font-size:13px; color:#6e7681; margin:0; line-height:1.6; max-width:520px; }
+    .qual-hdr-right { display:flex; align-items:center; gap:10px; flex-shrink:0; padding-top:4px; }
+    .qual-card { padding:0 !important; overflow:hidden !important; margin-bottom:20px !important; }
+    .qual-ch { display:flex; align-items:center; gap:16px; padding:22px 26px; border-bottom:1px solid rgba(255,255,255,.06); }
+    .qual-ch-icon { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+    .qual-ch-icon.lime { background:rgba(163,230,53,.1); box-shadow:inset 0 1px 0 rgba(163,230,53,.15); }
+    .qual-ch-icon.green { background:rgba(34,197,94,.1); box-shadow:inset 0 1px 0 rgba(34,197,94,.15); }
+    .qual-ch-title { font-size:15px; font-weight:700; color:#e6edf3; margin:0 0 3px; letter-spacing:-.1px; }
+    .qual-ch-sub { font-size:12px; color:#6e7681; margin:0; }
+    .qual-ch-badge { margin-left:auto; flex-shrink:0; font-size:10px; font-weight:700; padding:4px 11px; border-radius:20px; letter-spacing:.3px; }
+    .qual-ch-badge.ai { background:rgba(163,230,53,.08); color:#a3e635; border:1px solid rgba(163,230,53,.18); }
+    .qual-ch-badge.auto { background:rgba(59,130,246,.08); color:#60a5fa; border:1px solid rgba(59,130,246,.18); }
+    .qual-body { padding:24px 26px; }
+    .qual-hint { display:flex; align-items:flex-start; gap:10px; background:rgba(163,230,53,.04); border:1px solid rgba(163,230,53,.1); border-radius:10px; padding:12px 14px; font-size:12px; color:#8b949e; line-height:1.65; margin-top:12px; }
+    .qual-hint .hi { font-size:15px; flex-shrink:0; margin-top:1px; }
+    /* Flow visual */
+    .qual-flow { display:flex; align-items:center; gap:10px; padding:18px 26px; background:rgba(7,9,13,.5); border-bottom:1px solid rgba(255,255,255,.05); overflow-x:auto; }
+    .qf-step { display:inline-flex; align-items:center; gap:7px; padding:9px 14px; border-radius:9px; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; }
+    .qf-step.origin { background:rgba(163,230,53,.1); border:1.5px solid rgba(163,230,53,.2); color:#a3e635; }
+    .qf-step.always { background:rgba(34,197,94,.08); border:1.5px solid rgba(34,197,94,.2); color:#4ade80; }
+    .qf-step.cond { background:rgba(13,17,23,.6); border:1.5px dashed rgba(255,255,255,.1); color:#525a65; transition:all .3s; }
+    .qf-step.cond.filled { background:rgba(59,130,246,.08); border:1.5px solid rgba(59,130,246,.2); color:#60a5fa; border-style:solid; }
+    .qf-tag { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; }
+    .qf-tag.always { background:rgba(34,197,94,.15); color:#4ade80; }
+    .qf-tag.cond { background:rgba(255,255,255,.06); color:#525a65; }
+    .qf-arrow { color:#2a3040; font-size:16px; flex-shrink:0; }
+    .qf-plus { color:#2a3040; font-size:18px; font-weight:700; flex-shrink:0; }
+    /* Destinations */
+    .qual-dest-item { padding:22px 26px; border-top:1px solid rgba(255,255,255,.05); }
+    .qual-dest-item:first-child { border-top:none; }
+    .qual-dest-head { display:flex; align-items:center; gap:13px; margin-bottom:16px; }
+    .qual-dest-ico { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    .qual-dest-ico.primary { background:rgba(34,197,94,.1); }
+    .qual-dest-ico.secondary { background:rgba(59,130,246,.08); }
+    .qual-dest-name { font-size:14px; font-weight:700; color:#c9d1d9; margin-bottom:2px; }
+    .qual-dest-desc { font-size:12px; color:#525a65; }
+    .qual-dest-tag { margin-left:auto; flex-shrink:0; font-size:10px; font-weight:700; padding:4px 11px; border-radius:20px; text-transform:uppercase; letter-spacing:.3px; }
+    .qual-dest-tag.req { background:rgba(163,230,53,.08); color:#a3e635; border:1px solid rgba(163,230,53,.18); }
+    .qual-dest-tag.opt { background:rgba(255,255,255,.04); color:#525a65; border:1px solid rgba(255,255,255,.08); }
+    .qual-plus-div { display:flex; align-items:center; gap:14px; padding:10px 26px; background:rgba(7,9,13,.4); }
+    .qual-plus-div-line { flex:1; height:1px; background:rgba(255,255,255,.05); }
+    .qual-plus-div-dot { width:26px; height:26px; background:#0d1117; border:1.5px solid rgba(255,255,255,.1); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#525a65; flex-shrink:0; }
+    .inp-wrap { position:relative; }
+    .inp-prefix { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:15px; pointer-events:none; z-index:2; line-height:1; }
+    .inp-wrap input { padding-left:40px !important; }
+    .inp-mono { font-family:'JetBrains Mono','Fira Code','SF Mono','Courier New',monospace !important; font-size:13px !important; letter-spacing:.3px !important; }
+    .qual-info { display:flex; gap:13px; background:rgba(59,130,246,.04); border:1px solid rgba(59,130,246,.12); border-radius:11px; padding:16px 18px; margin-top:14px; }
+    .qual-info-ico { font-size:16px; flex-shrink:0; margin-top:2px; line-height:1; }
+    .qual-info-txt { font-size:12px; color:#8b949e; line-height:1.7; }
+    .qual-info-txt strong { color:#c9d1d9; font-weight:600; display:block; margin-bottom:3px; }
+    .qual-info-txt .code-block { margin-top:8px; background:rgba(13,17,23,.8); border:1px solid rgba(255,255,255,.07); border-radius:8px; padding:10px 13px; font-family:'JetBrains Mono','Fira Code',monospace; font-size:11px; color:#60a5fa; letter-spacing:.3px; }
+    .qual-info-txt code { background:rgba(13,17,23,.7); border:1px solid rgba(255,255,255,.08); padding:2px 6px; border-radius:5px; font-family:monospace; font-size:11px; color:#93c5fd; }
+
+    /* ════════════════════════════════════════════════════════════
+       CRM  —  Funnel tabs + richer cards
+       ════════════════════════════════════════════════════════════ */
+    .crm-funnel-nav { display:flex; align-items:center; gap:6px; margin-bottom:20px; padding:4px; background:#0d1117; border-radius:12px; width:fit-content; max-width:100%; overflow-x:auto; border:1px solid rgba(255,255,255,.06); }
+    .crm-funnel-tab { display:flex; align-items:center; gap:7px; padding:8px 16px; border-radius:9px; font-size:13px; font-weight:600; cursor:pointer; color:#525a65; transition:all .15s; white-space:nowrap; flex-shrink:0; border:none; background:transparent; }
+    .crm-funnel-tab:hover { color:#8b949e; background:rgba(255,255,255,.04); }
+    .crm-funnel-tab.active { background:#161b22; color:#a3e635; box-shadow:0 1px 4px rgba(0,0,0,.3),0 0 0 1px rgba(163,230,53,.12); }
+    .crm-funnel-tab .funnel-count { font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; background:rgba(255,255,255,.06); color:#525a65; }
+    .crm-funnel-tab.active .funnel-count { background:rgba(163,230,53,.15); color:#a3e635; }
+    .crm-funnel-add { width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:transparent; border:1.5px dashed rgba(255,255,255,.1); color:#525a65; cursor:pointer; font-size:18px; transition:all .15s; flex-shrink:0; }
+    .crm-funnel-add:hover { border-color:rgba(163,230,53,.3); color:#a3e635; background:rgba(163,230,53,.05); }
+    /* Richer cards */
+    .crm-card { background:#161b22 !important; border-radius:12px !important; padding:0 !important; margin-bottom:10px !important; cursor:grab; border:1px solid rgba(255,255,255,.06) !important; border-left:4px solid #e5e7eb !important; transition:all .18s !important; user-select:none; box-shadow:0 1px 3px rgba(0,0,0,.3) !important; overflow:hidden; }
+    .crm-card:hover { border-color:rgba(255,255,255,.12) !important; border-left-color:inherit !important; box-shadow:0 4px 16px rgba(0,0,0,.4) !important; transform:translateY(-1px); }
+    .crm-card:active { cursor:grabbing !important; opacity:.7 !important; transform:scale(.98); }
+    .crm-card-inner { padding:14px 14px 12px; }
+    .crm-card-head { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; }
+    .crm-card-name { font-size:13px; font-weight:700; color:#e6edf3; letter-spacing:-.1px; }
+    .crm-card-aniv { font-size:14px; cursor:default; }
+    .crm-card-tese { font-size:12px; color:#6e7681; margin-bottom:6px; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .crm-card-assunto { font-size:11px; color:#a3e635; background:rgba(163,230,53,.1); border:1px solid rgba(163,230,53,.15); padding:2px 8px; border-radius:20px; display:inline-block; margin-bottom:8px; font-weight:600; letter-spacing:.1px; }
+    .crm-card-meta { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+    .crm-card-chip { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#8b949e; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); padding:2px 8px; border-radius:20px; }
+    .crm-card-funil { font-size:10px; color:#6e7681; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); padding:2px 7px; border-radius:8px; display:inline-block; margin-bottom:6px; font-weight:600; letter-spacing:.3px; }
+    .crm-card-footer { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#525a65; border-top:1px solid rgba(255,255,255,.05); padding:8px 14px; background:rgba(7,9,13,.3); margin-top:0; }
+    .crm-card-tasks { display:flex; align-items:center; gap:3px; }
+    .crm-card-tasks.has-pending { color:#f59e0b; font-weight:700; }
+    /* Col count badges colors */
+    .crm-col[data-stage="novo_contato"] .crm-col-count { background:rgba(245,158,11,.15); color:#f59e0b; }
+    .crm-col[data-stage="em_atendimento"] .crm-col-count { background:rgba(59,130,246,.15); color:#60a5fa; }
+    .crm-col[data-stage="qualificado"] .crm-col-count { background:rgba(22,163,74,.15); color:#4ade80; }
+    .crm-col[data-stage="nao_qualificado"] .crm-col-count { background:rgba(220,38,38,.15); color:#f87171; }
+    .crm-col[data-stage="convertido"] .crm-col-count { background:rgba(163,230,53,.15); color:#a3e635; }
+    .crm-col[data-stage="perdido"] .crm-col-count { background:rgba(100,116,139,.15); color:#94a3b8; }
+    .crm-col { background:rgba(13,17,23,.6) !important; border-radius:14px !important; border:1px solid rgba(255,255,255,.05) !important; }
+    .crm-col-title { font-size:12px !important; font-weight:700 !important; letter-spacing:.3px; text-transform:uppercase; }
+    .crm-col-count { border-radius:20px !important; font-size:10px !important; font-weight:700 !important; }
+
+    /* ── Free client badge ────────────────────────────────────── */
+    .badge-free { background:rgba(163,230,53,.1); color:#a3e635; border:1px solid rgba(163,230,53,.2); font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; letter-spacing:.3px; }
+
+    /* ── Modal melhorado ──────────────────────────────────────── */
+    .modal-box { border:1px solid rgba(255,255,255,.08) !important; box-shadow:0 24px 64px rgba(0,0,0,.5), 0 0 0 1px rgba(163,230,53,.05) !important; }
+    .crm-modal-tabs { border-color:rgba(255,255,255,.07) !important; }
+    .crm-tab { font-size:12px !important; letter-spacing:.2px; }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/drawflow/dist/drawflow.min.css" />
 </head>
@@ -552,6 +730,7 @@
         <div id="sidebar-user-role" style="font-size:11px;"></div>
       </div>
       <button class="btn-logout" onclick="logout()">Sair</button>
+      <div class="sidebar-powered">Powered by <span>SX SevenXperts Business Solutions</span><br><span style="opacity:.5;font-size:9px;letter-spacing:.3px;">CNPJ: 32.794.007/0001-19</span></div>
     </div>
   </div>
 
@@ -723,20 +902,27 @@
 
     <!-- CRM -->
     <div class="page" id="page-crm">
-      <div class="page-header"><h1>🗂️ CRM — Pipeline de Leads</h1><p>Acompanhe cada lead do primeiro contato até a conversão</p></div>
-      <div class="crm-toolbar">
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="loadCRM()">🔄 Atualizar</button>
-          <button class="btn-secondary" style="padding:9px 18px;font-size:13px;" onclick="openNewLeadModal()">➕ Novo Lead</button>
-          <button class="btn-secondary" style="padding:9px 18px;font-size:13px;" onclick="openStagesModal()">⚙️ Colunas</button>
+      <!-- Header row -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="font-size:20px;font-weight:800;color:#e6edf3;margin:0 0 4px;letter-spacing:-.3px;">🗂️ CRM — Pipeline de Leads</h1>
+          <p style="font-size:13px;color:#6e7681;margin:0;">Acompanhe cada lead do primeiro contato até a conversão</p>
         </div>
-        <div style="font-size:12px;color:#6e7681;">Arraste os cards entre as colunas para atualizar o estágio</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+          <button class="btn-secondary" style="padding:9px 14px;font-size:13px;" onclick="loadCRM()" title="Atualizar CRM">🔄</button>
+          <button class="btn-secondary" style="padding:9px 16px;font-size:13px;" onclick="openStagesModal()">⚙️ Colunas</button>
+          <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="openNewLeadModal()">➕ Novo Lead</button>
+        </div>
       </div>
-      <!-- Filtro por funil/fluxo -->
-      <div id="crm-funil-filter" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:16px;">
-        <span style="font-size:12px;color:#8b949e;font-weight:600;">🔀 Funil:</span>
-        <button class="crm-funil-btn active" data-fluxo="all" onclick="filterCRMByFluxo('all',this)">Todos</button>
-        <span id="crm-funil-buttons"><!-- botões de fluxo inseridos por JS --></span>
+      <!-- Funnel tab nav -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+        <div class="crm-funnel-nav" id="crm-funnel-nav">
+          <button class="crm-funnel-tab active" data-fluxo="all" onclick="filterCRMByFluxo('all',this)">
+            <span>📊</span> Todos <span class="funnel-count" id="crm-all-count">0</span>
+          </button>
+          <span id="crm-funil-buttons"></span>
+        </div>
+        <button class="crm-funnel-add" onclick="openNewFunilModal()" title="Criar novo funil">＋</button>
       </div>
       <div class="crm-board-wrap">
         <div class="crm-board" id="crm-board">
@@ -764,9 +950,10 @@
           <input type="hidden" id="crm-lead-numero" />
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
             <div class="field-group" style="margin:0;"><label>Nome</label><input type="text" id="crm-nome" placeholder="Nome do lead" /></div>
-            <div class="field-group" style="margin:0;"><label>Celular</label><input type="text" id="crm-celular" placeholder="5511999999999" /></div>
+            <div class="field-group" style="margin:0;"><label>Celular / WhatsApp</label><input type="text" id="crm-celular" placeholder="5511999999999" /></div>
+            <div class="field-group" style="margin:0;"><label>E-mail</label><input type="email" id="crm-email" placeholder="email@exemplo.com" /></div>
             <div class="field-group" style="margin:0;"><label>Tese jurídica</label><input type="text" id="crm-tese" placeholder="Ex: Aposentadoria por invalidez" /></div>
-            <div class="field-group" style="margin:0;"><label>Assunto</label><input type="text" id="crm-assunto" placeholder="Ex: Aguardando documentos" /></div>
+            <div class="field-group" style="margin:0;"><label>Assunto / Pendência</label><input type="text" id="crm-assunto" placeholder="Ex: Aguardando documentos" /></div>
             <div class="field-group" style="margin:0;"><label>Data de aniversário</label><input type="date" id="crm-aniversario" /></div>
             <div class="field-group" style="margin:0;"><label>Estágio no CRM</label>
               <select id="crm-stage">
@@ -821,15 +1008,38 @@
 
     <!-- MODAL CRM: NOVO LEAD MANUAL -->
     <div class="modal-backdrop" id="modal-novo-lead" onclick="if(event.target===this)closeNewLeadModal()">
-      <div class="modal-box" style="width:460px;">
+      <div class="modal-box" style="width:500px;">
         <h2>➕ Novo Lead Manual</h2>
-        <div class="field-group"><label>Nome</label><input type="text" id="nl-nome" placeholder="Nome do contato" /></div>
-        <div class="field-group"><label>WhatsApp (com DDI+DDD)</label><input type="text" id="nl-numero" placeholder="5511999999999" /></div>
-        <div class="field-group"><label>Assunto</label><input type="text" id="nl-assunto" placeholder="Ex: Quer saber sobre aposentadoria" /></div>
-        <div class="modal-actions">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="field-group" style="margin:0;"><label>Nome completo</label><input type="text" id="nl-nome" placeholder="Nome do contato" /></div>
+          <div class="field-group" style="margin:0;"><label>WhatsApp <small style="color:#a3e635;">(DDI+DDD+número)</small></label><input type="text" id="nl-numero" placeholder="5511999999999" /></div>
+          <div class="field-group" style="margin:0;"><label>E-mail</label><input type="email" id="nl-email" placeholder="email@exemplo.com" /></div>
+          <div class="field-group" style="margin:0;"><label>Data de aniversário</label><input type="date" id="nl-aniversario" /></div>
+          <div class="field-group" style="margin:0;grid-column:1/-1;"><label>Tese jurídica</label><input type="text" id="nl-tese" placeholder="Ex: Aposentadoria por invalidez" /></div>
+          <div class="field-group" style="margin:0;grid-column:1/-1;"><label>Assunto / Observação inicial</label><input type="text" id="nl-assunto" placeholder="Ex: Quer saber sobre aposentadoria, aguardando documentos" /></div>
+        </div>
+        <div class="modal-actions" style="margin-top:18px;">
           <button class="btn-save" onclick="createManualLead()">✅ Criar lead</button>
           <button class="btn-secondary" onclick="closeNewLeadModal()">Cancelar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL: NOVO FUNIL -->
+    <div class="modal-backdrop" id="modal-novo-funil" onclick="if(event.target===this)closeNewFunilModal()">
+      <div class="modal-box" style="width:420px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="font-size:16px;font-weight:700;margin:0;">🔀 Criar Novo Funil</h2>
+          <button onclick="closeNewFunilModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6e7681;padding:0;">✕</button>
+        </div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:16px;line-height:1.5;">Um funil é um fluxo de automação que organiza os leads em um kanban dedicado. Você pode criar funis para diferentes campanhas, produtos ou equipes.</div>
+        <div class="field-group"><label>Nome do funil</label><input type="text" id="nf-nome" placeholder="Ex: Campanha Setembro, Leads Facebook..." /></div>
+        <div class="field-group"><label>Descrição <span style="color:#6e7681;font-weight:400;">(opcional)</span></label><input type="text" id="nf-descricao" placeholder="Finalidade deste funil" /></div>
+        <div class="modal-actions" style="margin-top:18px;">
+          <button class="btn-save" onclick="createNewFunil()">✅ Criar funil</button>
+          <button class="btn-secondary" onclick="closeNewFunilModal()">Cancelar</button>
+        </div>
+        <div id="nf-error" class="error-msg" style="margin-top:10px;display:none;"></div>
       </div>
     </div>
 
@@ -893,28 +1103,117 @@
 
     <!-- QUALIFICAÇÃO -->
     <div class="page" id="page-qualificacao">
-      <div class="page-header"><h1>✅ Qualificação</h1><p>Defina os critérios e o número de destino dos leads</p></div>
-      <div class="card">
-        <h3>📋 Critérios de Qualificação</h3>
-        <div class="field-group"><label>Liste os critérios (um por linha)</label>
-          <textarea id="cfg-criterios_qualificacao" placeholder="1. Possui vínculo com o INSS&#10;2. Tem benefício negado ou a requerer&#10;3. É possível identificar uma tese jurídica"></textarea></div>
-      </div>
-      <div class="card">
-        <h3>📲 WhatsApp de Destino</h3>
-        <div class="field-group"><label>Número que recebe os relatórios dos leads qualificados</label>
-          <input type="text" id="cfg-numero_destino" placeholder="5511999999999 (DDI+DDD+número, sem espaços)" /></div>
-        <div class="field-group" style="margin-top:14px;">
-          <label>📢 Grupo de Destino <span style="font-weight:400;color:#8b949e;">(opcional)</span></label>
-          <input type="text" id="cfg-grupo_destino" placeholder="Ex: 120363XXXXXXXXXX@g.us" style="font-family:monospace;font-size:13px;" />
-          <p style="font-size:11px;color:#8b949e;margin-top:6px;line-height:1.6;">
-            O relatório também será enviado ao grupo <strong style="color:#c9d1d9;">somente se o lead for participante</strong>.<br>
-            Cole o <strong style="color:#c9d1d9;">JID do grupo</strong> (formato: <code style="background:#1c2128;padding:1px 5px;border-radius:4px;">XXXXXXXXXXX@g.us</code>).<br>
-            Obtenha pelo Evolution API: <code style="background:#1c2128;padding:1px 5px;border-radius:4px;">GET /group/fetchAllGroups/{instância}</code>
-          </p>
+      <div class="qual-hdr">
+        <div class="qual-hdr-left">
+          <div class="qual-eyebrow">Configurações do Agente</div>
+          <h1>✅ Qualificação de Leads</h1>
+          <p>Defina os critérios de triagem e configure para onde o agente envia os relatórios quando um lead é qualificado</p>
+        </div>
+        <div class="qual-hdr-right">
+          <span class="save-status" id="save-qualificacao"></span>
+          <button class="btn-save" onclick="saveConfigs(['criterios_qualificacao','numero_destino','grupo_destino'])">💾 Salvar configurações</button>
         </div>
       </div>
-      <button class="btn-save" onclick="saveConfigs(['criterios_qualificacao','numero_destino','grupo_destino'])">💾 Salvar</button>
-      <span class="save-status" id="save-qualificacao"></span>
+
+      <!-- Card critérios -->
+      <div class="card qual-card">
+        <div class="qual-ch">
+          <div class="qual-ch-icon lime">📋</div>
+          <div>
+            <p class="qual-ch-title">Critérios de Qualificação</p>
+            <p class="qual-ch-sub">O agente verifica estes pontos antes de classificar um lead como qualificado</p>
+          </div>
+          <span class="qual-ch-badge ai">✨ Analisado por IA</span>
+        </div>
+        <div class="qual-body">
+          <div class="field-group" style="margin-bottom:0">
+            <label>Critérios · um por linha</label>
+            <textarea id="cfg-criterios_qualificacao" style="min-height:140px;resize:vertical;" placeholder="1. Possui vínculo com o INSS&#10;2. Tem benefício negado ou a requerer&#10;3. É possível identificar uma tese jurídica&#10;4. Reside no Brasil&#10;5. Tem interesse em prosseguir com o processo"></textarea>
+          </div>
+          <div class="qual-hint">
+            <span class="hi">💡</span>
+            <span>O agente precisará confirmar <strong>pelo menos 3 critérios</strong> para classificar o lead como qualificado. Seja específico para aumentar a precisão da triagem automática.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card roteamento -->
+      <div class="card qual-card">
+        <div class="qual-ch">
+          <div class="qual-ch-icon green">📲</div>
+          <div>
+            <p class="qual-ch-title">Roteamento de Notificações</p>
+            <p class="qual-ch-sub">Para onde o agente envia o relatório quando um lead é qualificado</p>
+          </div>
+          <span class="qual-ch-badge auto">⚡ Automático</span>
+        </div>
+
+        <!-- Flow visual -->
+        <div class="qual-flow">
+          <div class="qf-step origin">🤖 Lead qualificado</div>
+          <div class="qf-arrow">→</div>
+          <div class="qf-step always">📱 Número pessoal <span class="qf-tag always">sempre</span></div>
+          <div class="qf-plus">+</div>
+          <div class="qf-step cond" id="qf-grupo-step">👥 Grupo WhatsApp <span class="qf-tag cond">se membro</span></div>
+        </div>
+
+        <!-- Destinos -->
+        <div>
+          <!-- Número pessoal -->
+          <div class="qual-dest-item">
+            <div class="qual-dest-head">
+              <div class="qual-dest-ico primary">📱</div>
+              <div>
+                <div class="qual-dest-name">Número Pessoal do Advogado</div>
+                <div class="qual-dest-desc">Recebe o relatório completo do lead qualificado em todas as qualificações</div>
+              </div>
+              <span class="qual-dest-tag req">Obrigatório</span>
+            </div>
+            <div class="field-group" style="margin:0">
+              <label>WhatsApp · DDI + DDD + número (sem espaços)</label>
+              <div class="inp-wrap">
+                <span class="inp-prefix">📞</span>
+                <input type="tel" id="cfg-numero_destino" placeholder="5511999999999" oninput="updateFlowVisual()" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Divisor + -->
+          <div class="qual-plus-div">
+            <div class="qual-plus-div-line"></div>
+            <div class="qual-plus-div-dot">+</div>
+            <div class="qual-plus-div-line"></div>
+          </div>
+
+          <!-- Grupo -->
+          <div class="qual-dest-item">
+            <div class="qual-dest-head">
+              <div class="qual-dest-ico secondary">👥</div>
+              <div>
+                <div class="qual-dest-name">Grupo WhatsApp</div>
+                <div class="qual-dest-desc">Também notificado, porém <strong style="color:#8b949e;font-weight:600;">somente se o lead for participante</strong> do grupo</div>
+              </div>
+              <span class="qual-dest-tag opt">Opcional</span>
+            </div>
+            <div class="field-group" style="margin-bottom:0">
+              <label>JID do grupo</label>
+              <div class="inp-wrap">
+                <span class="inp-prefix">👥</span>
+                <input type="text" id="cfg-grupo_destino" placeholder="120363XXXXXXXXXX@g.us" class="inp-mono" oninput="updateFlowVisual()" />
+              </div>
+            </div>
+            <div class="qual-info">
+              <span class="qual-info-ico">ℹ️</span>
+              <div class="qual-info-txt">
+                <strong>Como obter o JID do grupo</strong>
+                O JID é o identificador único do grupo no formato <code>XXXXXXXXXXX@g.us</code>. Para listá-los, faça uma chamada à Evolution API da sua instância:
+                <div class="code-block">GET /group/fetchAllGroups/{sua-instância}</div>
+                O JID estará no campo <code>id</code> de cada grupo retornado.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- PDFs -->
@@ -1328,8 +1627,23 @@
       <label>Senha inicial</label>
       <input type="password" id="new-client-password" placeholder="Mínimo 6 caracteres" />
     </div>
-    <div class="field-group" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;">
-      <span style="font-size:12px;color:#166534;">⚡ A instância WhatsApp será criada automaticamente a partir do nome do cliente.</span>
+    <div class="field-group" style="background:rgba(163,230,53,.05);border:1px solid rgba(163,230,53,.2);border-radius:10px;padding:12px 14px;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#a3e635;margin-bottom:3px;">🎁 Plano Gratuito</div>
+          <div style="font-size:12px;color:#6e7681;">Cria a conta sem cobrança, sem tokens iniciais. Ideal para testes ou parceiros.</div>
+        </div>
+        <label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0;">
+          <input type="checkbox" id="new-client-free" style="opacity:0;width:0;height:0;" onchange="toggleFreeClientUI(this.checked)" />
+          <span style="position:absolute;cursor:pointer;inset:0;background:#1c2128;border-radius:24px;border:1.5px solid #30363d;transition:.2s;"
+                id="free-toggle-track"></span>
+          <span style="position:absolute;left:3px;top:3px;width:16px;height:16px;background:#525a65;border-radius:50%;transition:.2s;"
+                id="free-toggle-thumb"></span>
+        </label>
+      </div>
+    </div>
+    <div class="field-group" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px 14px;margin-top:4px;">
+      <span style="font-size:12px;color:#6e7681;">⚡ A instância WhatsApp será criada automaticamente a partir do nome do cliente.</span>
     </div>
     <div class="modal-actions">
       <button class="btn-save" id="btn-create-client" onclick="criarCliente()">✅ Criar conta</button>
@@ -1903,14 +2217,19 @@
   async function loadCRMFluxos() {
     const { data } = await db.from('fluxos').select('id,nome').order('atualizado_em', { ascending: false });
     crmFluxos = data || [];
-    // Monta botões de filtro
+    // Render funnel tabs
     const container = document.getElementById('crm-funil-buttons');
-    if (!container) return;
-    container.innerHTML = crmFluxos.map(f =>
-      `<button class="crm-funil-btn ${crmFluxoFilter === f.id ? 'active' : ''}" data-fluxo="${f.id}" onclick="filterCRMByFluxo('${f.id}',this)">
-        🔀 ${escapeHtml(f.nome)}
-      </button>`
-    ).join('');
+    if (container) {
+      container.innerHTML = crmFluxos.map(f => {
+        const count = crmLeads.filter(l => l.fluxo_id === f.id).length;
+        return `<button class="crm-funnel-tab ${crmFluxoFilter === f.id ? 'active' : ''}" data-fluxo="${f.id}" onclick="filterCRMByFluxo('${f.id}',this)">
+          🔀 ${escapeHtml(f.nome)} <span class="funnel-count">${count}</span>
+        </button>`;
+      }).join('');
+    }
+    // Update "all" count badge
+    const allCount = document.getElementById('crm-all-count');
+    if (allCount) allCount.textContent = crmLeads.length;
     // Popula select do modal de lead
     const sel = document.getElementById('crm-fluxo-id');
     if (sel) {
@@ -1922,7 +2241,7 @@
 
   function filterCRMByFluxo(fluxoId, btn) {
     crmFluxoFilter = fluxoId;
-    document.querySelectorAll('.crm-funil-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.crm-funnel-tab').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
     loadCRM();
   }
@@ -1964,25 +2283,39 @@
       const diff = Math.round((aniv - hoje) / 86400000);
       if (diff === 0) anivIcon = '<span class="crm-card-aniv" title="Aniversário hoje! 🎂">🎂</span>';
       else if (diff === 1) anivIcon = '<span class="crm-card-aniv" title="Aniversário amanhã">🎁</span>';
+      else if (diff < 0) { aniv.setFullYear(hoje.getFullYear()+1); const diffNext = Math.round((aniv - hoje)/86400000); if(diffNext<=7) anivIcon='<span class="crm-card-aniv" title="Aniversário em breve!">🎉</span>'; }
     }
     const stg = lead.stage || crmStages[0]?.id || 'novo_contato';
     const color = stageColor || crmStages.find(s => s.id === stg)?.color || '#e5e7eb';
     const fluxo = lead.fluxo_id ? crmFluxos.find(f => f.id === lead.fluxo_id) : null;
+    // Phone display: format 55XXYYYYYYYY → (XX) YYYYY-YYYY
+    const phone = lead.celular || lead.numero_whatsapp || '';
+    const phoneDisplay = phone.replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3') || phone;
+    const chips = [
+      phoneDisplay ? `<span class="crm-card-chip">📱 ${escapeHtml(phoneDisplay)}</span>` : '',
+      lead.email   ? `<span class="crm-card-chip">✉️ ${escapeHtml(lead.email)}</span>`   : '',
+      lead.data_aniversario ? `<span class="crm-card-chip">🎂 ${new Date(lead.data_aniversario+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span>` : '',
+    ].filter(Boolean).join('');
     return `<div class="crm-card" data-lead-id="${lead.id}" data-stage="${stg}"
       style="border-left-color:${color};"
       draggable="true"
       ondragstart="dragCard(event,this)"
       onclick="openLeadModal(${lead.id})">
-      <div class="crm-card-top">
-        <span class="crm-card-name">${escapeHtml(lead.nome || lead.numero_whatsapp || '—')}</span>
-        ${anivIcon}
+      <div class="crm-card-inner">
+        <div class="crm-card-head">
+          <span class="crm-card-name">${escapeHtml(lead.nome || lead.numero_whatsapp || '—')}</span>
+          ${anivIcon}
+        </div>
+        ${lead.tese ? `<div class="crm-card-tese">${escapeHtml(lead.tese)}</div>` : ''}
+        ${lead.assunto ? `<div class="crm-card-assunto">${escapeHtml(lead.assunto)}</div>` : ''}
+        ${chips || fluxo ? `<div class="crm-card-meta">
+          ${chips}
+          ${fluxo ? `<span class="crm-card-funil">🔀 ${escapeHtml(fluxo.nome)}</span>` : ''}
+        </div>` : ''}
       </div>
-      ${fluxo ? `<div class="crm-card-funil">🔀 ${escapeHtml(fluxo.nome)}</div>` : ''}
-      ${lead.tese ? `<div class="crm-card-tese">${escapeHtml(lead.tese)}</div>` : ''}
-      ${lead.assunto ? `<div class="crm-card-assunto">${escapeHtml(lead.assunto)}</div>` : ''}
       <div class="crm-card-footer">
         <span class="crm-card-tasks ${pendentes > 0 ? 'has-pending' : ''}">
-          ${pendentes > 0 ? `📋 ${pendentes} tarefa${pendentes>1?'s':''} pendente${pendentes>1?'s':''}` : tasks.length > 0 ? `✅ ${tasks.length} tarefa${tasks.length>1?'s':''}` : ''}
+          ${pendentes > 0 ? `📋 ${pendentes} pendente${pendentes>1?'s':''}` : tasks.length > 0 ? `✅ ${tasks.length} tarefa${tasks.length>1?'s':''}` : '<span style="opacity:.4;">Sem tarefas</span>'}
         </span>
         <span class="crm-card-date">${lead.atualizado_em ? timeAgo(lead.atualizado_em) : '—'}</span>
       </div>
@@ -2025,6 +2358,7 @@
     document.getElementById('crm-modal-title').textContent = lead.nome || lead.numero_whatsapp || 'Lead';
     document.getElementById('crm-nome').value = lead.nome || '';
     document.getElementById('crm-celular').value = lead.celular || '';
+    document.getElementById('crm-email').value = lead.email || '';
     document.getElementById('crm-tese').value = lead.tese || '';
     document.getElementById('crm-assunto').value = lead.assunto || '';
     document.getElementById('crm-aniversario').value = lead.data_aniversario || '';
@@ -2066,6 +2400,7 @@
     await db.from('leads').update({
       nome: document.getElementById('crm-nome').value,
       celular: document.getElementById('crm-celular').value,
+      email: document.getElementById('crm-email').value,
       tese: document.getElementById('crm-tese').value,
       assunto: document.getElementById('crm-assunto').value,
       data_aniversario: document.getElementById('crm-aniversario').value || null,
@@ -2080,6 +2415,8 @@
     const lead = crmLeads.find(x => x.id === id);
     if (lead) {
       lead.nome = document.getElementById('crm-nome').value;
+      lead.celular = document.getElementById('crm-celular').value;
+      lead.email = document.getElementById('crm-email').value;
       lead.tese = document.getElementById('crm-tese').value;
       lead.assunto = document.getElementById('crm-assunto').value;
       lead.stage = document.getElementById('crm-stage').value;
@@ -2172,17 +2509,52 @@
   function openNewLeadModal() { document.getElementById('modal-novo-lead').classList.add('open'); }
   function closeNewLeadModal() { document.getElementById('modal-novo-lead').classList.remove('open'); }
 
+  // ---- Novo funil ----
+  function openNewFunilModal() { document.getElementById('modal-novo-funil').classList.add('open'); }
+  function closeNewFunilModal() {
+    document.getElementById('modal-novo-funil').classList.remove('open');
+    document.getElementById('nf-nome').value = '';
+    document.getElementById('nf-descricao').value = '';
+    document.getElementById('nf-error').style.display = 'none';
+  }
+  async function createNewFunil() {
+    const nome = document.getElementById('nf-nome').value.trim();
+    const desc = document.getElementById('nf-descricao').value.trim();
+    const errEl = document.getElementById('nf-error');
+    if (!nome) { errEl.textContent = 'Informe o nome do funil.'; errEl.style.display='block'; return; }
+    const { data: { user } } = await db.auth.getUser();
+    const { error } = await db.from('fluxos').insert({ nome, descricao: desc || null, user_id: user.id });
+    if (error) { errEl.textContent = 'Erro: ' + error.message; errEl.style.display='block'; return; }
+    closeNewFunilModal();
+    await loadCRM();
+  }
+
+  // ---- updateFlowVisual (Qualificação page) ----
+  function updateFlowVisual() {
+    const val = (document.getElementById('cfg-grupo_destino')?.value || '').trim();
+    const step = document.getElementById('qf-grupo-step');
+    if (step) step.classList.toggle('filled', val.length > 0);
+  }
+
   async function createManualLead() {
     const numero = document.getElementById('nl-numero').value.replace(/\D/g,'');
     const nome   = document.getElementById('nl-nome').value.trim();
+    const email  = document.getElementById('nl-email').value.trim();
+    const tese   = document.getElementById('nl-tese').value.trim();
     const assunto = document.getElementById('nl-assunto').value.trim();
+    const aniversario = document.getElementById('nl-aniversario').value || null;
     if (!numero) { alert('Informe o número de WhatsApp'); return; }
     const { data: { user } } = await db.auth.getUser();
-    await db.from('leads').insert({ numero_whatsapp: numero, nome, assunto, user_id: user.id, stage: 'novo_contato', atualizado_em: new Date().toISOString() });
+    await db.from('leads').insert({
+      numero_whatsapp: numero, nome, email, tese, assunto,
+      data_aniversario: aniversario,
+      user_id: user.id, stage: 'novo_contato',
+      atualizado_em: new Date().toISOString()
+    });
     closeNewLeadModal();
-    document.getElementById('nl-nome').value = '';
-    document.getElementById('nl-numero').value = '';
-    document.getElementById('nl-assunto').value = '';
+    ['nl-nome','nl-numero','nl-email','nl-tese','nl-assunto','nl-aniversario'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.value = '';
+    });
     await loadCRM();
   }
 
@@ -2631,12 +3003,33 @@
 
   function closeModal() {
     document.getElementById('modal-backdrop').classList.remove('open');
+    // Reset free toggle
+    const cb = document.getElementById('new-client-free');
+    if (cb) { cb.checked = false; toggleFreeClientUI(false); }
+  }
+
+  function toggleFreeClientUI(checked) {
+    const track = document.getElementById('free-toggle-track');
+    const thumb = document.getElementById('free-toggle-thumb');
+    if (!track || !thumb) return;
+    if (checked) {
+      track.style.background = 'rgba(163,230,53,.2)';
+      track.style.borderColor = '#a3e635';
+      thumb.style.left = '21px';
+      thumb.style.background = '#a3e635';
+    } else {
+      track.style.background = '#1c2128';
+      track.style.borderColor = '#30363d';
+      thumb.style.left = '3px';
+      thumb.style.background = '#525a65';
+    }
   }
 
   async function criarCliente() {
     const name     = document.getElementById('new-client-name').value.trim();
     const email    = document.getElementById('new-client-email').value.trim();
     const password = document.getElementById('new-client-password').value;
+    const isFree   = document.getElementById('new-client-free')?.checked || false;
     const errEl    = document.getElementById('create-client-error');
     const btn      = document.getElementById('btn-create-client');
     errEl.textContent = '';
@@ -2647,13 +3040,15 @@
       errEl.textContent = 'Senha deve ter no mínimo 6 caracteres.'; return;
     }
     btn.disabled = true; btn.textContent = 'Criando...';
-    // evo_instance é auto-gerado pelo backend a partir do nome
-    const result = await adminFetch('POST', { name, email, password });
+    const payload = { name, email, password };
+    if (isFree) { payload.plano = 'gratuito'; payload.valor = 0; payload.tokens_iniciais = 0; }
+    const result = await adminFetch('POST', payload);
     if (result?.error) {
       errEl.textContent = 'Erro: ' + result.error;
       btn.disabled = false; btn.textContent = '✅ Criar conta';
       return;
     }
+    btn.disabled = false; btn.textContent = '✅ Criar conta';
     closeModal();
     loadClients();
   }
