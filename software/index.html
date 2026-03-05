@@ -641,6 +641,54 @@
     .crm-col-title { font-size:12px !important; font-weight:700 !important; letter-spacing:.3px; text-transform:uppercase; }
     .crm-col-count { border-radius:20px !important; font-size:10px !important; font-weight:700 !important; }
 
+    /* ══════════════════════════════════════════════════════════
+       TASK REMINDERS — Bell, Panel, Quick-add, Card badges
+       ══════════════════════════════════════════════════════════ */
+    .crm-bell-btn { position:relative; width:36px; height:36px; border-radius:9px; background:rgba(255,255,255,.04); border:1.5px solid rgba(255,255,255,.08); color:#8b949e; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; transition:all .15s; flex-shrink:0; }
+    .crm-bell-btn:hover { border-color:rgba(163,230,53,.3); color:#a3e635; background:rgba(163,230,53,.05); }
+    .crm-bell-btn.has-alerts { border-color:rgba(239,68,68,.35); color:#f87171; animation:bell-shake .6s ease 0s 2; }
+    .crm-bell-badge { position:absolute; top:-6px; right:-6px; min-width:18px; height:18px; background:#ef4444; border-radius:20px; font-size:9px; font-weight:800; color:#fff; display:none; align-items:center; justify-content:center; border:2px solid #0d1117; padding:0 4px; line-height:1; }
+    .crm-bell-badge.visible { display:flex; }
+    @keyframes bell-shake { 0%,100%{transform:rotate(0)} 20%{transform:rotate(-14deg)} 40%{transform:rotate(14deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(8deg)} }
+    .crm-reminder-panel { position:fixed; top:60px; right:24px; width:374px; max-height:500px; background:#161b22; border:1px solid rgba(255,255,255,.1); border-radius:16px; box-shadow:0 24px 64px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.03); z-index:9999; display:none; flex-direction:column; overflow:hidden; }
+    .crm-reminder-panel.open { display:flex; }
+    .crm-reminder-hdr { display:flex; align-items:flex-start; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid rgba(255,255,255,.06); flex-shrink:0; }
+    .crm-reminder-hdr-left h3 { font-size:14px; font-weight:700; color:#e6edf3; margin:0 0 2px; }
+    .crm-reminder-hdr-left p  { font-size:11px; color:#6e7681; margin:0; }
+    .crm-reminder-body { overflow-y:auto; flex:1; }
+    .crm-reminder-empty { padding:32px 18px; text-align:center; color:#6e7681; font-size:13px; }
+    .reminder-item { padding:11px 18px; border-bottom:1px solid rgba(255,255,255,.04); cursor:pointer; transition:background .12s; display:flex; align-items:flex-start; gap:10px; }
+    .reminder-item:hover { background:rgba(255,255,255,.03); }
+    .reminder-item:last-child { border-bottom:none; }
+    .reminder-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:5px; }
+    .reminder-dot.overdue  { background:#ef4444; box-shadow:0 0 8px rgba(239,68,68,.5); }
+    .reminder-dot.today    { background:#f59e0b; box-shadow:0 0 8px rgba(245,158,11,.4); }
+    .reminder-dot.tomorrow { background:#3b82f6; }
+    .reminder-dot.soon     { background:#8b5cf6; }
+    .reminder-item-body { flex:1; min-width:0; }
+    .reminder-item-desc { font-size:13px; color:#c9d1d9; font-weight:500; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .reminder-item-lead { font-size:11px; color:#6e7681; }
+    .reminder-item-date { font-size:10px; font-weight:700; border-radius:6px; padding:2px 7px; flex-shrink:0; margin-top:2px; }
+    .reminder-item-date.overdue  { background:rgba(239,68,68,.12); color:#ef4444; }
+    .reminder-item-date.today    { background:rgba(245,158,11,.12); color:#f59e0b; }
+    .reminder-item-date.tomorrow { background:rgba(59,130,246,.12); color:#60a5fa; }
+    .reminder-item-date.soon     { background:rgba(139,92,246,.12); color:#a78bfa; }
+    .crm-card-tasks.has-overdue  { color:#ef4444 !important; font-weight:700; }
+    .crm-card-tasks.has-today    { color:#f59e0b !important; font-weight:700; }
+    .crm-card-tasks.has-tomorrow { color:#60a5fa !important; }
+    .crm-card-add-task { background:none; border:1px dashed rgba(255,255,255,.1); cursor:pointer; font-size:10px; font-weight:700; opacity:0; transition:all .18s; padding:2px 8px; border-radius:6px; color:#6e7681; flex-shrink:0; }
+    .crm-card:hover .crm-card-add-task { opacity:1; }
+    .crm-card-add-task:hover { border-color:rgba(163,230,53,.35); color:#a3e635; background:rgba(163,230,53,.06); }
+    .quick-task-pop { position:absolute; bottom:calc(100% + 8px); left:0; right:0; background:#1c2128; border:1px solid rgba(163,230,53,.25); border-radius:12px; padding:14px; z-index:9998; box-shadow:0 12px 40px rgba(0,0,0,.5); display:none; }
+    .quick-task-pop.open { display:block; }
+    .quick-task-pop-title { font-size:11px; font-weight:700; color:#8b949e; margin-bottom:10px; text-transform:uppercase; letter-spacing:.4px; }
+    .quick-task-pop input { background:#0d1117; border:1.5px solid rgba(255,255,255,.1); color:#e6edf3; padding:8px 10px; border-radius:7px; font-size:12px; width:100%; margin-bottom:8px; box-sizing:border-box; outline:none; transition:border-color .15s; }
+    .quick-task-pop input:focus { border-color:rgba(163,230,53,.45); }
+    .quick-task-pop-actions { display:flex; gap:6px; }
+    .quick-task-pop-save   { background:linear-gradient(135deg,#a3e635,#78c013); color:#071a00; border:none; padding:7px 14px; border-radius:7px; font-size:12px; font-weight:700; cursor:pointer; }
+    .quick-task-pop-cancel { background:rgba(255,255,255,.05); color:#8b949e; border:1px solid rgba(255,255,255,.08); padding:7px 10px; border-radius:7px; font-size:12px; cursor:pointer; }
+    .crm-col-alert { display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; background:#ef4444; border-radius:20px; font-size:9px; font-weight:800; color:#fff; padding:0 4px; margin-left:4px; vertical-align:middle; }
+
     /* ── Free client badge ────────────────────────────────────── */
     .badge-free { background:rgba(163,230,53,.1); color:#a3e635; border:1px solid rgba(163,230,53,.2); font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; letter-spacing:.3px; }
 
@@ -910,6 +958,10 @@
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
           <button class="btn-secondary" style="padding:9px 14px;font-size:13px;" onclick="loadCRM()" title="Atualizar CRM">🔄</button>
+          <button class="crm-bell-btn" id="crm-bell-btn" onclick="toggleReminderPanel()" title="Lembretes de tarefas">
+            🔔
+            <span class="crm-bell-badge" id="crm-bell-badge"></span>
+          </button>
           <button class="btn-secondary" style="padding:9px 16px;font-size:13px;" onclick="openStagesModal()">⚙️ Colunas</button>
           <button class="btn-save" style="padding:9px 18px;font-size:13px;" onclick="openNewLeadModal()">➕ Novo Lead</button>
         </div>
@@ -928,6 +980,20 @@
         <div class="crm-board" id="crm-board">
           <div style="padding:40px;color:#6e7681;font-size:14px;">Carregando CRM...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- PAINEL DE LEMBRETES (floating, fora do kanban) -->
+    <div class="crm-reminder-panel" id="crm-reminder-panel">
+      <div class="crm-reminder-hdr">
+        <div class="crm-reminder-hdr-left">
+          <h3>🔔 Lembretes de Tarefas</h3>
+          <p id="crm-reminder-subtitle">Verificando...</p>
+        </div>
+        <button onclick="closeReminderPanel()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#6e7681;padding:0;flex-shrink:0;">✕</button>
+      </div>
+      <div class="crm-reminder-body" id="crm-reminder-body">
+        <div class="crm-reminder-empty">Carregando lembretes...</div>
       </div>
     </div>
 
@@ -1826,7 +1892,7 @@
     document.getElementById('page-' + name).classList.add('active');
     el.classList.add('active');
     if (name === 'leads') loadLeads();
-    if (name === 'crm') loadCRM();
+    if (name === 'crm') { loadCRM(); setTimeout(checkReminders, 500); }
     if (name === 'clientes') { loadClients(); loadTokenUsageAdmin(); }
     if (name === 'faturamento') {
       loadBilling();
@@ -2204,7 +2270,7 @@
     // Carrega fluxos e monta filtros
     await loadCRMFluxos();
     // Carrega leads (com filtro de fluxo se ativo)
-    let query = db.from('leads').select('*, lead_tarefas(id, concluida)').order('atualizado_em', { ascending: false });
+    let query = db.from('leads').select('*, lead_tarefas(id, concluida, descricao, data_vencimento)').order('atualizado_em', { ascending: false });
     if (crmFluxoFilter !== 'all') {
       query = query.eq('fluxo_id', crmFluxoFilter);
     }
@@ -2255,11 +2321,17 @@
       if (!byStage[s]) byStage[crmStages[0]?.id || 'novo_contato'].push(l);
       else byStage[s].push(l);
     });
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
     board.innerHTML = crmStages.map(stage => {
       const cols = byStage[stage.id] || [];
+      // Count overdue tasks in this stage
+      const stageOverdue = cols.reduce((acc, l) => {
+        return acc + (l.lead_tarefas||[]).filter(t => !t.concluida && t.data_vencimento && new Date(t.data_vencimento+'T00:00:00') < hoje).length;
+      }, 0);
+      const alertBadge = stageOverdue > 0 ? `<span class="crm-col-alert" title="${stageOverdue} tarefa${stageOverdue>1?'s':''} atrasada${stageOverdue>1?'s':''}">${stageOverdue}</span>` : '';
       return `<div class="crm-col" data-stage="${stage.id}" style="border-top:3px solid ${stage.color};">
         <div class="crm-col-header">
-          <span class="crm-col-title">${stage.label}</span>
+          <span class="crm-col-title">${stage.label}${alertBadge}</span>
           <span class="crm-col-count">${cols.length}</span>
         </div>
         <div class="crm-cards" data-stage="${stage.id}"
@@ -2274,8 +2346,36 @@
 
   function renderCard(lead, stageColor) {
     const tasks = lead.lead_tarefas || [];
-    const pendentes = tasks.filter(t => !t.concluida).length;
     const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
+
+    // Task urgency classification
+    const pendentes = tasks.filter(t => !t.concluida);
+    const overdueT  = pendentes.filter(t => t.data_vencimento && new Date(t.data_vencimento+'T00:00:00') < hoje);
+    const todayT    = pendentes.filter(t => t.data_vencimento && new Date(t.data_vencimento+'T00:00:00').getTime() === hoje.getTime());
+    const tomorrowT = pendentes.filter(t => t.data_vencimento && new Date(t.data_vencimento+'T00:00:00').getTime() === amanha.getTime());
+    const semVenc   = pendentes.filter(t => !t.data_vencimento);
+
+    let taskClass = '', taskText = '';
+    if (overdueT.length > 0) {
+      taskClass = 'has-overdue';
+      taskText  = `⚠️ ${overdueT.length} atrasada${overdueT.length>1?'s':''}`;
+    } else if (todayT.length > 0) {
+      taskClass = 'has-today';
+      taskText  = `⏰ ${todayT.length} p/ hoje`;
+    } else if (tomorrowT.length > 0) {
+      taskClass = 'has-tomorrow';
+      taskText  = `📅 ${tomorrowT.length} p/ amanhã`;
+    } else if (semVenc.length > 0) {
+      taskClass = 'has-pending';
+      taskText  = `📋 ${semVenc.length} pendente${semVenc.length>1?'s':''}`;
+    } else if (tasks.length > 0) {
+      taskText = `✅ ${tasks.length} concluída${tasks.length>1?'s':''}`;
+    } else {
+      taskText = '<span style="opacity:.35;">＋ tarefa</span>';
+    }
+
+    // Birthday
     let anivIcon = '';
     if (lead.data_aniversario) {
       const aniv = new Date(lead.data_aniversario + 'T00:00:00');
@@ -2283,12 +2383,12 @@
       const diff = Math.round((aniv - hoje) / 86400000);
       if (diff === 0) anivIcon = '<span class="crm-card-aniv" title="Aniversário hoje! 🎂">🎂</span>';
       else if (diff === 1) anivIcon = '<span class="crm-card-aniv" title="Aniversário amanhã">🎁</span>';
-      else if (diff < 0) { aniv.setFullYear(hoje.getFullYear()+1); const diffNext = Math.round((aniv - hoje)/86400000); if(diffNext<=7) anivIcon='<span class="crm-card-aniv" title="Aniversário em breve!">🎉</span>'; }
+      else if (diff < 0) { aniv.setFullYear(hoje.getFullYear()+1); const dn = Math.round((aniv-hoje)/86400000); if(dn<=7) anivIcon='<span class="crm-card-aniv" title="Aniversário em breve!">🎉</span>'; }
     }
-    const stg = lead.stage || crmStages[0]?.id || 'novo_contato';
+
+    const stg   = lead.stage || crmStages[0]?.id || 'novo_contato';
     const color = stageColor || crmStages.find(s => s.id === stg)?.color || '#e5e7eb';
     const fluxo = lead.fluxo_id ? crmFluxos.find(f => f.id === lead.fluxo_id) : null;
-    // Phone display: format 55XXYYYYYYYY → (XX) YYYYY-YYYY
     const phone = lead.celular || lead.numero_whatsapp || '';
     const phoneDisplay = phone.replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3') || phone;
     const chips = [
@@ -2296,11 +2396,21 @@
       lead.email   ? `<span class="crm-card-chip">✉️ ${escapeHtml(lead.email)}</span>`   : '',
       lead.data_aniversario ? `<span class="crm-card-chip">🎂 ${new Date(lead.data_aniversario+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span>` : '',
     ].filter(Boolean).join('');
+
     return `<div class="crm-card" data-lead-id="${lead.id}" data-stage="${stg}"
-      style="border-left-color:${color};"
+      style="border-left-color:${color};position:relative;"
       draggable="true"
       ondragstart="dragCard(event,this)"
       onclick="openLeadModal(${lead.id})">
+      <div id="qtp-${lead.id}" class="quick-task-pop" onclick="event.stopPropagation()">
+        <div class="quick-task-pop-title">⚡ Adicionar tarefa rápida</div>
+        <input type="text" id="qtp-desc-${lead.id}" placeholder="Descreva a tarefa..." onkeydown="if(event.key==='Enter')saveQuickTask(${lead.id})" />
+        <input type="date" id="qtp-date-${lead.id}" style="margin-bottom:0;" />
+        <div class="quick-task-pop-actions" style="margin-top:8px;">
+          <button class="quick-task-pop-save" onclick="saveQuickTask(${lead.id})">✅ Salvar</button>
+          <button class="quick-task-pop-cancel" onclick="closeQuickTask(${lead.id})">Cancelar</button>
+        </div>
+      </div>
       <div class="crm-card-inner">
         <div class="crm-card-head">
           <span class="crm-card-name">${escapeHtml(lead.nome || lead.numero_whatsapp || '—')}</span>
@@ -2314,10 +2424,11 @@
         </div>` : ''}
       </div>
       <div class="crm-card-footer">
-        <span class="crm-card-tasks ${pendentes > 0 ? 'has-pending' : ''}">
-          ${pendentes > 0 ? `📋 ${pendentes} pendente${pendentes>1?'s':''}` : tasks.length > 0 ? `✅ ${tasks.length} tarefa${tasks.length>1?'s':''}` : '<span style="opacity:.4;">Sem tarefas</span>'}
-        </span>
-        <span class="crm-card-date">${lead.atualizado_em ? timeAgo(lead.atualizado_em) : '—'}</span>
+        <span class="crm-card-tasks ${taskClass}" onclick="event.stopPropagation();openQuickTask(${lead.id})" title="Clique para adicionar tarefa">${taskText}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="crm-card-add-task" onclick="event.stopPropagation();openQuickTask(${lead.id})" title="Adicionar tarefa">＋ tarefa</button>
+          <span class="crm-card-date">${lead.atualizado_em ? timeAgo(lead.atualizado_em) : '—'}</span>
+        </div>
       </div>
     </div>`;
   }
@@ -2443,9 +2554,15 @@
   async function loadTarefas(leadId) {
     const { data } = await db.from('lead_tarefas').select('*').eq('lead_id', leadId).order('criado_em');
     renderTarefas(data || []);
-    // Atualiza count no lead local
+    // Atualiza lead local e re-renderiza card no kanban
     const lead = crmLeads.find(x => x.id === leadId);
-    if (lead) lead.lead_tarefas = data || [];
+    if (lead) {
+      lead.lead_tarefas = data || [];
+      const card = document.querySelector(`.crm-card[data-lead-id="${leadId}"]`);
+      if (card) card.outerHTML = renderCard(lead);
+    }
+    // Atualiza badge de lembretes
+    checkReminders();
   }
 
   function renderTarefas(tarefas) {
@@ -3605,6 +3722,162 @@
           '</tr>';
         }).join('')}</tbody>
       </table>`;
+  }
+
+  // =============================================
+  // TASK REMINDERS SYSTEM
+  // =============================================
+  let crmReminders = [];
+  let reminderPanelOpen = false;
+
+  // Urgency label for a task date
+  function taskUrgency(dateStr) {
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
+    const d = new Date(dateStr+'T00:00:00');
+    if (d < hoje)   return 'overdue';
+    if (d.getTime() === hoje.getTime())   return 'today';
+    if (d.getTime() === amanha.getTime()) return 'tomorrow';
+    return 'soon';
+  }
+
+  function urgencyLabel(u) {
+    return { overdue:'Atrasada', today:'Hoje', tomorrow:'Amanhã', soon:'Em breve' }[u] || '';
+  }
+
+  async function checkReminders() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    // 7-day lookahead + overdue
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+    const em7 = new Date(hoje); em7.setDate(em7.getDate()+7);
+    const { data } = await db.from('lead_tarefas')
+      .select('id, descricao, data_vencimento, concluida, lead_id, leads(nome, numero_whatsapp)')
+      .eq('concluida', false)
+      .not('data_vencimento', 'is', null)
+      .lte('data_vencimento', em7.toISOString().split('T')[0])
+      .order('data_vencimento', { ascending: true });
+    crmReminders = data || [];
+    // Update bell badge (overdue + today only)
+    const urgent = crmReminders.filter(t => {
+      const u = taskUrgency(t.data_vencimento);
+      return u === 'overdue' || u === 'today';
+    });
+    const badge = document.getElementById('crm-bell-badge');
+    const bell  = document.getElementById('crm-bell-btn');
+    if (badge) { badge.textContent = urgent.length; badge.classList.toggle('visible', urgent.length > 0); }
+    if (bell)  { bell.classList.toggle('has-alerts', urgent.length > 0); }
+    // If panel already open, refresh content
+    if (reminderPanelOpen) renderReminderPanel();
+  }
+
+  function toggleReminderPanel() {
+    const panel = document.getElementById('crm-reminder-panel');
+    reminderPanelOpen = !reminderPanelOpen;
+    panel.classList.toggle('open', reminderPanelOpen);
+    if (reminderPanelOpen) { checkReminders(); renderReminderPanel(); }
+  }
+
+  function closeReminderPanel() {
+    document.getElementById('crm-reminder-panel').classList.remove('open');
+    reminderPanelOpen = false;
+  }
+
+  function renderReminderPanel() {
+    const body = document.getElementById('crm-reminder-body');
+    const sub  = document.getElementById('crm-reminder-subtitle');
+    if (!body) return;
+    if (!crmReminders.length) {
+      body.innerHTML = '<div class="crm-reminder-empty">🎉 Nenhuma tarefa vencida ou próxima do prazo nos próximos 7 dias!</div>';
+      if (sub) sub.textContent = 'Tudo em dia';
+      return;
+    }
+    const overdue  = crmReminders.filter(t => taskUrgency(t.data_vencimento) === 'overdue');
+    const today    = crmReminders.filter(t => taskUrgency(t.data_vencimento) === 'today');
+    const tomorrow = crmReminders.filter(t => taskUrgency(t.data_vencimento) === 'tomorrow');
+    const soon     = crmReminders.filter(t => taskUrgency(t.data_vencimento) === 'soon');
+    if (sub) sub.textContent = `${overdue.length + today.length} urgente${(overdue.length+today.length)!==1?'s':''} · ${crmReminders.length} nos próximos 7 dias`;
+    const sections = [
+      { list: overdue,  label: '⚠️ Atrasadas', cls: 'overdue' },
+      { list: today,    label: '⏰ Vence hoje',  cls: 'today' },
+      { list: tomorrow, label: '📅 Amanhã',      cls: 'tomorrow' },
+      { list: soon,     label: '🔮 Em breve',    cls: 'soon' },
+    ].filter(s => s.list.length > 0);
+    body.innerHTML = sections.map(sec =>
+      `<div style="padding:8px 18px 4px;font-size:10px;font-weight:700;color:#6e7681;text-transform:uppercase;letter-spacing:.4px;">${sec.label}</div>` +
+      sec.list.map(t => {
+        const leadName = t.leads?.nome || t.leads?.numero_whatsapp || '—';
+        const dStr = new Date(t.data_vencimento+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'short'});
+        return `<div class="reminder-item" onclick="openLeadFromReminder(${t.lead_id})">
+          <span class="reminder-dot ${sec.cls}"></span>
+          <div class="reminder-item-body">
+            <div class="reminder-item-desc">${escapeHtml(t.descricao || '—')}</div>
+            <div class="reminder-item-lead">Lead: <b>${escapeHtml(leadName)}</b></div>
+          </div>
+          <div class="reminder-item-date ${sec.cls}">${dStr}</div>
+        </div>`;
+      }).join('')
+    ).join('');
+  }
+
+  async function openLeadFromReminder(leadId) {
+    closeReminderPanel();
+    // Ensure CRM is loaded and then open the modal
+    const existing = crmLeads.find(l => l.id === leadId);
+    if (existing) { openLeadModal(leadId); return; }
+    // Load the lead and open
+    const { data } = await db.from('leads').select('*, lead_tarefas(id,concluida,descricao,data_vencimento)').eq('id', leadId).single();
+    if (data) {
+      crmLeads.push(data);
+      openLeadModal(leadId);
+    }
+  }
+
+  // ── Quick task add (popover on card) ──────────────
+  let activeQuickTaskId = null;
+
+  function openQuickTask(leadId) {
+    // Close any other open popover first
+    if (activeQuickTaskId && activeQuickTaskId !== leadId) closeQuickTask(activeQuickTaskId);
+    const pop = document.getElementById('qtp-' + leadId);
+    if (!pop) return;
+    pop.classList.add('open');
+    activeQuickTaskId = leadId;
+    const inp = document.getElementById('qtp-desc-' + leadId);
+    if (inp) setTimeout(() => inp.focus(), 50);
+    // Set default date to today
+    const dateInp = document.getElementById('qtp-date-' + leadId);
+    if (dateInp && !dateInp.value) dateInp.value = new Date().toISOString().split('T')[0];
+  }
+
+  function closeQuickTask(leadId) {
+    const pop = document.getElementById('qtp-' + leadId);
+    if (pop) pop.classList.remove('open');
+    if (activeQuickTaskId === leadId) activeQuickTaskId = null;
+  }
+
+  async function saveQuickTask(leadId) {
+    const desc = (document.getElementById('qtp-desc-' + leadId)?.value || '').trim();
+    const date = document.getElementById('qtp-date-' + leadId)?.value || null;
+    if (!desc) { closeQuickTask(leadId); return; }
+    const { data: { user } } = await db.auth.getUser();
+    await db.from('lead_tarefas').insert({
+      lead_id: leadId, user_id: user.id,
+      descricao: desc,
+      data_vencimento: date || null,
+      concluida: false
+    });
+    closeQuickTask(leadId);
+    // Update local lead tasks + re-render card
+    const lead = crmLeads.find(l => l.id === leadId);
+    if (lead) {
+      lead.lead_tarefas = lead.lead_tarefas || [];
+      lead.lead_tarefas.push({ id: Date.now(), concluida: false, descricao: desc, data_vencimento: date });
+      const card = document.querySelector(`.crm-card[data-lead-id="${leadId}"]`);
+      if (card) card.outerHTML = renderCard(lead);
+    }
+    // Refresh reminder badge
+    checkReminders();
   }
 </script>
 <script src="https://unpkg.com/drawflow/dist/drawflow.min.js"></script>
