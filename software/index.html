@@ -3592,6 +3592,7 @@
 
   // Load scoring rules from agente_config
   async function loadScoringRulesFromDB() {
+    const { data: { user: currentUser } } = await db.auth.getUser();
     if (!currentUser) return DEFAULT_SCORING_RULES;
     try {
       const { data } = await db.from('agente_config')
@@ -3609,6 +3610,7 @@
 
   // Save rules to agente_config
   async function saveScoringRules() {
+    const { data: { user: currentUser } } = await db.auth.getUser();
     if (!currentUser) return;
     // Collect rules from UI
     const tbody = document.getElementById('scoring-rules-body');
@@ -3638,6 +3640,7 @@
 
   // Recalculate and patch score on all leads for current user
   async function recalcAllScores() {
+    const { data: { user: currentUser } } = await db.auth.getUser();
     if (!currentUser || !scoringRules) return;
     const { data: leads } = await db.from('leads')
       .select('id,nome,celular,tese,resumo,stage,notas,data_aniversario,atualizado_em')
@@ -3671,6 +3674,7 @@
 
   async function loadTopLeads() {
     const el = document.getElementById('scoring-top-leads');
+    const { data: { user: currentUser } } = await db.auth.getUser();
     if (!el || !currentUser) return;
     el.innerHTML = '<p style="color:var(--text2);font-size:13px;">Carregando...</p>';
     const { data: leads } = await db.from('leads')
