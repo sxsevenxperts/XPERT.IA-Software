@@ -202,8 +202,19 @@
     /* ===================== CRM KANBAN ===================== */
     .crm-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:10px; }
     .crm-board-wrap { overflow-x:auto; padding-bottom:16px; }
-    .crm-board { display:flex; gap:14px; min-height:560px; width:max-content; }
+    .crm-board { display:flex; gap:14px; min-height:560px; width:max-content; align-items:flex-start; }
     .crm-col { width:260px; background:#1c2128; border-radius:14px; padding:12px; flex-shrink:0; display:flex; flex-direction:column; }
+    /* Add-column button inline */
+    .crm-add-col { width:220px; flex-shrink:0; border-radius:12px; padding:10px; background:transparent; border:2px dashed rgba(255,255,255,.08); transition:all .15s; cursor:pointer; }
+    .crm-add-col:hover { border-color:rgba(163,230,53,.3); background:rgba(163,230,53,.03); }
+    .crm-add-col-btn { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; background:none; border:none; color:#525a65; font-size:13px; font-weight:600; cursor:pointer; padding:10px 8px; border-radius:8px; transition:color .15s; }
+    .crm-add-col-btn:hover { color:#a3e635; }
+    .crm-add-col-form { display:none; flex-direction:column; gap:8px; }
+    .crm-add-col-form input { background:#0d1117; border:1.5px solid rgba(255,255,255,.12); border-radius:8px; color:#c9d1d9; font-size:13px; padding:8px 10px; width:100%; box-sizing:border-box; }
+    .crm-add-col-form input:focus { outline:none; border-color:#a3e635; }
+    .crm-add-col-form-btns { display:flex; gap:6px; }
+    .crm-add-col-form-btns .acf-confirm { background:#a3e635; color:#0d1117; border:none; border-radius:6px; padding:7px 0; font-size:12px; font-weight:700; cursor:pointer; flex:1; }
+    .crm-add-col-form-btns .acf-cancel { background:transparent; color:#6e7681; border:1px solid rgba(255,255,255,.1); border-radius:6px; padding:7px 0; font-size:12px; cursor:pointer; }
     .crm-col-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:4px 2px; }
     .crm-col-title { font-size:13px; font-weight:700; color:#e6edf3; display:flex; align-items:center; gap:6px; }
     .crm-col-count { background:#e5e7eb; color:#8b949e; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; }
@@ -2682,7 +2693,19 @@
           ${cols.map(l => renderCard(l, stage.color)).join('')}
         </div>
       </div>`;
-    }).join('');
+    }).join('') + `<div class="crm-add-col" id="crm-add-col-wrap">
+      <button class="crm-add-col-btn" id="crm-add-col-btn" onclick="showAddColForm()">
+        ＋ Nova coluna
+      </button>
+      <div class="crm-add-col-form" id="crm-add-col-form">
+        <input type="text" id="crm-add-col-input" placeholder="Nome da coluna..." maxlength="40"
+          onkeydown="if(event.key==='Enter')confirmAddCol();if(event.key==='Escape')hideAddColForm()" />
+        <div class="crm-add-col-form-btns">
+          <button class="acf-confirm" onclick="confirmAddCol()">Criar</button>
+          <button class="acf-cancel" onclick="hideAddColForm()">✕</button>
+        </div>
+      </div>
+    </div>`;
   }
 
   function renderCard(lead, stageColor) {
@@ -3234,6 +3257,38 @@
       const inputs = document.querySelectorAll('#stages-list .stage-name-input');
       if (inputs.length) { const last = inputs[inputs.length - 1]; last.focus(); last.select(); }
     }, 50);
+  }
+
+  // ---- Adicionar coluna inline no board (estilo Trello) ----
+  function showAddColForm() {
+    const btn  = document.getElementById('crm-add-col-btn');
+    const form = document.getElementById('crm-add-col-form');
+    if (!btn || !form) return;
+    btn.style.display  = 'none';
+    form.style.display = 'flex';
+    const input = document.getElementById('crm-add-col-input');
+    if (input) { input.value = ''; input.focus(); }
+  }
+  function hideAddColForm() {
+    const btn  = document.getElementById('crm-add-col-btn');
+    const form = document.getElementById('crm-add-col-form');
+    if (btn)  btn.style.display  = '';
+    if (form) form.style.display = 'none';
+  }
+  async function confirmAddCol() {
+    const input = document.getElementById('crm-add-col-input');
+    const nome  = (input?.value || '').trim();
+    if (!nome) { input?.focus(); return; }
+    // Adiciona à lista de estágios
+    crmStages.push({ id: 'custom_' + Date.now(), label: nome, color: '#64748b' });
+    // Salva no Supabase
+    const { data: { user } } = await db.auth.getUser();
+    await db.from('agente_config').upsert(
+      { user_id: user.id, chave: 'crm_stages', valor: JSON.stringify(crmStages) },
+      { onConflict: 'user_id,chave' }
+    );
+    // Re-renderiza o board com a nova coluna
+    renderKanban(crmLeads);
   }
 
   function deleteStageRow(idx) {
