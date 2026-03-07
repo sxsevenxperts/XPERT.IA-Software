@@ -465,6 +465,17 @@
     .mkt-section-title { font-size:16px; font-weight:700; color:#e6edf3; margin-bottom:4px; display:flex; align-items:center; gap:8px; }
     .mkt-section-sub { font-size:13px; color:#6e7681; margin-bottom:16px; }
     .mkt-addon-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin-bottom:8px; }
+    .mkt-qty-card { background:#161b22; border-radius:14px; padding:24px; border:2px solid #a3e635; display:flex; gap:24px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .mkt-qty-left { display:flex; gap:16px; align-items:flex-start; flex:1; min-width:240px; }
+    .mkt-qty-right { display:flex; flex-direction:column; align-items:center; gap:10px; min-width:170px; }
+    .mkt-unit-price { font-size:30px; font-weight:900; color:#a3e635; line-height:1; }
+    .mkt-unit-price span { font-size:13px; font-weight:400; color:#6e7681; }
+    .mkt-stepper { display:flex; align-items:center; gap:10px; background:#0d1117; border-radius:10px; padding:8px 14px; border:1px solid #30363d; }
+    .mkt-stepper button { width:32px; height:32px; border-radius:8px; border:none; background:#21262d; color:#e6edf3; font-size:20px; font-weight:700; cursor:pointer; transition:background .15s; line-height:1; }
+    .mkt-stepper button:hover { background:#a3e635; color:#0d1117; }
+    .mkt-stepper-val { font-size:22px; font-weight:800; color:#e6edf3; min-width:28px; text-align:center; }
+    .mkt-total-price { font-size:13px; color:#8b949e; text-align:center; }
+    .mkt-total-price strong { color:#a3e635; font-size:16px; }
     .mkt-addon-card { background:#161b22; border-radius:14px; padding:24px 20px; border:2px solid #21262d; transition:all .2s; position:relative; }
     .mkt-addon-card:hover { border-color:#a3e635; transform:translateY(-2px); box-shadow:0 6px 24px rgba(163,230,53,.12); }
     .mkt-addon-card.featured { border-color:#a3e635; }
@@ -512,6 +523,15 @@
     .drawflow .drawflow-node.node-aguardar .title-box { background:#d97706; }
     .drawflow .drawflow-node.node-etapa .title-box { background:linear-gradient(135deg,#16a34a,#065f46); color:#fff; }
     .drawflow .drawflow-node.node-etapa { min-width:220px; }
+    .drawflow .drawflow-node.node-departamento .title-box { background:#b45309; }
+    .drawflow .drawflow-node.node-captura .title-box { background:#0e7490; }
+    .drawflow .drawflow-node.node-contexto .title-box { background:#7c3aed; }
+    .drawflow .drawflow-node.node-mover-pipeline .title-box { background:#0f766e; }
+    .drawflow .drawflow-node.node-objecao .title-box { background:linear-gradient(135deg,#dc2626,#9f1239); }
+    .drawflow .drawflow-node.node-objecao { border-color:#dc2626; min-width:220px; }
+    .palette-node.node-acao-pago { border-color:#dc2626; color:#fca5a5; }
+    .palette-node.node-acao-pago.locked { opacity:0.5; cursor:not-allowed; border-style:dashed; }
+    .palette-node.node-acao-pago.locked:hover { border-color:#dc2626; color:#fca5a5; background:#161b22; }
     .drawflow-delete { background:#ef4444 !important; }
     /* ── Flow Etapa Palette ─────────────────────────────────────────── */
     .flow-plan-status { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; padding:8px 10px; background:#0d1117; border-radius:8px; border:1px solid #21262d; }
@@ -1862,21 +1882,32 @@
         <!-- SEÇÃO 2: AGENTES DE IA -->
         <div class="mkt-section">
           <div class="mkt-section-title">🤖 Agentes de IA Extras</div>
-          <div class="mkt-section-sub">Adicione mais agentes de IA para atender diferentes públicos, produtos ou segmentos — cada um com prompt, tom e configurações independentes. Acrescido à mensalidade.</div>
-          <div class="mkt-addon-grid">
-            <div class="mkt-addon-card featured">
-              <div class="mkt-addon-icon">🤖</div>
-              <div class="mkt-addon-name">Agente de IA Extra</div>
-              <div class="mkt-addon-desc">Agente independente com prompt, personalidade e configurações próprias. Aparece no Designer de Fluxos.</div>
-              <div class="mkt-addon-price"><sup>R$</sup>197<sub>/mês</sub></div>
-              <div class="mkt-addon-recurrence">🔄 Recorrente — acrescido na mensalidade</div>
-              <ul class="mkt-addon-features">
-                <li>Prompt e tom independentes</li>
-                <li>Base de conhecimento própria</li>
-                <li>Aparece no Designer de Fluxos</li>
-                <li>Relatório de atendimento integrado</li>
-              </ul>
-              <button class="btn-addon-buy" onclick="showAddonModal('agente')">Contratar Agente Extra</button>
+          <div class="mkt-section-sub">Cada agente é independente: prompt, tom e base de conhecimento próprios. Escolha quantos precisa — todos aparecem no Designer de Fluxos. Acrescido à mensalidade.</div>
+          <div class="mkt-qty-card">
+            <div class="mkt-qty-left">
+              <div style="font-size:42px;flex-shrink:0;">🤖</div>
+              <div>
+                <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente de IA Extra</div>
+                <ul class="mkt-addon-features" style="margin:0;">
+                  <li>Prompt e personalidade independentes</li>
+                  <li>Base de conhecimento própria</li>
+                  <li>Aparece no Designer de Fluxos</li>
+                  <li>Relatório de atendimento integrado</li>
+                </ul>
+              </div>
+            </div>
+            <div class="mkt-qty-right">
+              <div class="mkt-unit-price">R$ 197<span>/mês cada</span></div>
+              <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+              <div class="mkt-stepper">
+                <button onclick="changeAddonQty('agente',-1)">−</button>
+                <span class="mkt-stepper-val" id="qty-agente">1</span>
+                <button onclick="changeAddonQty('agente',+1)">+</button>
+              </div>
+              <div class="mkt-total-price">Total: <strong id="total-agente">R$ 197/mês</strong></div>
+              <button class="btn-addon-buy" onclick="showAddonModal('agente')">
+                Contratar <span id="qty-label-agente">1 agente</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1884,21 +1915,59 @@
         <!-- SEÇÃO 3: NÚMEROS WHATSAPP -->
         <div class="mkt-section">
           <div class="mkt-section-title">📱 Números WhatsApp Extras</div>
-          <div class="mkt-section-sub">Conecte números adicionais — cada número pode ser atribuído a um agente diferente no Designer de Fluxos. Acrescido à mensalidade.</div>
-          <div class="mkt-addon-grid">
-            <div class="mkt-addon-card featured">
-              <div class="mkt-addon-icon">📱</div>
-              <div class="mkt-addon-name">Número WhatsApp Extra</div>
-              <div class="mkt-addon-desc">Conecte um número adicional de WhatsApp. Ele pode receber e encaminhar leads no Designer de Fluxos.</div>
-              <div class="mkt-addon-price"><sup>R$</sup>97<sub>/mês</sub></div>
-              <div class="mkt-addon-recurrence">🔄 Recorrente — acrescido na mensalidade</div>
-              <ul class="mkt-addon-features">
-                <li>Conexão via QR Code</li>
-                <li>Integrável ao Designer de Fluxos</li>
-                <li>Pode ter agente próprio</li>
-                <li>Relatório por número</li>
-              </ul>
-              <button class="btn-addon-buy" onclick="showAddonModal('numero')">Contratar Número Extra</button>
+          <div class="mkt-section-sub">Cada número é um canal separado — pode ter agente próprio, receber leads e atuar em etapas distintas no Designer de Fluxos. Acrescido à mensalidade.</div>
+          <div class="mkt-qty-card">
+            <div class="mkt-qty-left">
+              <div style="font-size:42px;flex-shrink:0;">📱</div>
+              <div>
+                <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Número WhatsApp Extra</div>
+                <ul class="mkt-addon-features" style="margin:0;">
+                  <li>Conexão via QR Code (Evolution API)</li>
+                  <li>Integrável ao Designer de Fluxos</li>
+                  <li>Pode ter agente dedicado</li>
+                  <li>Relatório por número</li>
+                </ul>
+              </div>
+            </div>
+            <div class="mkt-qty-right">
+              <div class="mkt-unit-price">R$ 97<span>/mês cada</span></div>
+              <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+              <div class="mkt-stepper">
+                <button onclick="changeAddonQty('numero',-1)">−</button>
+                <span class="mkt-stepper-val" id="qty-numero">1</span>
+                <button onclick="changeAddonQty('numero',+1)">+</button>
+              </div>
+              <div class="mkt-total-price">Total: <strong id="total-numero">R$ 97/mês</strong></div>
+              <button class="btn-addon-buy" onclick="showAddonModal('numero')">
+                Contratar <span id="qty-label-numero">1 número</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEÇÃO 4: IDENTIFICAÇÃO DE OBJEÇÃO -->
+        <div class="mkt-section">
+          <div class="mkt-section-title">🛡️ Identificação de Objeção por IA</div>
+          <div class="mkt-section-sub">A IA monitora em tempo real e detecta objeções do lead durante o atendimento, enviando um alerta instantâneo para o número do cliente. Aparece como nó no Designer de Fluxos. Acrescido à mensalidade.</div>
+          <div class="mkt-qty-card">
+            <div class="mkt-qty-left">
+              <div style="font-size:42px;flex-shrink:0;">🛡️</div>
+              <div>
+                <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Identificar Objeção (IA)</div>
+                <ul class="mkt-addon-features" style="margin:0;">
+                  <li>IA detecta objeções em tempo real</li>
+                  <li>Alerta instantâneo no número do cliente</li>
+                  <li>Nó exclusivo no Designer de Fluxos</li>
+                  <li>Desvio automático de fluxo com/sem objeção</li>
+                </ul>
+              </div>
+            </div>
+            <div class="mkt-qty-right">
+              <div class="mkt-unit-price" style="color:#fca5a5;">R$ 97<span>/mês</span></div>
+              <div class="mkt-addon-recurrence" style="background:rgba(220,38,38,.08);color:#fca5a5;">🔄 Recorrente</div>
+              <button class="btn-addon-buy" style="background:#dc2626;" onclick="showAddonModal('objecao')">
+                Ativar Identificação de Objeção
+              </button>
             </div>
           </div>
         </div>
@@ -2013,6 +2082,18 @@
             <div class="etapa-pal-num">📞 Etapa de Atendimento</div>
             <div class="etapa-pal-agt" id="flow-etapa-hint">Arraste para o canvas</div>
           </div>
+
+          <h4 style="margin-top:14px">Ações</h4>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'departamento')">🏢 Transferir Departamento</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'captura')">📋 Captura de Dados</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'condicao')">🔀 Condição IF/ELSE</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'aguardar')">⏳ Aguardar / Wait</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'followup')">📤 Follow-up</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'contexto')">🧠 Contextualizar</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'mover_pipeline')">🗂️ Mover no CRM</div>
+          <div class="palette-node node-acao-pago" id="palette-objecao" draggable="true"
+               ondragstart="dragObjecao(event)"
+               title="Identificação de Objeção por IA — R$ 97/mês">🛡️ Identificar Objeção IA</div>
 
           <h4 style="margin-top:14px">Terminadores</h4>
           <div class="palette-node" draggable="true" ondragstart="drag(event,'inicio')">🟢 Início</div>
@@ -4648,51 +4729,63 @@
   }
 
   // =====================
-  // ADDON PURCHASE (Agente / Número)
+  // ADDON PURCHASE (Agente / Número) com seletor de quantidade
   // =====================
-  function showAddonModal(tipo) {
-    const cfg = {
-      agente: {
-        title: '🤖 Contratar Agente de IA Extra',
-        nome: 'Agente de IA Extra',
-        preco: 'R$ 197/mês',
-        descricao: 'Um novo agente independente com prompt, personalidade e configurações próprias. Será ativado após confirmação do pagamento e aparecerá no Designer de Fluxos.',
-        aviso: 'Este valor será acrescido à sua mensalidade a partir do próximo ciclo.'
-      },
-      numero: {
-        title: '📱 Contratar Número WhatsApp Extra',
-        nome: 'Número WhatsApp Extra',
-        preco: 'R$ 97/mês',
-        descricao: 'Um número adicional de WhatsApp para conectar via QR Code. Pode ser integrado ao Designer de Fluxos e ter um agente próprio.',
-        aviso: 'Este valor será acrescido à sua mensalidade a partir do próximo ciclo.'
-      }
-    };
-    const c = cfg[tipo];
-    if (!c) return;
-    const msg = `${c.title}\n\n` +
-      `Produto: ${c.nome}\n` +
-      `Valor: ${c.preco}\n\n` +
-      `${c.descricao}\n\n` +
-      `⚠️ ${c.aviso}\n\n` +
-      `Deseja solicitar este add-on? O administrador entrará em contato com os dados de pagamento via PIX.`;
-    if (!confirm(msg)) return;
-    requestAddonPurchase(tipo, c.nome, c.preco);
+  const _addonQty  = { agente: 1, numero: 1, objecao: 1 };
+  const _addonUnit = { agente: 197, numero: 97, objecao: 97 };
+
+  function changeAddonQty(tipo, delta) {
+    _addonQty[tipo] = Math.max(1, (_addonQty[tipo] || 1) + delta);
+    const qty = _addonQty[tipo];
+    const total = qty * _addonUnit[tipo];
+    const nouns = { agente: ['agente','agentes'], numero: ['número','números'] };
+    const noun = nouns[tipo];
+    const el = (id) => document.getElementById(id);
+    if (el('qty-' + tipo))       el('qty-' + tipo).textContent = qty;
+    if (el('qty-label-' + tipo)) el('qty-label-' + tipo).textContent = `${qty} ${qty > 1 ? noun[1] : noun[0]}`;
+    if (el('total-' + tipo))     el('total-' + tipo).textContent = `R$ ${total.toLocaleString('pt-BR')}/mês`;
   }
 
-  async function requestAddonPurchase(tipo, nome, preco) {
-    const { data: { user } } = await db.auth.getUser();
-    const { error } = await db.from('pedidos_creditos').insert({
-      user_id: user.id,
-      pacote: 'addon_' + tipo,
-      tokens: 0,
-      preco_brl: tipo === 'agente' ? 197 : 97,
-      status: 'pendente'
-    });
-    if (error) {
-      alert('Erro ao enviar solicitação. Tente novamente.');
+  function showAddonModal(tipo) {
+    const qty   = _addonQty[tipo] || 1;
+    const unit  = _addonUnit[tipo];
+    const total = qty * unit;
+    const icons = { agente:'🤖', numero:'📱', objecao:'🛡️' };
+    const nomes = { agente:'Agente de IA Extra', numero:'Número WhatsApp Extra', objecao:'Identificação de Objeção IA' };
+    const icon  = icons[tipo] || '📦';
+    const nome  = nomes[tipo] || tipo;
+    // Objeção é único — não tem qty
+    if (tipo === 'objecao') {
+      const msg = `🛡️ Ativar Identificação de Objeção por IA\n\nValor: R$ 97/mês\n⚠️ Será acrescido à sua mensalidade.\n\nApós ativação, o nó aparecerá desbloqueado no Designer de Fluxos.\n\nDeseja solicitar?`;
+      if (!confirm(msg)) return;
+      requestAddonPurchase('objecao', 1, 97);
       return;
     }
-    alert(`✅ Solicitação enviada!\n\nAdd-on: ${nome}\nValor: ${preco}\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, o recurso será ativado em até 2h.`);
+    const plural = qty > 1 ? 's' : '';
+    const msg = `${icon} Contratar ${qty} ${nome}${plural}\n\n` +
+      `Quantidade: ${qty}\n` +
+      `Valor unitário: R$ ${unit}/mês\n` +
+      `Total acrescido na mensalidade: R$ ${total}/mês\n\n` +
+      `⚠️ Este valor será somado à sua mensalidade a partir do próximo ciclo.\n\n` +
+      `Deseja solicitar? O administrador entrará em contato com os dados de pagamento via PIX.`;
+    if (!confirm(msg)) return;
+    requestAddonPurchase(tipo, qty, total);
+  }
+
+  async function requestAddonPurchase(tipo, qty, totalPreco) {
+    const { data: { user } } = await db.auth.getUser();
+    // Um registro por unidade — mantém a lógica de contagem existente
+    const inserts = Array.from({ length: qty }, () => ({
+      user_id:   user.id,
+      pacote:    'addon_' + tipo,
+      tokens:    0,
+      preco_brl: _addonUnit[tipo],
+      status:    'pendente'
+    }));
+    const { error } = await db.from('pedidos_creditos').insert(inserts);
+    if (error) { alert('Erro ao enviar solicitação. Tente novamente.'); return; }
+    const noun = tipo === 'agente' ? 'agente(s) de IA' : 'número(s) WhatsApp';
+    alert(`✅ Solicitação enviada!\n\n${qty} ${noun} extra(s)\nTotal: R$ ${totalPreco.toLocaleString('pt-BR')}/mês\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os recursos serão ativados em até 2h.`);
     loadAdminPedidos && loadAdminPedidos();
   }
 
@@ -4949,17 +5042,117 @@
         </div>
       </div>`
     },
-    // Legado — mantidos para compatibilidade com fluxos antigos
-    mensagem:       { title:'💬 Mensagem IA',      inputs:1, outputs:1, html:'<div class="box"><textarea style="width:100%;font-size:12px;border:1px solid #30363d;border-radius:6px;padding:6px;resize:vertical;min-height:50px;" placeholder="Texto da mensagem..."></textarea></div>', cls:'' },
-    pergunta:       { title:'❓ Pergunta',           inputs:1, outputs:1, html:'<div class="box"><textarea style="width:100%;font-size:12px;border:1px solid #30363d;border-radius:6px;padding:6px;resize:vertical;min-height:50px;" placeholder="Pergunta para o lead..."></textarea></div>', cls:'node-pergunta' },
-    condicao:       { title:'🔀 Condição',           inputs:1, outputs:2, html:'<div class="box"><input style="width:100%;font-size:12px;border:1px solid #30363d;border-radius:6px;padding:6px;" placeholder="Se contém..." /><div style="display:flex;justify-content:space-between;font-size:10px;color:#6e7681;margin-top:6px;"><span>Saída 1: Sim</span><span>Saída 2: Não</span></div></div>', cls:'node-condicao' },
-    followup:       { title:'📤 Follow-up',          inputs:1, outputs:1, html:'<div class="box"><input style="width:100%;font-size:12px;border:1px solid #30363d;border-radius:6px;padding:5px;margin-bottom:6px;" placeholder="5511999999999" class="followup-numero" /><textarea style="width:100%;font-size:12px;border:1px solid #30363d;border-radius:6px;padding:6px;resize:vertical;min-height:50px;" placeholder="Mensagem de follow-up..." class="followup-msg"></textarea></div>', cls:'node-followup' },
-    aguardar:       { title:'⏳ Aguardar',           inputs:1, outputs:1, html:'<div class="box"><input type="number" style="width:70px;font-size:12px;border:1px solid #30363d;border-radius:6px;padding:5px;" value="24" min="1" class="aguardar-horas" /><span style="font-size:12px;color:#8b949e;margin-left:6px;">horas</span></div>', cls:'node-aguardar' },
+    // ── Ações ─────────────────────────────────────────────────────────────
+    departamento: {
+      title: '🏢 Transferir Departamento', inputs: 1, outputs: 1, cls: 'node-departamento',
+      html: `<div class="box">
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">🏢 Nome do departamento</label>
+        <input class="etapa-select" placeholder="ex: Jurídico, Financeiro, Pós-venda..." style="margin-bottom:8px;" />
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">📱 Número do departamento</label>
+        <select class="etapa-select">ETAPA_NUMEROS_OPTIONS</select>
+        <label class="etapa-relatorio-wrap"><input type="checkbox" checked />📊 Enviar contexto da conversa</label>
+      </div>`
+    },
+    captura: {
+      title: '📋 Captura de Dados', inputs: 1, outputs: 1, cls: 'node-captura',
+      html: `<div class="box">
+        <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:8px;">Campos a capturar do lead:</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> 👤 Nome</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" style="accent-color:#a3e635;" /> 👤 Sobrenome</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> 📱 Telefone</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> 💬 O que te trouxe ao atendimento?</label>
+      </div>`
+    },
+    condicao: {
+      title: '🔀 Condição IF/ELSE', inputs: 1, outputs: 2, cls: 'node-condicao',
+      html: `<div class="box">
+        <select class="etapa-select" style="margin-bottom:6px;">
+          <option>Tese do lead contém...</option>
+          <option>Nome do lead contém...</option>
+          <option>Lead está qualificado</option>
+          <option>Texto da mensagem contém...</option>
+          <option>Estágio do CRM é...</option>
+        </select>
+        <input class="etapa-select" placeholder="Valor para comparar..." />
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#6e7681;margin-top:8px;padding:0 2px;">
+          <span style="color:#16a34a;font-weight:600;">✅ Sim (saída 1)</span>
+          <span style="color:#dc2626;font-weight:600;">❌ Não (saída 2)</span>
+        </div>
+      </div>`
+    },
+    aguardar: {
+      title: '⏳ Aguardar / Wait', inputs: 1, outputs: 1, cls: 'node-aguardar',
+      html: `<div class="box">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <input type="number" class="etapa-select" style="width:65px;margin-bottom:0;font-size:14px;font-weight:700;" value="1" min="1" />
+          <select class="etapa-select" style="flex:1;margin-bottom:0;">
+            <option value="min">minutos</option>
+            <option value="h" selected>horas</option>
+            <option value="d">dias</option>
+          </select>
+        </div>
+        <div style="font-size:10px;color:#6e7681;">Pausa o fluxo até receber mensagem ou o tempo esgotar</div>
+      </div>`
+    },
+    followup: {
+      title: '📤 Follow-up', inputs: 1, outputs: 1, cls: 'node-followup',
+      html: `<div class="box">
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">💬 Mensagem</label>
+        <textarea class="etapa-select" style="resize:vertical;min-height:60px;font-size:12px;margin-bottom:8px;" placeholder="Olá {{nome}}! Queria acompanhar o seu caso..."></textarea>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:#8b949e;white-space:nowrap;">⏱ Após</span>
+          <input type="number" class="etapa-select" style="width:55px;margin-bottom:0;" value="0" min="0" />
+          <select class="etapa-select" style="flex:1;margin-bottom:0;">
+            <option value="0">imediatamente</option>
+            <option value="min">minutos</option>
+            <option value="h">horas</option>
+          </select>
+        </div>
+        <div style="font-size:10px;color:#6e7681;margin-top:5px;">Variáveis: {{nome}}, {{telefone}}, {{tese}}</div>
+      </div>`
+    },
+    contexto: {
+      title: '🧠 Contextualizar Conversa', inputs: 1, outputs: 1, cls: 'node-contexto',
+      html: `<div class="box">
+        <div style="font-size:12px;color:#c9d1d9;margin-bottom:8px;">Resume toda a conversa e injeta como contexto para o próximo agente ou etapa.</div>
+        <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">Incluir no resumo:</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:4px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#7c3aed;" /> 🗨️ Histórico da conversa</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:4px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#7c3aed;" /> 👤 Dados do lead</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" style="accent-color:#7c3aed;" /> 🛡️ Objeções identificadas</label>
+      </div>`
+    },
+    mover_pipeline: {
+      title: '🗂️ Mover no CRM', inputs: 1, outputs: 1, cls: 'node-mover-pipeline',
+      html: `<div class="box">
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:6px;">Mover lead para o estágio:</label>
+        <select class="etapa-select">
+          <option value="novo_contato">🆕 Novo Contato</option>
+          <option value="em_atendimento">💬 Em Atendimento</option>
+          <option value="qualificado">✅ Qualificado</option>
+          <option value="nao_qualificado">❌ Não Qualificado</option>
+          <option value="convertido">🎉 Convertido</option>
+          <option value="perdido">🚪 Perdido</option>
+        </select>
+      </div>`
+    },
+    objecao: {
+      title: '🛡️ Identificar Objeção (IA)', inputs: 1, outputs: 2, cls: 'node-objecao',
+      html: `<div class="box">
+        <div style="font-size:12px;color:#c9d1d9;margin-bottom:8px;">A IA analisa a mensagem e detecta objeções. Envia alerta ao número indicado.</div>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">📱 Enviar alerta para:</label>
+        <input class="etapa-select" placeholder="5511999999999 (número do cliente)" />
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:8px;padding:0 2px;">
+          <span style="color:#dc2626;font-weight:600;">🛡️ Com objeção (saída 1)</span>
+          <span style="color:#16a34a;font-weight:600;">✅ Sem objeção (saída 2)</span>
+        </div>
+      </div>`
+    },
   };
 
   // ── Dados de plano carregados para o designer de fluxos ─────────────
-  let _fluxoNumeros = [];   // ex: ['EVO-main','EVO-extra-1'] — carregado ao abrir Designer de Fluxos
-  let _fluxoAgentes = [];   // ex: ['Agente 1 (Principal)','Agente 2']
+  let _fluxoNumeros  = [];    // carregado ao abrir Designer de Fluxos
+  let _fluxoAgentes  = [];
+  let _fluxoObjecao  = false; // true se o usuário comprou addon_objecao
 
   async function loadFluxosPage() {
     // 1. Inicializa Drawflow se necessário
@@ -4977,10 +5170,11 @@
       .select('pacote')
       .eq('user_id', user.id)
       .eq('status', 'ativo')
-      .in('pacote', ['addon_agente', 'addon_numero']);
+      .in('pacote', ['addon_agente', 'addon_numero', 'addon_objecao']);
 
     const extraNums = (addons || []).filter(a => a.pacote === 'addon_numero').length;
     const extraAgts = (addons || []).filter(a => a.pacote === 'addon_agente').length;
+    _fluxoObjecao   = (addons || []).some(a => a.pacote === 'addon_objecao');
 
     // 4. Monta listas
     const instBase = profile?.evo_instance || 'Número Principal';
@@ -4995,7 +5189,8 @@
     if (statusEl) {
       statusEl.innerHTML =
         `<span class="flow-plan-badge num">📱 ${_fluxoNumeros.length} número${_fluxoNumeros.length > 1 ? 's' : ''}</span>` +
-        `<span class="flow-plan-badge agt">🤖 ${_fluxoAgentes.length} agente${_fluxoAgentes.length > 1 ? 's' : ''}</span>`;
+        `<span class="flow-plan-badge agt">🤖 ${_fluxoAgentes.length} agente${_fluxoAgentes.length > 1 ? 's' : ''}</span>` +
+        (_fluxoObjecao ? `<span class="flow-plan-badge" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3);">🛡️ Objeção IA</span>` : '');
     }
 
     // 6. Atualiza hint da paleta
@@ -5004,6 +5199,29 @@
       const n = _fluxoNumeros.length, a = _fluxoAgentes.length;
       hint.textContent = `${n} número${n>1?'s':''} · ${a} agente${a>1?'s':''} disponíveis`;
     }
+
+    // 7. Bloqueia / desbloqueia nó de Objeção na paleta
+    const palOb = document.getElementById('palette-objecao');
+    if (palOb) {
+      if (_fluxoObjecao) {
+        palOb.classList.remove('locked');
+        palOb.setAttribute('draggable','true');
+        palOb.title = 'Identificação de Objeção por IA';
+      } else {
+        palOb.classList.add('locked');
+        palOb.setAttribute('draggable','false');
+        palOb.title = '🔒 Recurso pago — R$ 97/mês. Comprar no Marketplace';
+      }
+    }
+  }
+
+  function dragObjecao(event) {
+    if (!_fluxoObjecao) {
+      event.preventDefault();
+      alert('🔒 Identificação de Objeção é um recurso pago.\n\nValor: R$ 97/mês\n\nAcesse Faturamento → Marketplace para contratar.');
+      return;
+    }
+    drag(event, 'objecao');
   }
 
   function initDrawflow() {
@@ -5040,18 +5258,23 @@
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
+    // Opções de números (usadas em etapa e departamento)
+    const numerosOpts = _fluxoNumeros.length
+      ? _fluxoNumeros.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join('')
+      : '<option value="">Nenhum número configurado</option>';
+    const agentesOpts = '<option value="">Sem agente (humano)</option>' +
+      _fluxoAgentes.map((a, i) => `<option value="${i}">${escapeHtml(a)}</option>`).join('');
+
     let nodeHtml;
     if (type === 'etapa') {
-      // Todos os números e agentes disponíveis — sem pré-seleção forçada
-      const numerosOpts = _fluxoNumeros.length
-        ? _fluxoNumeros.map((n, i) => `<option value="${i}">${escapeHtml(n)}</option>`).join('')
-        : '<option value="">Nenhum número configurado</option>';
-      const agentesOpts = '<option value="">Sem agente (humano)</option>' +
-        _fluxoAgentes.map((a, i) => `<option value="${i}">${escapeHtml(a)}</option>`).join('');
-      const etapaBody = cfg.html
+      const body = cfg.html
         .replace('ETAPA_NUMEROS_OPTIONS', numerosOpts)
         .replace('ETAPA_AGENTES_OPTIONS', agentesOpts);
-      nodeHtml = `<div class="title-box">📞 Etapa de Atendimento</div>${etapaBody}`;
+      nodeHtml = `<div class="title-box">📞 Etapa de Atendimento</div>${body}`;
+    } else if (type === 'departamento') {
+      // Popula o select de número do departamento
+      const body = cfg.html.replace('ETAPA_NUMEROS_OPTIONS', numerosOpts);
+      nodeHtml = `<div class="title-box">${cfg.title}</div>${body}`;
     } else {
       nodeHtml = `<div class="title-box">${cfg.title}</div>${cfg.html}`;
     }
