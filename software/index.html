@@ -118,10 +118,11 @@
     #dashboard-page { display: none; min-height: 100vh; }
     .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; }
     .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .sidebar .logo .logo-brand { display:flex; align-items:center; gap:9px; margin-bottom:5px; }
-    .sidebar .logo .logo-mark { width:34px; height:34px; background:linear-gradient(135deg,#a3e635 0%,#4ade80 100%); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#0a0a0a; flex-shrink:0; }
-    .sidebar .logo h2 { color: #fff; font-size: 16px; font-weight: 800; letter-spacing:-.3px; }
-    .sidebar .logo .logo-company { color: #a3e635; font-size: 11px; font-weight: 600; margin-top: 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:.9; }
+    .sidebar .logo .logo-brand { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
+    .sidebar .logo .logo-img { width:44px; height:44px; object-fit:contain; flex-shrink:0; border-radius:8px; }
+    .sidebar .logo h2 { color: #fff; font-size: 16px; font-weight: 800; letter-spacing:-.3px; line-height:1.2; }
+    .sidebar .logo .logo-sub { color:rgba(255,255,255,.4); font-size:9px; font-weight:500; letter-spacing:.2px; display:block; margin-top:1px; }
+    .sidebar .logo .logo-company { color: #a3e635; font-size: 11px; font-weight: 600; margin-top: 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:.9; }
     .nav-section { padding: 12px 24px 4px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; }
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 24px; color: rgba(255,255,255,0.6); cursor: pointer; transition: all 0.2s; font-size: 14px; border-left: 3px solid transparent; }
     .nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
@@ -967,8 +968,11 @@
 <!-- LOGIN -->
 <div id="login-page">
   <div class="login-box">
-    <h1>XPERT.IA</h1>
-    <p>Painel de administração do agente IA</p>
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="logo.png" alt="XPERT.IA" style="width:96px;height:96px;object-fit:contain;border-radius:16px;" />
+    </div>
+    <h1 style="text-align:center;">XPERT.IA</h1>
+    <p style="text-align:center;">Painel de administração do agente IA</p>
     <div class="form-group">
       <label>E-mail</label>
       <input type="email" id="login-email" placeholder="seu@email.com" />
@@ -987,8 +991,11 @@
   <div class="sidebar">
     <div class="logo">
       <div class="logo-brand">
-        <div class="logo-mark">X✦</div>
-        <h2>XPERT.IA</h2>
+        <img src="logo.png" alt="XPERT.IA" class="logo-img" />
+        <div>
+          <h2>XPERT.IA</h2>
+          <span class="logo-sub">by Seven Xperts</span>
+        </div>
       </div>
       <div class="logo-company" id="sidebar-company-name">Painel de Administração</div>
     </div>
