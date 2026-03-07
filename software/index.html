@@ -2515,37 +2515,6 @@
   </div>
 </div>
 
-<!-- MODAL COMPRAR CRÉDITOS -->
-<div class="modal-backdrop" id="modal-buy-credits" onclick="if(event.target===this)closeBuyModal()">
-  <div class="modal-box">
-    <h2 id="buy-modal-title">Comprar Créditos</h2>
-    <div class="buy-modal-pkg-info">
-      <div class="buy-modal-pkg-row">
-        <span id="buy-pkg-name" style="font-weight:700;font-size:16px;"></span>
-        <span id="buy-pkg-price" style="font-size:22px;font-weight:800;color:#a3e635;"></span>
-      </div>
-      <div class="buy-modal-pkg-grid">
-        <div id="buy-pkg-leads"></div>
-        <div id="buy-pkg-tokens"></div>
-        <div>IA ativa 24/7</div>
-        <div>Relatórios completos</div>
-      </div>
-    </div>
-    <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:12px;">
-      <div style="font-weight:700;font-size:13px;color:#16a34a;margin-bottom:6px;">Como pagar</div>
-      <div style="font-size:12px;color:#374151;line-height:1.7;">
-        1. Clique em <strong>Confirmar Pedido</strong> abaixo<br>
-        2. Aguarde o contato do administrador com a chave PIX<br>
-        3. Após confirmação do pagamento, os tokens serão adicionados em até 2h
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-save" id="btn-confirm-buy" onclick="confirmBuy()">Confirmar Pedido</button>
-      <button class="btn-secondary" onclick="closeBuyModal()">Cancelar</button>
-    </div>
-    <div id="buy-modal-error" class="error-msg" style="margin-top:10px;"></div>
-  </div>
-</div>
 
 <!-- MODAL ADICIONAR CRÉDITOS (admin) -->
 <div class="modal-backdrop" id="modal-add-credits" onclick="if(event.target===this)closeAddCreditsModal()">
@@ -4885,7 +4854,6 @@
     max:    { nome: '💼 Max',     leads: 1350,  tokens: 50000000,  preco_brl: 597, moeda: 'BRL' },
   };
 
-  let buyPacoteAtual = null;
   let addCreditsUserId = null;
 
   async function loadCredits() {
@@ -5023,7 +4991,7 @@
     showPage('faturamento', document.querySelector('.nav-item[onclick*="faturamento"]'));
     setTimeout(() => {
       showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1]);
-      setTimeout(() => showBuyModal('medio'), 150);
+      setTimeout(() => openAddonCheckout('tokens_medio'), 150);
     }, 400);
   }
 
@@ -5150,96 +5118,6 @@
     if (el('qty-' + tipo))       el('qty-' + tipo).textContent = qty;
     if (el('qty-label-' + tipo)) el('qty-label-' + tipo).textContent = `${qty} ${qty > 1 ? noun[1] : noun[0]}`;
     if (el('total-' + tipo))     el('total-' + tipo).textContent = `R$ ${total.toLocaleString('pt-BR')}/mês`;
-  }
-
-  function showAddonModal(tipo) {
-    const qty   = _addonQty[tipo] || 1;
-    const unit  = _addonUnit[tipo];
-    const total = qty * unit;
-    const icons = { agente:'🤖', numero:'📱', objecao:'🛡️', usuario:'👤' };
-    const nomes = { agente:'Agente de IA Extra', numero:'Número WhatsApp Extra', objecao:'Identificação de Objeção IA', usuario:'Usuário Extra' };
-    const icon  = icons[tipo] || '📦';
-    const nome  = nomes[tipo] || tipo;
-    // Objeção é único — não tem qty
-    if (tipo === 'objecao') {
-      const msg = `🛡️ Ativar Agente IA — Identificação de Objeção + Plano de Ação\n\nO agente monitora a conversa em tempo real, detecta objeções, gera um plano de ação personalizado e envia o relatório via WhatsApp ao responsável.\n\nValor: R$ 127/mês\n⚠️ Será acrescido à sua mensalidade.\n\nApós ativação, o nó aparecerá desbloqueado no Designer de Fluxos.\n\nDeseja solicitar?`;
-      if (!confirm(msg)) return;
-      requestAddonPurchase('objecao', 1, 127);
-      return;
-    }
-    const plural = qty > 1 ? 's' : '';
-    const msg = `${icon} Contratar ${qty} ${nome}${plural}\n\n` +
-      `Quantidade: ${qty}\n` +
-      `Valor unitário: R$ ${unit}/mês\n` +
-      `Total acrescido na mensalidade: R$ ${total}/mês\n\n` +
-      `⚠️ Este valor será somado à sua mensalidade a partir do próximo ciclo.\n\n` +
-      `Deseja solicitar? O administrador entrará em contato com os dados de pagamento via PIX.`;
-    if (!confirm(msg)) return;
-    requestAddonPurchase(tipo, qty, total);
-  }
-
-  async function requestAddonPurchase(tipo, qty, totalPreco) {
-    const { data: { user } } = await db.auth.getUser();
-    // Um registro por unidade — mantém a lógica de contagem existente
-    const inserts = Array.from({ length: qty }, () => ({
-      user_id:   user.id,
-      pacote:    'addon_' + tipo,
-      tokens:    0,
-      preco_brl: _addonUnit[tipo],
-      status:    'pendente'
-    }));
-    const { error } = await db.from('pedidos_creditos').insert(inserts);
-    if (error) { alert('Erro ao enviar solicitação. Tente novamente.'); return; }
-    const noun = tipo === 'agente' ? 'agente(s) de IA' : 'número(s) WhatsApp';
-    alert(`✅ Solicitação enviada!\n\n${qty} ${noun} extra(s)\nTotal: R$ ${totalPreco.toLocaleString('pt-BR')}/mês\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os recursos serão ativados em até 2h.`);
-    loadAdminPedidos && loadAdminPedidos();
-  }
-
-  function showBuyModal(pacoteId) {
-    const pkg = PACOTES_CREDITOS[pacoteId];
-    if (!pkg) return;
-    buyPacoteAtual = pacoteId;
-    const precoFmt = pkg.moeda === 'BRL'
-      ? `R$ ${pkg.preco_brl}`
-      : `$${pkg.preco_usd}`;
-    document.getElementById('buy-modal-title').textContent = `⚡ Adicionar ${pkg.nome}`;
-    document.getElementById('buy-pkg-name').textContent = pkg.nome;
-    document.getElementById('buy-pkg-price').textContent = precoFmt;
-    document.getElementById('buy-pkg-leads').textContent = `👥 +${pkg.leads.toLocaleString('pt-BR')} atendimentos`;
-    document.getElementById('buy-pkg-tokens').textContent = `🔢 +${(pkg.tokens/1000000).toFixed(0)}M tokens`;
-    document.getElementById('buy-modal-error').textContent = '';
-    document.getElementById('btn-confirm-buy').disabled = false;
-    document.getElementById('btn-confirm-buy').textContent = '✅ Confirmar Pedido';
-    document.getElementById('modal-buy-credits').classList.add('open');
-  }
-
-  function closeBuyModal() {
-    document.getElementById('modal-buy-credits').classList.remove('open');
-    buyPacoteAtual = null;
-  }
-
-  async function confirmBuy() {
-    if (!buyPacoteAtual) return;
-    const pkg = PACOTES_CREDITOS[buyPacoteAtual];
-    const btn = document.getElementById('btn-confirm-buy');
-    const errEl = document.getElementById('buy-modal-error');
-    btn.disabled = true; btn.textContent = 'Enviando...';
-    const { data: { user } } = await db.auth.getUser();
-    const { error } = await db.from('pedidos_creditos').insert({
-      user_id: user.id, pacote: buyPacoteAtual,
-      tokens: pkg.tokens,
-      preco_usd: pkg.preco_usd || null,
-      preco_brl: pkg.preco_brl || null,
-      status: 'pendente'
-    });
-    if (error) {
-      errEl.textContent = 'Erro ao enviar pedido. Tente novamente.';
-      btn.disabled = false; btn.textContent = '✅ Confirmar Pedido'; return;
-    }
-    closeBuyModal();
-    const precoFmt = pkg.preco_brl ? `R$ ${pkg.preco_brl}` : `$${pkg.preco_usd}`;
-    alert(`✅ Pedido enviado!\n\nPacote: ${pkg.nome}\nValor: ${precoFmt}\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os tokens serão creditados em até 2h.`);
-    loadCredits();
   }
 
   // Admin: abrir modal de adicionar créditos
