@@ -31,6 +31,11 @@ const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY") ?? "";
 const HOTMART_SECRET    = Deno.env.get("HOTMART_WEBHOOK_SECRET") ?? "";
 const PANEL_URL         = Deno.env.get("PANEL_URL") ?? "https://xpertia.sevenxperts.solutions/";
 
+// ID do produto principal XPERT.IA na Hotmart.
+// Se configurado, apenas este produto ativa/desativa contas.
+// Se vazio, qualquer produto não-addon ativa contas (fallback).
+const MAIN_PRODUCT_ID   = Deno.env.get("MAIN_PRODUCT_ID") ?? "7336568";
+
 // IDs dos produtos addon no Hotmart (configure via Supabase Secrets)
 const ADDON_PRODUCT_IDS: Record<string, string> = {
   [Deno.env.get("ADDON_OBJECAO_PRODUCT_ID")       ?? ""]: "objecao",
@@ -503,7 +508,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Produto principal
+      // Produto principal — só processa se for o produto correto
+      const isMainProduct = !MAIN_PRODUCT_ID || productId === MAIN_PRODUCT_ID;
+      if (!isMainProduct) {
+        console.warn(`Produto desconhecido ignorado: ${productId}`);
+        return new Response(JSON.stringify({ ok: true, action: "ignored", reason: "unknown_product", productId }), { status: 200 });
+      }
+
       const TOKENS_INICIAIS = 5_000_000;
       const result = await activateClient(
         buyerName,
@@ -530,7 +541,11 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Produto principal: desativa conta
+      // Produto principal: desativa conta (só se for o produto correto)
+      if (MAIN_PRODUCT_ID && productId !== MAIN_PRODUCT_ID) {
+        console.warn(`Cancelamento de produto desconhecido ignorado: ${productId}`);
+        return new Response(JSON.stringify({ ok: true, action: "ignored", reason: "unknown_product", productId }), { status: 200 });
+      }
       const result = await deactivateClient(buyerEmail);
       return new Response(JSON.stringify({ ok: true, ...result }), {
         status: 200,
