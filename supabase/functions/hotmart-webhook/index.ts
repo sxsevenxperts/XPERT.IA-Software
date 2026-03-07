@@ -20,7 +20,7 @@ const SERVICE_ROLE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const EVOLUTION_API_URL = Deno.env.get("EVOLUTION_API_URL") ?? "";
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY") ?? "";
 const HOTMART_SECRET    = Deno.env.get("HOTMART_WEBHOOK_SECRET") ?? "";
-const PANEL_URL         = Deno.env.get("PANEL_URL") ?? "https://expertia.sevenxperts.solutions/";
+const PANEL_URL         = Deno.env.get("PANEL_URL") ?? "https://xpertia.sevenxperts.solutions/";
 
 const adminDb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
