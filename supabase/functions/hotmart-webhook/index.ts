@@ -230,15 +230,18 @@ async function applyAddon(
       break;
 
     case "tokens_extra": {
-      // Tokens são consumíveis: sempre soma ao saldo (primeira compra ou renovação)
+      // Tokens extras acumulam de um mês para o outro — nunca expiram.
+      // tokens_extras: total de extras comprados (cresce sempre, referência para renovação)
+      // saldo_tokens: total disponível agora (base + extras restantes)
       const { data: tc } = await adminDb.from("tokens_creditos")
-        .select("saldo_tokens, total_comprado")
+        .select("saldo_tokens, total_comprado, tokens_extras")
         .eq("user_id", userId)
         .maybeSingle();
       await adminDb.from("tokens_creditos").upsert({
         user_id: userId,
-        saldo_tokens: (tc?.saldo_tokens ?? 0) + ADDON_TOKENS_QTD,
-        total_comprado: (tc?.total_comprado ?? 0) + ADDON_TOKENS_QTD,
+        saldo_tokens:   (tc?.saldo_tokens   ?? 0) + ADDON_TOKENS_QTD,
+        total_comprado: (tc?.total_comprado  ?? 0) + ADDON_TOKENS_QTD,
+        tokens_extras:  (tc?.tokens_extras   ?? 0) + ADDON_TOKENS_QTD,
         mes_referencia: new Date().toISOString().slice(0, 7),
       }, { onConflict: "user_id" });
       break;
@@ -316,25 +319,43 @@ async function activateClient(
   const existingId = await findUserByEmail(buyerEmail);
 
   if (existingId) {
-    // Reativa conta existente (também cobre renovação mensal do plano base)
+    // Reativa ou renova conta existente.
     await adminDb.from("profiles").update({ active: true }).eq("id", existingId);
     await adminDb.from("assinaturas").upsert(
       { user_id: existingId, plano: productName, valor: 497, status: "ativa" },
       { onConflict: "user_id" },
     );
+
     const { data: tc } = await adminDb.from("tokens_creditos")
-      .select("saldo_tokens, total_comprado")
+      .select("saldo_tokens, total_comprado, tokens_extras")
       .eq("user_id", existingId)
       .maybeSingle();
+
+    // Renovação de tokens:
+    //   - Plano base (5M) → sempre reposto a cada renovação (tokens do mês expiram)
+    //   - Extras comprados → nunca expiram; calculamos quantos ainda restam e preservamos
+    //
+    // extras_restantes = MIN(saldo_atual, tokens_extras_comprados)
+    //   Lógica: assumimos que o base é consumido antes dos extras.
+    //   Se o saldo atual ainda é >= total de extras, significa que os extras
+    //   estão todos intactos. Se é menor, o que sobrou é tudo extras.
+    const saldoAtual     = tc?.saldo_tokens   ?? 0;
+    const totalExtras    = tc?.tokens_extras   ?? 0;
+    const extrasRestantes = Math.min(saldoAtual, totalExtras);
+    const novoSaldo      = tokensIniciais + extrasRestantes;  // 5M base + extras restantes
+
     await adminDb.from("tokens_creditos").upsert({
       user_id: existingId,
-      saldo_tokens: (tc?.saldo_tokens ?? 0) + tokensIniciais,
+      saldo_tokens:    novoSaldo,
       tokens_usados_mes: 0,
-      total_comprado: (tc?.total_comprado ?? 0) + tokensIniciais,
-      mes_referencia: new Date().toISOString().slice(0, 7),
+      total_comprado:  (tc?.total_comprado ?? 0) + tokensIniciais,
+      tokens_extras:   totalExtras,        // preserva total de extras (não altera)
+      mes_referencia:  new Date().toISOString().slice(0, 7),
     }, { onConflict: "user_id" });
 
-    console.log("Cliente reativado/renovado:", buyerEmail, existingId);
+    console.log(
+      `Cliente reativado/renovado: ${buyerEmail} (${existingId}) | base=5M extras_restantes=${extrasRestantes} novo_saldo=${novoSaldo}`
+    );
     return { action: "reactivated", userId: existingId };
   }
 
@@ -384,13 +405,14 @@ async function activateClient(
     status: "ativa",
   });
 
-  // 5. Tokens iniciais
+  // 5. Tokens iniciais (5M base, nenhum extra ainda)
   await adminDb.from("tokens_creditos").upsert({
     user_id: userId,
-    saldo_tokens: tokensIniciais,
+    saldo_tokens:    tokensIniciais,
     tokens_usados_mes: 0,
-    total_comprado: tokensIniciais,
-    mes_referencia: new Date().toISOString().slice(0, 7),
+    total_comprado:  tokensIniciais,
+    tokens_extras:   0,    // extras acumulam com compras futuras
+    mes_referencia:  new Date().toISOString().slice(0, 7),
   }, { onConflict: "user_id" });
 
   // 6. Configurações padrão do agente
