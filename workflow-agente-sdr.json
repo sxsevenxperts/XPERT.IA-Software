@@ -464,9 +464,9 @@
     },
     {
       "parameters": {
-        "model": "gpt-4o",
+        "model": "={{ $('Monta system prompt com config').first().json.config?.openai_model || 'gpt-4o' }}",
         "options": {
-          "temperature": 0.3
+          "temperature": "={{ parseFloat($('Monta system prompt com config').first().json.config?.ai_temperature || '0.3') }}"
         }
       },
       "id": "node-llm-openai",
@@ -503,8 +503,18 @@
                 "type": "boolean",
                 "operation": "equal"
               }
+            },
+            {
+              "id": "cond-audio-contextual",
+              "leftValue": "={{ $('Monta system prompt com config').first().json.mensagemOriginalAudio === true }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
             }
-          ]
+          ],
+          "combinator": "and"
         }
       },
       "id": "node-switch-audio-resp",
@@ -624,7 +634,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const dados = $('Processa resposta e qualificação').first().json;\n// Usa saldo do nó 'Tokens disponíveis?' que tem o valor real\nconst saldoAtual = $('Tokens disponíveis?').first().json.saldoTokens || 0;\n\n// Estima tokens usados nesta interação (~37037 tokens por lead interaction)\nconst tokensEstimado = 37037;\nconst novoSaldo = Math.max(0, saldoAtual - tokensEstimado);\n\nreturn [{ json: { ...dados, tokensUsados: tokensEstimado, novoSaldo } }];"
+        "jsCode": "const dados = $('Processa resposta e qualificação').first().json;\nconst saldoAtual = $('Tokens disponíveis?').first().json.saldoTokens || 0;\n\n// Estima tokens baseado no tamanho real dos textos (≈4 chars por token)\nconst historicoTexto = $('Monta histórico da conversa').first().json.historicoTexto || '';\nconst systemPrompt = $('Monta system prompt com config').first().json.systemPrompt || '';\nconst respostaLen = (dados.textoParaLead || '').length;\nconst tokensEstimado = Math.max(500, Math.round((historicoTexto.length + systemPrompt.length + respostaLen) / 4));\n\nconst novoSaldo = Math.max(0, saldoAtual - tokensEstimado);\n\nreturn [{ json: { ...dados, tokensUsados: tokensEstimado, novoSaldo } }];"
       },
       "id": "node-desconta-tokens",
       "name": "Desconta tokens do saldo",
@@ -638,7 +648,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/update_token_balance",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/decrementar_tokens",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -658,7 +668,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_user_id: $json.userId, p_novo_saldo: $json.novoSaldo, p_tokens_usados_mes: ($('Verifica saldo de tokens').first().json[0]?.tokens_usados_mes || 0) + $json.tokensUsados }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: $json.userId, p_tokens: $json.tokensUsados }) }}",
         "options": {}
       },
       "id": "node-update-saldo",
@@ -669,7 +679,7 @@
         4400,
         540
       ],
-      "notes": "Desconta tokens usados do saldo do cliente."
+      "notes": "Desconta tokens atomicamente via RPC decrementar_tokens (sem race condition)."
     },
     {
       "parameters": {
