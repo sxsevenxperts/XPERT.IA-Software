@@ -466,7 +466,8 @@
       "parameters": {
         "model": "={{ $('Monta system prompt com config').first().json.config?.openai_model || 'gpt-4o' }}",
         "options": {
-          "temperature": "={{ parseFloat($('Monta system prompt com config').first().json.config?.ai_temperature || '0.3') }}"
+          "temperature": "={{ parseFloat($('Monta system prompt com config').first().json.config?.openai_temperature || '0.3') }}",
+          "maxTokens": "={{ parseInt($('Monta system prompt com config').first().json.config?.openai_max_tokens || '1024') }}"
         }
       },
       "id": "node-llm-openai",
@@ -1161,7 +1162,8 @@
       "parameters": {
         "model": "={{ $('Monta system prompt com config').first().json.config?.claude_model || 'claude-opus-4-6' }}",
         "options": {
-          "temperature": "={{ parseFloat($('Monta system prompt com config').first().json.config?.ai_temperature || '0.3') }}"
+          "temperature": "={{ parseFloat($('Monta system prompt com config').first().json.config?.claude_temperature || '0.3') }}",
+          "maxTokensToSample": "={{ parseInt($('Monta system prompt com config').first().json.config?.claude_max_tokens || '1024') }}"
         }
       },
       "id": "node-llm-claude",
