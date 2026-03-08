@@ -3,6 +3,23 @@
 -- Execute no SQL Editor do projeto Supabase
 -- =============================================
 
+-- ✅ USUÁRIO DE DEMO (IMPORTANTE!)
+--
+-- Para criar o usuário jacyaraponte@gmail.com / Jacyara10:
+--
+-- OPÇÃO 1: Via Supabase Dashboard (mais fácil)
+-- 1. Vá em Authentication > Users
+-- 2. Clique em "Invite user"
+-- 3. Email: jacyaraponte@gmail.com
+-- 4. Password: Jacyara10
+-- 5. Pronto! (o trigger abaixo criará o perfil automaticamente)
+--
+-- OPÇÃO 2: Via Supabase CLI (se preferir)
+-- supabase functions deploy create-demo-user
+--
+-- OPÇÃO 3: Via SQL direto (veja função abaixo)
+--
+
 -- Habilitar extensão UUID
 create extension if not exists "uuid-ossp";
 
@@ -294,3 +311,33 @@ select
   count(*) filter (where status = 'pago') as transacoes_pagas
 from public.pagamentos
 group by date_trunc('month', data_pagamento), metodo;
+
+-- =============================================
+-- FUNÇÃO: criar usuário de demo
+-- (somente se usar SQL direto)
+-- =============================================
+create or replace function public.criar_usuario_demo()
+returns json language plpgsql security definer set search_path = public as $$
+declare
+  v_user_id uuid;
+begin
+  -- Criar usuário no auth (AVISO: isso só funciona em contexto admin)
+  -- Para produção, use o Dashboard do Supabase ou Supabase CLI
+
+  -- Por enquanto, criar apenas o perfil (após usuário ser criado no Dashboard)
+  v_user_id := (select id from auth.users where email = 'jacyaraponte@gmail.com' limit 1);
+
+  if v_user_id is not null then
+    insert into public.profiles (id, nome, email, role)
+    values (v_user_id, 'Jacyara Ponte', 'jacyaraponte@gmail.com', 'admin')
+    on conflict (id) do update set role = 'admin';
+
+    return json_build_object('success', true, 'message', 'Usuário de demo criado com sucesso!');
+  else
+    return json_build_object('success', false, 'message', 'Crie o usuário jacyaraponte@gmail.com no Dashboard primeiro');
+  end if;
+end;
+$$;
+
+-- Para chamar a função depois de criar o usuário no Dashboard:
+-- SELECT public.criar_usuario_demo();
