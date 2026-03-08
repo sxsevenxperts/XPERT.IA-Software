@@ -378,14 +378,14 @@
         }
       },
       "id": "node-agente-ia",
-      "name": "Agente SDR — IA",
+      "name": "Agente SDR — IA (OpenAI)",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        3080,
-        540
+        3300,
+        380
       ],
-      "notes": "Configure a credencial OpenAI."
+      "notes": "Agente via OpenAI (GPT). Ativo quando ai_provider != 'claude'."
     },
     {
       "parameters": {
@@ -1110,6 +1110,85 @@
         4620,
         760
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-provider-claude",
+              "leftValue": "={{ $json.config?.ai_provider }}",
+              "rightValue": "claude",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "node-if-provider",
+      "name": "Provider IA?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        540
+      ],
+      "notes": "True → Claude (Anthropic) | False → OpenAI (GPT)"
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "promptType": "define",
+        "text": "=Histórico da conversa:\n{{ $json.historicoTexto }}\n\nNova mensagem do lead: {{ $json.mensagem }}",
+        "options": {
+          "systemMessage": "={{ $json.systemPrompt }}",
+          "maxIterations": 5
+        }
+      },
+      "id": "node-agente-ia-claude",
+      "name": "Agente SDR — IA (Claude)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        3300,
+        700
+      ],
+      "notes": "Agente via Claude (Anthropic). Ativo quando ai_provider = 'claude'."
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Monta system prompt com config').first().json.config?.claude_model || 'claude-opus-4-6' }}",
+        "options": {
+          "temperature": "={{ parseFloat($('Monta system prompt com config').first().json.config?.ai_temperature || '0.3') }}"
+        }
+      },
+      "id": "node-llm-claude",
+      "name": "LLM — Claude",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        3080,
+        900
+      ],
+      "notes": "Configure credencial Anthropic no n8n. Modelo e temperatura lidos do agente_config."
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "chooseBranchMode": "waitForAll",
+        "output": "firstFound"
+      },
+      "id": "node-merge-ia-output",
+      "name": "Merge — Saída IA",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        3520,
+        540
+      ],
+      "notes": "Une saída do Agent OpenAI ou Claude (apenas um executa por rodada)."
     }
   ],
   "connections": {
@@ -1285,7 +1364,25 @@
       "main": [
         [
           {
-            "node": "Agente SDR — IA",
+            "node": "Provider IA?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Provider IA?": {
+      "main": [
+        [
+          {
+            "node": "Agente SDR — IA (Claude)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente SDR — IA (OpenAI)",
             "type": "main",
             "index": 0
           }
@@ -1296,7 +1393,12 @@
       "ai_tool": [
         [
           {
-            "node": "Agente SDR — IA",
+            "node": "Agente SDR — IA (OpenAI)",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agente SDR — IA (Claude)",
             "type": "ai_tool",
             "index": 0
           }
@@ -1307,7 +1409,12 @@
       "ai_tool": [
         [
           {
-            "node": "Agente SDR — IA",
+            "node": "Agente SDR — IA (OpenAI)",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agente SDR — IA (Claude)",
             "type": "ai_tool",
             "index": 0
           }
@@ -1329,14 +1436,47 @@
       "ai_languageModel": [
         [
           {
-            "node": "Agente SDR — IA",
+            "node": "Agente SDR — IA (OpenAI)",
             "type": "ai_languageModel",
             "index": 0
           }
         ]
       ]
     },
-    "Agente SDR — IA": {
+    "LLM — Claude": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente SDR — IA (Claude)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente SDR — IA (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Merge — Saída IA",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Agente SDR — IA (Claude)": {
+      "main": [
+        [
+          {
+            "node": "Merge — Saída IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge — Saída IA": {
       "main": [
         [
           {
@@ -1660,7 +1800,7 @@
     "tts"
   ],
   "meta": {
-    "description": "XPERT.IA — Agente SDR WhatsApp com suporte a áudio (Whisper STT + OpenAI TTS). Multi-tenant com verificação de saldo de tokens. Cada cliente tem dados isolados.",
-    "version": "5.0.0"
+    "description": "XPERT.IA — Agente SDR WhatsApp com suporte a áudio (Whisper STT + OpenAI TTS). Multi-tenant com verificação de saldo de tokens. Suporte a OpenAI (GPT) e Claude (Anthropic) configuráveis por cliente.",
+    "version": "6.0.0"
   }
 }
