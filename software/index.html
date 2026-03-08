@@ -462,6 +462,11 @@
     .btn-token-alert-buy:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(79,70,229,.5); }
     .btn-token-alert-later { width:100%; padding:10px; background:transparent; color:#6e7681; border:none; cursor:pointer; font-size:13px; margin-top:8px; transition:color .2s; }
     .btn-token-alert-later:hover { color:#8b949e; }
+    .task-reminder-chip { display:flex; align-items:flex-start; gap:8px; background:#161b22; border-radius:8px; padding:8px 10px; border-left:3px solid #3b82f6; font-size:12px; }
+    .task-reminder-chip.overdue { border-left-color:#ef4444; }
+    .task-reminder-chip-date { font-size:10px; color:#6e7681; flex-shrink:0; margin-top:1px; }
+    .task-reminder-chip-text { color:#e6edf3; line-height:1.4; }
+    .task-reminder-chip-lead { font-size:10px; color:#8b949e; margin-top:2px; }
     .token-progress-bar { height:8px; background:#fee2e2; border-radius:8px; margin:12px 0 4px; overflow:hidden; }
     .token-progress-fill { height:100%; border-radius:8px; transition:width .5s ease; }
 
@@ -2619,6 +2624,28 @@
   </div>
 </div>
 
+<!-- POPUP LEMBRETES DE TAREFAS -->
+<div class="token-alert-backdrop" id="task-reminder-popup" onclick="if(event.target===this)dismissTaskReminder()">
+  <div class="token-alert-box" style="max-width:440px;">
+    <div class="token-alert-header" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);">
+      <span class="token-alert-icon">📋</span>
+      <h2 id="task-reminder-title">Tarefas pendentes!</h2>
+      <p id="task-reminder-subtitle">Você tem tarefas vencidas ou para hoje.</p>
+      <div class="token-alert-saldo" style="font-size:28px;" id="task-reminder-count">—</div>
+    </div>
+    <div class="token-alert-body">
+      <div id="task-reminder-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+      <button class="btn-token-alert-buy" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);"
+        onclick="dismissTaskReminder();showPage('crm',document.querySelector('.nav-item[onclick*=crm]'))">
+        🗂️ Ver no CRM
+      </button>
+      <button class="btn-token-alert-later" onclick="dismissTaskReminder()">
+        Fechar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL COMPRAR CRÉDITOS -->
 <div class="modal-backdrop" id="modal-buy-credits" onclick="if(event.target===this)closeBuyModal()">
   <div class="modal-box">
@@ -2941,6 +2968,7 @@
 
     loadConfigs(); loadStats(); loadOverviewLeads(); loadPDFList();
     loadCredits(); // verifica saldo e dispara alerta se necessário
+    setTimeout(checkTaskReminder, 3000); // popup de tarefas após token alert
     checkWAStatus();
     waStatusInterval = setInterval(checkWAStatus, 15000);
   }
@@ -5185,10 +5213,11 @@
   const TOKENS_BASE_PLANO      = 5000000; // referência do plano base
 
   function checkTokenAlert(saldo) {
-    // Só mostra 1x por sessão e só para clientes
+    // Só mostra 1x por dia e só para clientes
     if (currentProfile?.role === 'admin') return;
-    if (sessionStorage.getItem('token_alert_dismissed')) return;
     if (saldo >= TOKENS_ALERTA_BAIXO) return;
+    const hoje = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('token_alert_dismissed_date') === hoje) return;
 
     const popup   = document.getElementById('token-alert-popup');
     const header  = document.getElementById('token-alert-header');
@@ -5231,7 +5260,62 @@
 
   function dismissTokenAlert() {
     document.getElementById('token-alert-popup').classList.remove('open');
-    sessionStorage.setItem('token_alert_dismissed', '1');
+    const hoje = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('token_alert_dismissed_date', hoje);
+  }
+
+  async function checkTaskReminder() {
+    if (currentProfile?.role === 'admin') return;
+    const hoje = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('task_reminder_dismissed_date') === hoje) return;
+
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const { data } = await db.from('lead_tarefas')
+      .select('id, descricao, data_vencimento, lead_id, leads(nome)')
+      .eq('concluida', false)
+      .not('data_vencimento', 'is', null)
+      .lte('data_vencimento', hoje)
+      .order('data_vencimento', { ascending: true })
+      .limit(10);
+
+    if (!data?.length) return;
+
+    const title   = document.getElementById('task-reminder-title');
+    const sub     = document.getElementById('task-reminder-subtitle');
+    const countEl = document.getElementById('task-reminder-count');
+    const list    = document.getElementById('task-reminder-list');
+
+    const vencidas = data.filter(t => t.data_vencimento < hoje);
+    const hoje_    = data.filter(t => t.data_vencimento === hoje);
+
+    countEl.textContent = data.length;
+    title.textContent   = data.length === 1 ? '1 tarefa pendente!' : `${data.length} tarefas pendentes!`;
+    sub.textContent     = vencidas.length > 0
+      ? `${vencidas.length} vencida${vencidas.length > 1 ? 's' : ''} + ${hoje_.length} para hoje`
+      : `${hoje_.length} tarefa${hoje_.length > 1 ? 's' : ''} para hoje`;
+
+    list.innerHTML = data.map(t => {
+      const isOverdue = t.data_vencimento < hoje;
+      const dateLabel = isOverdue ? `Venceu ${new Date(t.data_vencimento+'T00:00:00').toLocaleDateString('pt-BR')}` : 'Hoje';
+      const leadNome  = t.leads?.nome ? escapeHtml(t.leads.nome) : '';
+      return `<div class="task-reminder-chip ${isOverdue ? 'overdue' : ''}">
+        <div>
+          <div class="task-reminder-chip-date">${isOverdue ? '🔴' : '🟡'} ${dateLabel}</div>
+          <div class="task-reminder-chip-text">${escapeHtml(t.descricao)}</div>
+          ${leadNome ? `<div class="task-reminder-chip-lead">👤 ${leadNome}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    setTimeout(() => document.getElementById('task-reminder-popup').classList.add('open'), 2500);
+  }
+
+  function dismissTaskReminder() {
+    document.getElementById('task-reminder-popup').classList.remove('open');
+    const hoje = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('task_reminder_dismissed_date', hoje);
   }
 
   function buyFromAlert() {
