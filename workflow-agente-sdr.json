@@ -305,7 +305,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.numero, text: $json.textoParaLead }) }}",
+        "jsonBody": "={{ ({ number: $json.numero, text: ($json.textoParaLead || '⚠️ Olá! No momento nosso sistema está temporariamente indisponível. Por favor, tente novamente mais tarde ou entre em contato pelo número do escritório. Pedimos desculpas pelo inconveniente.') }) }}",
         "options": {}
       },
       "id": "node-envia-aviso-bloqueio",
@@ -535,7 +535,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ model: 'tts-1', input: $json.textoParaLead, voice: 'nova', response_format: 'mp3' }) }}",
+        "jsonBody": "={{ ({ model: 'tts-1', input: $json.textoParaLead, voice: 'nova', response_format: 'mp3' }) }}",
         "options": {
           "response": {
             "response": {
@@ -582,7 +582,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.numero, audio: $json.audioResposta }) }}",
+        "jsonBody": "={{ ({ number: $json.numero, audio: $json.audioResposta }) }}",
         "options": {}
       },
       "id": "node-envia-audio-lead",
@@ -610,7 +610,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.numero, text: $json.textoParaLead }) }}",
+        "jsonBody": "={{ ({ number: $json.numero, text: $json.textoParaLead }) }}",
         "options": {}
       },
       "id": "node-envia-lead",
@@ -711,7 +711,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Processa resposta e qualificação').first().json.numeroDestino, text: $('Processa resposta e qualificação').first().json.relatorio }) }}",
+        "jsonBody": "={{ ({ number: $('Processa resposta e qualificação').first().json.numeroDestino, text: $('Processa resposta e qualificação').first().json.relatorio }) }}",
         "options": {}
       },
       "id": "node-envia-responsavel",
@@ -837,7 +837,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Processa resposta e qualificação').first().json.grupoDestino, text: $('Processa resposta e qualificação').first().json.relatorio }) }}",
+        "jsonBody": "={{ ({ number: $('Processa resposta e qualificação').first().json.grupoDestino, text: $('Processa resposta e qualificação').first().json.relatorio }) }}",
         "options": {}
       },
       "id": "node-envia-grupo",
