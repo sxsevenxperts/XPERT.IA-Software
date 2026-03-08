@@ -2763,14 +2763,25 @@
     const btn   = document.getElementById('btn-reset');
     const msg   = document.getElementById('reset-msg');
     if (!email) { msg.style.color = '#f85149'; msg.textContent = 'Informe seu e-mail.'; return; }
-    btn.disabled = true; btn.textContent = 'Enviando...'; msg.textContent = '';
+    btn.disabled = true; btn.textContent = 'Verificando...'; msg.textContent = '';
+
+    // Verifica se o e-mail possui assinatura ativa antes de enviar o reset
+    const { data: ativa, error: rpcErr } = await db.rpc('verificar_assinatura_ativa', { p_email: email });
+    if (rpcErr || !ativa) {
+      btn.disabled = false; btn.textContent = 'Enviar link de recuperação';
+      msg.style.color = '#f85149';
+      msg.textContent = 'E-mail não encontrado ou assinatura inativa.';
+      return;
+    }
+
+    btn.textContent = 'Enviando...';
     const { error } = await db.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname
     });
     btn.disabled = false; btn.textContent = 'Enviar link de recuperação';
     if (error) {
       msg.style.color = '#f85149';
-      msg.textContent = 'Erro ao enviar. Verifique o e-mail e tente novamente.';
+      msg.textContent = 'Erro ao enviar. Tente novamente.';
     } else {
       msg.style.color = '#4ade80';
       msg.textContent = '✅ Link enviado! Verifique sua caixa de entrada.';
