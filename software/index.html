@@ -1547,22 +1547,22 @@
               <label>Modelo</label>
               <select id="cfg-openai_model">
                 <optgroup label="GPT-4.1 (abril 2025)">
-                  <option value="gpt-4.1-nano">gpt-4.1-nano (mais barato)</option>
-                  <option value="gpt-4.1-mini">gpt-4.1-mini (recomendado)</option>
-                  <option value="gpt-4.1">gpt-4.1 (mais capaz)</option>
+                  <option value="gpt-4.1-nano">gpt-4.1-nano — fator 0.3×</option>
+                  <option value="gpt-4.1-mini">gpt-4.1-mini — fator 0.8× (recomendado)</option>
+                  <option value="gpt-4.1">gpt-4.1 — fator 5.5×</option>
                 </optgroup>
                 <optgroup label="GPT-4o">
-                  <option value="gpt-4o-mini">gpt-4o-mini</option>
-                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini — fator 1.0× (base)</option>
+                  <option value="gpt-4o">gpt-4o — fator 8.0×</option>
                 </optgroup>
                 <optgroup label="Reasoning (o-series)">
-                  <option value="o4-mini">o4-mini</option>
-                  <option value="o3-mini">o3-mini</option>
-                  <option value="o3">o3</option>
+                  <option value="o4-mini">o4-mini — fator 2.0×</option>
+                  <option value="o3-mini">o3-mini — fator 3.0×</option>
+                  <option value="o3">o3 — fator 12×</option>
                 </optgroup>
                 <optgroup label="Legado">
-                  <option value="gpt-4-turbo">gpt-4-turbo</option>
-                  <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                  <option value="gpt-4-turbo">gpt-4-turbo — fator 6.0×</option>
+                  <option value="gpt-3.5-turbo">gpt-3.5-turbo — fator 0.2×</option>
                 </optgroup>
               </select>
             </div>
@@ -1597,14 +1597,14 @@
               <label>Modelo</label>
               <select id="cfg-claude_model">
                 <optgroup label="Claude 4.x (mais recentes)">
-                  <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (recomendado — barato)</option>
-                  <option value="claude-sonnet-4-6">claude-sonnet-4-6 (equilíbrio)</option>
-                  <option value="claude-opus-4-6">claude-opus-4-6 (premium)</option>
+                  <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 — fator 0.9× (recomendado)</option>
+                  <option value="claude-sonnet-4-6">claude-sonnet-4-6 — fator 10×</option>
+                  <option value="claude-opus-4-6">claude-opus-4-6 — fator 50×</option>
                 </optgroup>
                 <optgroup label="Claude 3.x">
-                  <option value="claude-3-5-haiku-20241022">claude-3-5-haiku</option>
-                  <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet</option>
-                  <option value="claude-3-opus-20240229">claude-3-opus</option>
+                  <option value="claude-3-5-haiku-20241022">claude-3-5-haiku — fator 0.9×</option>
+                  <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet — fator 10×</option>
+                  <option value="claude-3-opus-20240229">claude-3-opus — fator 40×</option>
                 </optgroup>
               </select>
             </div>
@@ -6696,22 +6696,23 @@
         <div data-prov="openai">
           <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Modelo OpenAI:</label>
           <select class="etapa-select" style="margin-bottom:6px;">
-            <option value="gpt-4.1-mini">gpt-4.1-mini — Recomendado</option>
-            <option value="gpt-4.1-nano">gpt-4.1-nano — Mais barato</option>
-            <option value="gpt-4.1">gpt-4.1 — Premium</option>
-            <option value="gpt-4o">gpt-4o — Clássico</option>
-            <option value="gpt-4o-mini">gpt-4o-mini — Econômico</option>
-            <option value="o4-mini">o4-mini — Raciocínio</option>
+            <option value="gpt-4.1-nano">gpt-4.1-nano — fator 0.3×</option>
+            <option value="gpt-4.1-mini">gpt-4.1-mini — fator 0.8× (rec.)</option>
+            <option value="gpt-4o-mini">gpt-4o-mini — fator 1.0× (base)</option>
+            <option value="gpt-4.1">gpt-4.1 — fator 5.5×</option>
+            <option value="gpt-4o">gpt-4o — fator 8.0×</option>
+            <option value="o4-mini">o4-mini — fator 2.0×</option>
+            <option value="o3-mini">o3-mini — fator 3.0×</option>
           </select>
         </div>
         <div data-prov="claude" style="display:none;">
           <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Modelo Claude:</label>
           <select class="etapa-select" style="margin-bottom:6px;">
-            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 — Recomendado</option>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6 — Equilíbrio</option>
-            <option value="claude-opus-4-6">claude-opus-4-6 — Premium</option>
-            <option value="claude-3-5-haiku-20241022">claude-3-5-haiku</option>
-            <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 — fator 0.9× (rec.)</option>
+            <option value="claude-3-5-haiku-20241022">claude-3-5-haiku — fator 0.9×</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6 — fator 10×</option>
+            <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet — fator 10×</option>
+            <option value="claude-opus-4-6">claude-opus-4-6 — fator 50×</option>
           </select>
         </div>
         <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Temperatura (criatividade 0–1):</label>
