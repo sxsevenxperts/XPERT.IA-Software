@@ -23,6 +23,66 @@
       --lime-dk:  #84cc16;
       --lime-bg:  #1a2e00;
     }
+    /* ── Tema Light ──────────────────────────────────────────────────── */
+    [data-theme="light"] {
+      --bg:       #f6f8fa;
+      --bg-card:  #ffffff;
+      --bg-card2: #f0f2f5;
+      --border:   #d0d7de;
+      --border2:  #e1e4e8;
+      --text:     #24292f;
+      --text2:    #57606a;
+      --text3:    #8c959f;
+      --lime:     #4a7c23;
+      --lime-dk:  #3b6219;
+      --lime-bg:  #ddf4c2;
+    }
+    /* Sidebar sempre escura independente do tema */
+    [data-theme="light"] .sidebar {
+      background: #0d1117 !important;
+    }
+    [data-theme="light"] .sidebar .nav-section,
+    [data-theme="light"] .sidebar .sidebar-bottom,
+    [data-theme="light"] .sidebar .sidebar-powered { color: rgba(255,255,255,0.5) !important; }
+    [data-theme="light"] .sidebar .nav-item { color: rgba(255,255,255,0.7) !important; }
+    [data-theme="light"] .sidebar .nav-item.active,
+    [data-theme="light"] .sidebar .nav-item:hover { background: rgba(255,255,255,0.1) !important; color: #fff !important; }
+    [data-theme="light"] .sidebar-bottom { border-top-color: rgba(255,255,255,0.08) !important; }
+    [data-theme="light"] #sidebar-user-name { color: #fff !important; }
+    /* Ajustes light para elementos específicos */
+    [data-theme="light"] .page-header h1 { color: var(--text); }
+    [data-theme="light"] .stat-card { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    [data-theme="light"] .card { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    [data-theme="light"] .msg-row.user .msg-bubble { background: #4a7c23 !important; color: #fff !important; }
+    [data-theme="light"] .modal-box { box-shadow: 0 16px 48px rgba(0,0,0,0.16) !important; }
+
+    /* ── Theme Toggle Buttons ────────────────────────────────────────── */
+    .theme-toggle { display:flex; gap:4px; margin-bottom:10px; background:rgba(255,255,255,0.06); border-radius:8px; padding:3px; }
+    .theme-btn { flex:1; padding:5px 4px; border:none; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; background:transparent; color:rgba(255,255,255,0.5); transition:all .15s; }
+    .theme-btn.active { background:rgba(255,255,255,0.15); color:#fff; }
+    .theme-btn:hover:not(.active) { color:rgba(255,255,255,0.8); }
+
+    /* ── Agentes Extras ──────────────────────────────────────────────── */
+    .agente-item { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:var(--bg-card2); border-radius:10px; margin-bottom:8px; cursor:pointer; border:1px solid var(--border2); transition:border-color .2s; }
+    .agente-item:hover { border-color:var(--lime); }
+    .agente-item.inactive { opacity:.5; }
+    .agente-item-info { display:flex; flex-direction:column; gap:5px; }
+    .agente-item-meta { display:flex; flex-direction:column; gap:4px; align-items:flex-end; font-size:12px; color:var(--text2); }
+    .agente-funcao-badge { display:inline-block; font-size:11px; font-weight:700; padding:2px 10px; border-radius:20px; width:fit-content; }
+    .funcao-vendas      { background:#1a2e00; color:#a3e635; }
+    .funcao-suporte     { background:#1c3a5e; color:#60a5fa; }
+    .funcao-qualificacao{ background:#3b1f63; color:#c084fc; }
+    .funcao-objecao     { background:#3b1a1a; color:#f87171; }
+    .funcao-followup    { background:#1a2c3b; color:#34d399; }
+    [data-theme="light"] .funcao-vendas      { background:#ddf4c2; color:#3b6219; }
+    [data-theme="light"] .funcao-suporte     { background:#dbeafe; color:#1d4ed8; }
+    [data-theme="light"] .funcao-qualificacao{ background:#ede9fe; color:#6d28d9; }
+    [data-theme="light"] .funcao-objecao     { background:#fee2e2; color:#b91c1c; }
+    [data-theme="light"] .funcao-followup    { background:#d1fae5; color:#065f46; }
+    .agente-status-dot { font-size:11px; font-weight:700; }
+    .agente-status-dot.ativo  { color:#a3e635; }
+    .agente-status-dot.inativo{ color:var(--text3); }
+    .agente-quota-info { font-size:12px; color:var(--text2); margin-bottom:14px; padding:8px 12px; background:var(--bg-card2); border-radius:8px; border-left:3px solid var(--lime); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
 
@@ -561,6 +621,10 @@
     .drawflow .drawflow-node.node-lead-score-coletor { border-color:#d97706; }
     .drawflow .drawflow-node.node-agendar-gcal .title-box { background:linear-gradient(135deg,#1a73e8,#0d47a1); color:#fff; }
     .drawflow .drawflow-node.node-agendar-gcal { border-color:#1a73e8; }
+    .drawflow .drawflow-node.node-disparo-programado .title-box { background:linear-gradient(135deg,#b45309,#92400e); color:#fde047; }
+    .drawflow .drawflow-node.node-disparo-programado { border-color:#d97706; }
+    .drawflow .drawflow-node.node-adicionar-campos .title-box { background:linear-gradient(135deg,#6d28d9,#4c1d95); color:#e9d5ff; }
+    .drawflow .drawflow-node.node-adicionar-campos { border-color:#7c3aed; }
     /* ── Calendário ── */
     .cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
     .cal-nav-btn { background:#21262d; border:1px solid #30363d; color:#c9d1d9; border-radius:8px; padding:6px 14px; cursor:pointer; font-size:13px; transition:background .15s; }
@@ -1112,6 +1176,11 @@
         <div id="sidebar-user-name" style="color:#fff;font-weight:600;font-size:13px;margin-bottom:2px;">—</div>
         <div id="sidebar-user-role" style="font-size:11px;"></div>
       </div>
+      <div class="theme-toggle" id="theme-toggle">
+        <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')"  >🌙 Dark</button>
+        <button class="theme-btn" data-t="light"  onclick="setTheme('light')" >☀️ Light</button>
+        <button class="theme-btn" data-t="system" onclick="setTheme('system')">💻 Auto</button>
+      </div>
       <button class="btn-logout" onclick="logout()">Sair</button>
       <div class="sidebar-powered">Powered by <span>SX SevenXperts Business Solutions</span><br><span style="opacity:.5;font-size:9px;letter-spacing:.3px;">CNPJ: 32.794.007/0001-19</span></div>
     </div>
@@ -1325,6 +1394,64 @@
           <button class="btn-save" onclick="addWebUrl()" style="padding:10px 18px;white-space:nowrap;align-self:flex-end;">Adicionar</button>
         </div>
         <span class="save-status" id="web-urls-status" style="margin-top:8px;display:block;"></span>
+      </div>
+      <!-- Agentes Extras -->
+      <div class="card" style="margin-top:0;" id="card-agentes-extras">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h3 style="margin:0;">🤖 Agentes Extras</h3>
+            <p style="font-size:13px;color:var(--text2);margin-top:4px;">Configure agentes com funções específicas — cada um pode usar o mesmo número ou um número diferente.</p>
+          </div>
+          <button class="btn-save" style="padding:8px 16px;" onclick="openAgenteModal()">+ Adicionar Agente</button>
+        </div>
+        <div class="agente-quota-info" id="agente-quota-info">Carregando quota...</div>
+        <div id="agentes-list">
+          <div style="text-align:center;padding:32px;color:var(--text3);font-size:14px;">Nenhum agente extra configurado</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Agente Extra -->
+    <div class="modal-backdrop" id="agente-modal" onclick="if(event.target===this)closeAgenteModal()">
+      <div class="modal-box" style="max-width:520px;">
+        <div class="modal-header">
+          <h3 id="agente-modal-title">➕ Novo Agente</h3>
+          <button class="modal-close" onclick="closeAgenteModal()">✕</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="field-group" style="margin:0;">
+            <label>Nome do Agente</label>
+            <input type="text" id="agente-nome" placeholder="Ex: Agente de Suporte Premium" />
+          </div>
+          <div class="field-group" style="margin:0;">
+            <label>Função</label>
+            <select id="agente-funcao">
+              <option value="vendas">💰 Vendas — qualifica e converte leads</option>
+              <option value="suporte">🛠️ Suporte — atende dúvidas pós-venda</option>
+              <option value="qualificacao">🎯 Qualificação — filtra e classifica leads</option>
+              <option value="objecao">🛡️ Objeção — lida com objeções de compra</option>
+              <option value="followup">🔁 Follow-up — reativa leads inativos</option>
+            </select>
+          </div>
+          <div class="field-group" style="margin:0;">
+            <label>Número WhatsApp (instância EVO)</label>
+            <select id="agente-evo-instance"></select>
+          </div>
+          <div class="field-group" style="margin:0;">
+            <label>Prompt do Agente</label>
+            <textarea id="agente-prompt" style="min-height:140px" placeholder="Instruções específicas para este agente. Descreva o tom, objetivos e limites de atuação..."></textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-save" onclick="saveAgente()">Salvar</button>
+            <button class="btn-secondary" onclick="closeAgenteModal()">Cancelar</button>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+              <label style="font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;">
+                <input type="checkbox" id="agente-ativo" checked> Ativo
+              </label>
+              <button id="btn-delete-agente" class="btn-danger" onclick="deleteAgente()" style="display:none;">Excluir</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -2429,6 +2556,8 @@
           <div class="palette-node" draggable="true" ondragstart="drag(event,'anotacao')">🗒️ Anotação Interna</div>
           <div class="palette-node" draggable="true" ondragstart="drag(event,'mover_pipeline')">🗂️ Mover no CRM</div>
           <div class="palette-node" draggable="true" ondragstart="drag(event,'agendar_gcal')" style="border-color:rgba(26,115,232,.4);color:#93c5fd;">📅 Agendar no Google Agenda</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'disparo_programado')" style="border-color:rgba(234,179,8,.4);color:#fde047;">⏰ Disparo Programado</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'adicionar_campos')" style="border-color:rgba(168,85,247,.4);color:#d8b4fe;">🏷️ Campos & Tags</div>
 
           <h4 style="margin-top:14px">Terminadores</h4>
           <div class="palette-node" draggable="true" ondragstart="drag(event,'inicio')">🟢 Início</div>
@@ -2747,6 +2876,37 @@
 
 <script>
   // =====================
+  // TEMA (dark / light / system)
+  // =====================
+  const THEME_KEY = 'xpert_theme';
+
+  function _resolveTheme(t) {
+    if (t === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return t || 'dark';
+  }
+
+  function applyTheme(t) {
+    const resolved = _resolveTheme(t);
+    document.documentElement.setAttribute('data-theme', resolved);
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.t === (t || 'dark'));
+    });
+  }
+
+  function setTheme(t) {
+    localStorage.setItem(THEME_KEY, t);
+    applyTheme(t);
+  }
+
+  // Aplicar tema salvo antes do DOM estar pronto para evitar flash
+  applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+
+  // Ouvir mudança no SO (para modo "system")
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem(THEME_KEY) || 'dark') === 'system') applyTheme('system');
+  });
+
+  // =====================
   // CONFIGURAÇÃO
   // =====================
   const SUPABASE_URL = 'https://vyvdrbkcrvklcaombjqu.supabase.co';
@@ -2982,7 +3142,7 @@
     document.getElementById('page-' + name).classList.add('active');
     el.classList.add('active');
     if (name === 'leads') loadLeads();
-    if (name === 'agente') { loadWebAgente(); checkGCalStatus(); }
+    if (name === 'agente') { loadWebAgente(); checkGCalStatus(); loadAgentes(); }
     if (name === 'crm') { loadCRM(); setTimeout(checkReminders, 500); }
     if (name === 'pdfs') loadPDFList();
     if (name === 'analytics') loadDashboard();
@@ -4305,6 +4465,134 @@
   // WEB SEARCH & URLs DO AGENTE
   // =====================
   let webUrlsList = []; // [{url, desc}]
+
+  // =====================================================================
+  // AGENTES EXTRAS
+  // =====================================================================
+  let _agenteEditId = null;
+  let _agentesData  = [];
+
+  const FUNCAO_LABEL = {
+    vendas:       '💰 Vendas',
+    suporte:      '🛠️ Suporte',
+    qualificacao: '🎯 Qualificação',
+    objecao:      '🛡️ Objeção',
+    followup:     '🔁 Follow-up',
+  };
+
+  async function loadAgentes() {
+    if (!currentUser) return;
+    const [{ data: agentes }, { data: sub }] = await Promise.all([
+      db.from('agentes').select('*').eq('user_id', currentUser.id).order('criado_em'),
+      db.from('assinaturas').select('agentes_extras').eq('user_id', currentUser.id).maybeSingle(),
+    ]);
+    _agentesData = agentes || [];
+    const quota = sub?.agentes_extras ?? 0;
+    const usado = _agentesData.filter(a => a.ativo).length;
+    const infoEl = document.getElementById('agente-quota-info');
+    if (infoEl) {
+      infoEl.textContent = quota === 0
+        ? '⚠️ Nenhum slot de agente extra ativo. Adquira no Marketplace.'
+        : `Usando ${usado} de ${quota} agente(s) extra disponíve${quota === 1 ? 'l' : 'is'}.`;
+    }
+    renderAgentesList();
+  }
+
+  function renderAgentesList() {
+    const el = document.getElementById('agentes-list');
+    if (!el) return;
+    if (!_agentesData.length) {
+      el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);font-size:14px;">Nenhum agente extra configurado</div>';
+      return;
+    }
+    el.innerHTML = _agentesData.map(a => `
+      <div class="agente-item ${a.ativo ? '' : 'inactive'}" onclick="openAgenteModal('${a.id}')">
+        <div class="agente-item-info">
+          <strong style="font-size:14px;">${escapeHtml(a.nome)}</strong>
+          <span class="agente-funcao-badge funcao-${a.funcao}">${FUNCAO_LABEL[a.funcao] || a.funcao}</span>
+        </div>
+        <div class="agente-item-meta">
+          <span>📱 ${escapeHtml(a.evo_instance || '—')}</span>
+          <span class="agente-status-dot ${a.ativo ? 'ativo' : 'inativo'}">${a.ativo ? '● Ativo' : '● Inativo'}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function openAgenteModal(id = null) {
+    _agenteEditId = id;
+
+    // Popular seletor de instâncias
+    const selInst = document.getElementById('agente-evo-instance');
+    const { data: prof } = await db.from('profiles').select('evo_instance').eq('id', currentUser.id).single();
+    const instances = [prof?.evo_instance].filter(Boolean);
+    selInst.innerHTML = [...new Set(instances)].map(i => `<option value="${escapeHtml(i)}">${escapeHtml(i)}</option>`).join('');
+    if (!selInst.options.length) selInst.innerHTML = '<option value="">— nenhuma instância —</option>';
+
+    const btnDel = document.getElementById('btn-delete-agente');
+
+    if (id) {
+      const a = _agentesData.find(x => x.id === id);
+      document.getElementById('agente-modal-title').textContent = '✏️ Editar Agente';
+      document.getElementById('agente-nome').value = a.nome;
+      document.getElementById('agente-funcao').value = a.funcao;
+      selInst.value = a.evo_instance;
+      document.getElementById('agente-prompt').value = a.prompt_sistema;
+      document.getElementById('agente-ativo').checked = a.ativo;
+      btnDel.style.display = '';
+    } else {
+      // Verificar quota antes de abrir
+      const { data: sub } = await db.from('assinaturas').select('agentes_extras').eq('user_id', currentUser.id).maybeSingle();
+      const quota = sub?.agentes_extras ?? 0;
+      const usado = _agentesData.filter(a => a.ativo).length;
+      if (usado >= quota) {
+        showNotification(`Você tem ${quota} slot(s) disponível(is). Adquira mais no Marketplace.`, 'warning');
+        return;
+      }
+      document.getElementById('agente-modal-title').textContent = '➕ Novo Agente';
+      document.getElementById('agente-nome').value = '';
+      document.getElementById('agente-funcao').value = 'vendas';
+      document.getElementById('agente-prompt').value = '';
+      document.getElementById('agente-ativo').checked = true;
+      btnDel.style.display = 'none';
+    }
+
+    document.getElementById('agente-modal').classList.add('open');
+  }
+
+  function closeAgenteModal() {
+    document.getElementById('agente-modal').classList.remove('open');
+    _agenteEditId = null;
+  }
+
+  async function saveAgente() {
+    const nome         = document.getElementById('agente-nome').value.trim();
+    const funcao       = document.getElementById('agente-funcao').value;
+    const evo_instance = document.getElementById('agente-evo-instance').value;
+    const prompt_sistema = document.getElementById('agente-prompt').value.trim();
+    const ativo        = document.getElementById('agente-ativo').checked;
+    if (!nome) { showNotification('Informe um nome para o agente.', 'error'); return; }
+
+    const payload = { user_id: currentUser.id, nome, funcao, evo_instance, prompt_sistema, ativo };
+    if (_agenteEditId) {
+      await db.from('agentes').update(payload).eq('id', _agenteEditId);
+    } else {
+      await db.from('agentes').insert(payload);
+    }
+    closeAgenteModal();
+    await loadAgentes();
+    showNotification('Agente salvo!', 'success');
+  }
+
+  async function deleteAgente() {
+    if (!_agenteEditId || !confirm('Excluir este agente? Esta ação não pode ser desfeita.')) return;
+    await db.from('agentes').delete().eq('id', _agenteEditId);
+    closeAgenteModal();
+    await loadAgentes();
+    showNotification('Agente removido.', 'success');
+  }
+
+  // =====================================================================
 
   async function loadWebAgente() {
     const { data } = await db.from('agente_config').select('chave, valor')
@@ -6115,6 +6403,68 @@
         </div>
       </div>`
     },
+    disparo_programado: {
+      title: '⏰ Disparo Programado', inputs: 1, outputs: 1, cls: 'node-disparo-programado',
+      html: `<div class="box">
+        <div style="font-size:11px;font-weight:600;color:#fde047;margin-bottom:8px;">⏰ Mensagem Programada</div>
+        <div style="margin-bottom:6px;">
+          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Mensagem</div>
+          <textarea class="etapa-select" style="margin-bottom:0;font-size:11px;height:54px;resize:none;" placeholder="Olá {{nome}}, tudo bem? Ainda tem interesse em...">Olá {{nome}}, aqui é o assistente da {{empresa}}. Passando para verificar se ainda tem interesse 😊</textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+          <div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Enviar após</div>
+            <input type="number" class="etapa-select" style="margin-bottom:0;font-size:11px;" value="24" min="1" />
+          </div>
+          <div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Unidade</div>
+            <select class="etapa-select" style="margin-bottom:0;font-size:11px;">
+              <option value="horas">horas</option>
+              <option value="dias">dias</option>
+              <option value="minutos">minutos</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:6px;">
+          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Enviar somente entre</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="time" class="etapa-select" style="margin-bottom:0;font-size:11px;flex:1;" value="08:00" />
+            <span style="font-size:10px;color:#6e7681;">e</span>
+            <input type="time" class="etapa-select" style="margin-bottom:0;font-size:11px;flex:1;" value="20:00" />
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Condição de envio</div>
+          <select class="etapa-select" style="margin-bottom:0;font-size:11px;">
+            <option value="sem_resposta">Lead sem resposta</option>
+            <option value="sempre">Sempre</option>
+            <option value="nao_convertido">Lead não convertido</option>
+          </select>
+        </div>
+      </div>`
+    },
+    adicionar_campos: {
+      title: '🏷️ Campos & Tags', inputs: 1, outputs: 1, cls: 'node-adicionar-campos',
+      html: `<div class="box">
+        <div style="font-size:11px;font-weight:600;color:#d8b4fe;margin-bottom:8px;">🏷️ Definir Campos & Tags no Lead</div>
+        <div style="margin-bottom:8px;">
+          <div style="font-size:10px;color:#6e7681;margin-bottom:4px;">Tags a adicionar <span style="opacity:.6">(vírgula separa)</span></div>
+          <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Ex: vip, produto-x, hot-lead" />
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="font-size:10px;color:#6e7681;margin-bottom:4px;">Tags a remover</div>
+          <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Ex: cold, inativo" />
+        </div>
+        <div id="campos-dinamicos-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:6px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:4px;align-items:center;">
+            <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Campo" value="assunto" />
+            <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Valor" value="{{assunto}}" />
+            <button onclick="this.closest('div').remove()" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:0 2px;">✕</button>
+          </div>
+        </div>
+        <button onclick="adicionarCampoNo(this)" style="background:rgba(168,85,247,.15);border:1px solid rgba(168,85,247,.3);color:#d8b4fe;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;width:100%;">+ Adicionar campo</button>
+      </div>`
+    },
     lead_score_coletor: {
       title: '🎯 Colhedor de Lead Score', inputs: 1, outputs: 2, cls: 'node-lead-score-coletor',
       html: `<div class="box">
@@ -6728,6 +7078,19 @@
   function drag(event, type) {
     dragNodeType = type;
     event.dataTransfer.setData('text', type);
+  }
+
+  // Adiciona linha de campo customizado no nó Campos & Tags
+  function adicionarCampoNo(btn) {
+    const list = btn.previousElementSibling;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr auto;gap:4px;align-items:center;';
+    row.innerHTML = `
+      <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Campo" />
+      <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Valor / {{var}}" />
+      <button onclick="this.closest('div').remove()" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:0 2px;">✕</button>
+    `;
+    list.appendChild(row);
   }
 
   function allowDrop(event) { event.preventDefault(); }
