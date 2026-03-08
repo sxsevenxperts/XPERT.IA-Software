@@ -13,10 +13,10 @@
  *   → addons recorrentes (agente, número, usuário): ignoram o incremento (já ativo)
  *   → tokens e produto principal: somam ao saldo normalmente
  *
- * ADDONS (identificados pelo product ID do Hotmart, sem precisar de link):
+ * ADDONS (identificados pelo offer code da Hotmart — todas as ofertas pertencem ao produto 7336568):
  *   → atualiza assinatura do cliente existente
- *   → Configurar secrets: ADDON_OBJECAO_PRODUCT_ID, ADDON_AGENTE_EXTRA_PRODUCT_ID,
- *                         ADDON_NUMERO_EXTRA_PRODUCT_ID, ADDON_USUARIO_EXTRA_PRODUCT_ID
+ *   → Offer codes hardcoded: cjszocj0 (agente), 8ivu9gbb (objeção), w17oc1q3 (número),
+ *     vhne1box (usuário), f623v6bt/z9f5y7h3/yfbmox0t/e23bospr (tokens)
  *
  * Endpoint público (verify_jwt: false).
  * Segurança: token secreto via HOTMART_WEBHOOK_SECRET (query param ?token= ou header X-Hotmart-Webhook-Token).
@@ -36,17 +36,21 @@ const PANEL_URL         = Deno.env.get("PANEL_URL") ?? "https://xpertia.sevenxpe
 // Se vazio, qualquer produto não-addon ativa contas (fallback).
 const MAIN_PRODUCT_ID   = Deno.env.get("MAIN_PRODUCT_ID") ?? "7336568";
 
-// IDs dos produtos addon no Hotmart (configure via Supabase Secrets)
-const ADDON_PRODUCT_IDS: Record<string, string> = {
-  [Deno.env.get("ADDON_OBJECAO_PRODUCT_ID")       ?? ""]: "objecao",
-  [Deno.env.get("ADDON_AGENTE_EXTRA_PRODUCT_ID")  ?? ""]: "agente_extra",
-  [Deno.env.get("ADDON_NUMERO_EXTRA_PRODUCT_ID")  ?? ""]: "numero_extra",
-  [Deno.env.get("ADDON_USUARIO_EXTRA_PRODUCT_ID") ?? ""]: "usuario_extra",
-  [Deno.env.get("ADDON_TOKENS_PRODUCT_ID")        ?? ""]: "tokens_extra",
-};
+// Offer code da oferta base (Start / Plano Principal)
+const MAIN_PLAN_OFFER = "xj0983i2";
 
-// Quantidade de tokens por pacote (padrão: 5M — configure via ADDON_TOKENS_QTD)
-const ADDON_TOKENS_QTD = Number(Deno.env.get("ADDON_TOKENS_QTD") ?? "5000000");
+// Offer codes dos addons/pacotes — todos dentro do produto 7336568
+// Chave: offer code da Hotmart → valor: tipo do addon + tokens (se aplicável)
+const ADDON_OFFERS: Record<string, { type: string; tokens?: number }> = {
+  "cjszocj0": { type: "agente_extra" },              // R$197/mês
+  "8ivu9gbb": { type: "objecao" },                   // R$127/mês
+  "w17oc1q3": { type: "numero_extra" },               // R$97/mês
+  "vhne1box": { type: "usuario_extra" },              // R$57/mês
+  "f623v6bt": { type: "tokens_extra", tokens:  5_000_000 },  // Mini  R$97
+  "z9f5y7h3": { type: "tokens_extra", tokens: 10_000_000 },  // Médio R$177
+  "yfbmox0t": { type: "tokens_extra", tokens: 20_000_000 },  // Grande R$297
+  "e23bospr": { type: "tokens_extra", tokens: 50_000_000 },  // Max   R$597
+};
 
 const adminDb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -176,6 +180,7 @@ async function applyAddon(
   transactionId: string,
   valor: number,
   recurrenceNumber: number,  // 1 = primeira compra, > 1 = renovação
+  tokenQtd?: number,         // quantidade de tokens (Mini=5M, Médio=10M, Grande=20M, Max=50M)
 ): Promise<{ action: string; userId: string | null }> {
   const userId = await findUserByEmail(buyerEmail);
 
@@ -238,17 +243,19 @@ async function applyAddon(
       // Tokens extras acumulam de um mês para o outro — nunca expiram.
       // tokens_extras: total de extras comprados (cresce sempre, referência para renovação)
       // saldo_tokens: total disponível agora (base + extras restantes)
+      const qtd = tokenQtd ?? 5_000_000; // fallback 5M (Mini)
       const { data: tc } = await adminDb.from("tokens_creditos")
         .select("saldo_tokens, total_comprado, tokens_extras")
         .eq("user_id", userId)
         .maybeSingle();
       await adminDb.from("tokens_creditos").upsert({
         user_id: userId,
-        saldo_tokens:   (tc?.saldo_tokens   ?? 0) + ADDON_TOKENS_QTD,
-        total_comprado: (tc?.total_comprado  ?? 0) + ADDON_TOKENS_QTD,
-        tokens_extras:  (tc?.tokens_extras   ?? 0) + ADDON_TOKENS_QTD,
+        saldo_tokens:   (tc?.saldo_tokens   ?? 0) + qtd,
+        total_comprado: (tc?.total_comprado  ?? 0) + qtd,
+        tokens_extras:  (tc?.tokens_extras   ?? 0) + qtd,
         mes_referencia: new Date().toISOString().slice(0, 7),
       }, { onConflict: "user_id" });
+      console.log(`Tokens adicionados: ${qtd.toLocaleString()} → ${buyerEmail}`);
       break;
     }
 
@@ -476,6 +483,9 @@ Deno.serve(async (req) => {
     const transactionId     = purchase?.transaction ?? purchase?.id ?? "";
     const valor             = Number(purchase?.price?.value ?? purchase?.value ?? 0);
 
+    // Offer code identifica qual oferta do produto foi comprada (addon vs plano base)
+    const offerCode: string = purchase?.offer?.code ?? purchase?.offer_code ?? "";
+
     // recurrence_number: 1 = primeira compra, > 1 = renovação automática (cartão)
     const recurrenceNumber  = Number(purchase?.recurrence_number ?? purchase?.subscription?.recurrenceNumber ?? 1);
 
@@ -487,20 +497,22 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, reason: "sem_email" }), { status: 200 });
     }
 
-    console.log(`Hotmart event: ${event} | product_id: ${productId} | email: ${buyerEmail} | recurrence: ${recurrenceNumber}`);
+    console.log(`Hotmart event: ${event} | product_id: ${productId} | offer: ${offerCode} | email: ${buyerEmail} | recurrence: ${recurrenceNumber}`);
 
     // ── Ativação ──────────────────────────────────────────────────────
     if (EVENTS_ACTIVATE.includes(event)) {
-      const addonType = productId && ADDON_PRODUCT_IDS[productId] ? ADDON_PRODUCT_IDS[productId] : null;
+      // Identifica addon pelo offer code (todas as ofertas estão no mesmo produto 7336568)
+      const addonOffer = offerCode ? ADDON_OFFERS[offerCode] : null;
 
-      if (addonType) {
+      if (addonOffer) {
         const result = await applyAddon(
           buyerEmail,
-          addonType,
+          addonOffer.type,
           product?.name ?? "",
           transactionId,
           valor,
           recurrenceNumber,
+          addonOffer.tokens,   // quantidade de tokens (undefined para addons não-token)
         );
         return new Response(JSON.stringify({ ok: true, ...result }), {
           status: 200,
@@ -508,11 +520,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Produto principal — só processa se for o produto correto
-      const isMainProduct = !MAIN_PRODUCT_ID || productId === MAIN_PRODUCT_ID;
+      // Produto principal — verifica product ID e offer code
+      const isMainProduct = (!MAIN_PRODUCT_ID || productId === MAIN_PRODUCT_ID)
+        && (!offerCode || offerCode === MAIN_PLAN_OFFER);
       if (!isMainProduct) {
-        console.warn(`Produto desconhecido ignorado: ${productId}`);
-        return new Response(JSON.stringify({ ok: true, action: "ignored", reason: "unknown_product", productId }), { status: 200 });
+        console.warn(`Oferta desconhecida ignorada: product=${productId} offer=${offerCode}`);
+        return new Response(JSON.stringify({ ok: true, action: "ignored", reason: "unknown_offer", productId, offerCode }), { status: 200 });
       }
 
       const TOKENS_INICIAIS = 5_000_000;
@@ -530,21 +543,23 @@ Deno.serve(async (req) => {
 
     // ── Desativação / Cancelamento ────────────────────────────────────
     if (EVENTS_DEACTIVATE.includes(event)) {
-      const addonType = productId && ADDON_PRODUCT_IDS[productId] ? ADDON_PRODUCT_IDS[productId] : null;
+      const addonOffer = offerCode ? ADDON_OFFERS[offerCode] : null;
 
-      if (addonType) {
+      if (addonOffer) {
         // Cancelamento de addon: remove só aquele recurso, conta continua ativa
-        const result = await removeAddon(buyerEmail, addonType);
+        const result = await removeAddon(buyerEmail, addonOffer.type);
         return new Response(JSON.stringify({ ok: true, ...result }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      // Produto principal: desativa conta (só se for o produto correto)
-      if (MAIN_PRODUCT_ID && productId !== MAIN_PRODUCT_ID) {
-        console.warn(`Cancelamento de produto desconhecido ignorado: ${productId}`);
-        return new Response(JSON.stringify({ ok: true, action: "ignored", reason: "unknown_product", productId }), { status: 200 });
+      // Produto principal: desativa conta (verifica product ID + offer)
+      const isMainCancel = (!MAIN_PRODUCT_ID || productId === MAIN_PRODUCT_ID)
+        && (!offerCode || offerCode === MAIN_PLAN_OFFER);
+      if (!isMainCancel) {
+        console.warn(`Cancelamento de oferta desconhecida ignorado: product=${productId} offer=${offerCode}`);
+        return new Response(JSON.stringify({ ok: true, action: "ignored", reason: "unknown_offer", productId, offerCode }), { status: 200 });
       }
       const result = await deactivateClient(buyerEmail);
       return new Response(JSON.stringify({ ok: true, ...result }), {
