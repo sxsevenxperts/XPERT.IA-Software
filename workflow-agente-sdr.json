@@ -711,7 +711,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ ({ number: $('Processa resposta e qualificação').first().json.numeroDestino, text: $('Processa resposta e qualificação').first().json.relatorio }) }}",
+        "jsonBody": "={{ ({ number: $('Roteia para Membro da Equipe').first().json.numeroDestino || $('Calcula Score do Lead').first().json.numeroDestino, text: $('Calcula Score do Lead').first().json.relatorio + '\\n\\n👤 *Responsável:* ' + $('Roteia para Membro da Equipe').first().json.membroNome + '\\n🎯 *Score:* ' + $('Calcula Score do Lead').first().json.score + '/100' }) }}",
         "options": {}
       },
       "id": "node-envia-responsavel",
@@ -873,7 +873,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_numero_whatsapp: $('Processa resposta e qualificação').first().json.numero, p_user_id: $('Processa resposta e qualificação').first().json.userId, p_nome: $('Processa resposta e qualificação').first().json.dadosQualificacao?.nome || '', p_celular: $('Processa resposta e qualificação').first().json.dadosQualificacao?.celular || '', p_tese: $('Processa resposta e qualificação').first().json.dadosQualificacao?.tese || '', p_resumo: $('Processa resposta e qualificação').first().json.dadosQualificacao?.resumo || $('Processa resposta e qualificação').first().json.dadosQualificacao?.motivo || '', p_qualificado: $('Processa resposta e qualificação').first().json.qualificado, p_motivo_desqualificacao: $('Processa resposta e qualificação').first().json.dadosQualificacao?.motivo || '', p_stage: $('Processa resposta e qualificação').first().json.qualificado ? 'qualificado' : ($('Processa resposta e qualificação').first().json.dadosQualificacao?.motivo ? 'nao_qualificado' : 'em_atendimento') }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_numero_whatsapp: $('Calcula Score do Lead').first().json.numero, p_user_id: $('Calcula Score do Lead').first().json.userId, p_nome: $('Calcula Score do Lead').first().json.dadosQualificacao?.nome || '', p_celular: $('Calcula Score do Lead').first().json.dadosQualificacao?.celular || '', p_tese: $('Calcula Score do Lead').first().json.dadosQualificacao?.tese || '', p_resumo: $('Calcula Score do Lead').first().json.dadosQualificacao?.resumo || $('Calcula Score do Lead').first().json.dadosQualificacao?.motivo || '', p_qualificado: $('Calcula Score do Lead').first().json.qualificado, p_motivo_desqualificacao: $('Calcula Score do Lead').first().json.dadosQualificacao?.motivo || '', p_stage: $('Calcula Score do Lead').first().json.qualificado ? 'qualificado' : ($('Calcula Score do Lead').first().json.dadosQualificacao?.motivo ? 'nao_qualificado' : 'em_atendimento'), p_score: $('Calcula Score do Lead').first().json.score || 0, p_membro_id: $('Calcula Score do Lead').first().json.membroId || null }) }}",
         "options": {}
       },
       "id": "node-salva-lead",
@@ -1100,6 +1100,181 @@
         4620,
         760
       ]
+    },
+    {
+      "id": "node-calcula-score",
+      "name": "Calcula Score do Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        720
+      ],
+      "parameters": {
+        "jsCode": "// Calcula score 0-100 baseado em completude e qualificação\nconst dados = $('Processa resposta e qualificação').first().json;\nconst q = dados.dadosQualificacao || {};\n\nlet score = 0;\n\n// Dados capturados (até 60 pts)\nif (q.nome   && q.nome.length   > 1) score += 15;\nif (q.celular && q.celular.length > 7) score += 15;\nif (q.tese   && q.tese.length   > 5) score += 15;\nif (q.resumo && q.resumo.length > 20) score += 15;\n\n// Qualificação binária (30 pts)\nif (dados.qualificado === true) score += 30;\n\n// Interesse declarado / urgência detectada na tese (10 pts bônus)\nconst tese = (q.tese || '').toLowerCase();\nconst altaUrgencia = ['urgente','imediato','agora','semana','mês','pensão','revisão','aposentadoria'];\nif (altaUrgencia.some(w => tese.includes(w))) score += 10;\n\n// Cap em 100\nscore = Math.min(score, 100);\n\nreturn [{ json: { ...dados, score } }];\n"
+      },
+      "notes": "Calcula score 0-100: completude dos dados (60pts) + qualificação (30pts) + urgência (10pts)"
+    },
+    {
+      "id": "node-busca-equipe",
+      "name": "Busca Membro da Equipe (Round-Robin)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4840,
+        680
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/equipe_membros",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "user_id",
+              "value": "={{ $('Calcula Score do Lead').first().json.userId }}"
+            },
+            {
+              "name": "ativo",
+              "value": "eq.true"
+            },
+            {
+              "name": "select",
+              "value": "*"
+            },
+            {
+              "name": "order",
+              "value": "ultimo_atendimento.asc.nullsfirst"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "Busca o membro da equipe com menos atendimentos recentes (round-robin por ultimo_atendimento)"
+    },
+    {
+      "id": "node-roteia-equipe",
+      "name": "Roteia para Membro da Equipe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5060,
+        680
+      ],
+      "parameters": {
+        "jsCode": "// Seleciona membro da equipe ou cai no número padrão\nconst dados = $('Calcula Score do Lead').first().json;\nconst membros = $input.first().json;\n\nlet numeroDestino = dados.numeroDestino; // fallback config\nlet membroId = null;\nlet membroNome = 'Responsável padrão';\n\nif (Array.isArray(membros) && membros.length > 0) {\n  const m = membros[0];\n  numeroDestino = m.whatsapp || m.telefone || dados.numeroDestino;\n  membroId = m.id;\n  membroNome = m.nome || m.name || 'Membro da equipe';\n}\n\nreturn [{ json: { ...dados, numeroDestino, membroId, membroNome } }];\n"
+      },
+      "notes": "Resolve o número de destino: membro da equipe (round-robin) ou fallback para numero_destino da config"
+    },
+    {
+      "id": "node-atualiza-equipe-ts",
+      "name": "Atualiza Timestamp Equipe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5280,
+        680
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/equipe_membros",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "={{ `eq.${$('Roteia para Membro da Equipe').first().json.membroId}` }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ JSON.stringify({ ultimo_atendimento: new Date().toISOString() }) }",
+        "options": {}
+      },
+      "notes": "Atualiza ultimo_atendimento do membro selecionado para manter round-robin justo"
+    },
+    {
+      "id": "node-cria-tarefa",
+      "name": "Cria Tarefa de Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4840,
+        900
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/tarefas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  user_id: $('Calcula Score do Lead').first().json.userId,\n  numero_whatsapp: $('Calcula Score do Lead').first().json.numero,\n  titulo: 'Follow-up: ' + ($('Calcula Score do Lead').first().json.dadosQualificacao?.nome || $('Calcula Score do Lead').first().json.numero),\n  descricao: 'Lead qualificado automaticamente. Interesse: ' + ($('Calcula Score do Lead').first().json.dadosQualificacao?.tese || 'Não informado') + '. Score: ' + $('Calcula Score do Lead').first().json.score + '/100.',\n  prazo: new Date(Date.now() + 24*60*60*1000).toISOString(),\n  status: 'pendente',\n  prioridade: $('Calcula Score do Lead').first().json.score >= 70 ? 'alta' : 'media',\n  criado_por: 'agente_ia'\n}) }}",
+        "options": {}
+      },
+      "notes": "Cria tarefa de follow-up automaticamente para leads qualificados. Prioridade alta se score >= 70."
     }
   ],
   "connections": {
@@ -1351,12 +1526,12 @@
             "index": 0
           },
           {
-            "node": "Lead qualificado?",
+            "node": "Prepara sessão para salvar",
             "type": "main",
             "index": 0
           },
           {
-            "node": "Prepara sessão para salvar",
+            "node": "Calcula Score do Lead",
             "type": "main",
             "index": 0
           }
@@ -1451,6 +1626,11 @@
           },
           {
             "node": "Tem grupo configurado?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cria Tarefa de Follow-up",
             "type": "main",
             "index": 0
           }
@@ -1627,12 +1807,50 @@
       "main": [
         [
           {
-            "node": "Envia relatório ao responsável",
+            "node": "Busca Membro da Equipe (Round-Robin)",
             "type": "main",
             "index": 0
           }
         ],
         []
+      ]
+    },
+    "Calcula Score do Lead": {
+      "main": [
+        [
+          {
+            "node": "Lead qualificado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca Membro da Equipe (Round-Robin)": {
+      "main": [
+        [
+          {
+            "node": "Roteia para Membro da Equipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roteia para Membro da Equipe": {
+      "main": [
+        [
+          {
+            "node": "Envia relatório ao responsável",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atualiza Timestamp Equipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
