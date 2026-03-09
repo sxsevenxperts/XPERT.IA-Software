@@ -215,7 +215,11 @@ export default function Login({ onAuth }) {
         {screen === 'login' && (
           <>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <img src='/logo.png' alt='EasyDrive' style={{ width: 200, height: 'auto', marginBottom: 4 }} />
+              <img src='/logo.png' alt='EasyDrive' style={{
+                width: 220, height: 'auto', marginBottom: 4,
+                WebkitMaskImage: 'radial-gradient(ellipse 90% 80% at 50% 45%, black 55%, transparent 85%)',
+                maskImage: 'radial-gradient(ellipse 90% 80% at 50% 45%, black 55%, transparent 85%)',
+              }} />
             </div>
 
             <form onSubmit={handleLogin}>
