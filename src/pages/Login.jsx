@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase, checkSubscription } from '../lib/supabase'
-import { Car, Lock, Mail, AlertCircle, CheckCircle, Loader, ArrowLeft } from 'lucide-react'
+import { Lock, Mail, AlertCircle, CheckCircle, Loader, ArrowLeft } from 'lucide-react'
 
 // Auth offline (quando Supabase não está configurado)
 const OFFLINE_KEY = 'easydrive_offline_auth'
@@ -215,9 +215,7 @@ export default function Login({ onAuth }) {
         {screen === 'login' && (
           <>
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <div style={S.iconBox}><Car size={36} color='#3b82f6' /></div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, marginTop: 14 }}>EasyDrive</h1>
-              <p style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>Painel do Motorista</p>
+              <img src='/logo.png' alt='EasyDrive' style={{ width: 200, height: 'auto', marginBottom: 4 }} />
             </div>
 
             <form onSubmit={handleLogin}>
