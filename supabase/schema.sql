@@ -1,56 +1,43 @@
--- EasyDrive — Schema Supabase
--- Projeto: easydrive
--- Execute este SQL no SQL Editor do Supabase
+-- EasyDrive — Setup minimalista do Supabase
+-- Cole tudo no SQL Editor e clique "Run"
 
--- ── TABELA: subscriptions ────────────────────────────────────────────────
+-- 1. Criar tabela de assinaturas
 create table if not exists public.subscriptions (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid references auth.users(id) on delete cascade not null,
-  plan        text not null default 'mensal',   -- 'mensal', 'anual', 'trial'
-  status      text not null default 'active',   -- 'active', 'cancelled', 'expired'
-  starts_at   timestamptz not null default now(),
-  expires_at  timestamptz not null,
-  created_at  timestamptz not null default now()
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  plan text default 'trial',
+  status text default 'active',
+  expires_at timestamptz not null,
+  created_at timestamptz default now()
 );
 
--- Índice para busca por user_id
-create index if not exists subscriptions_user_id_idx on public.subscriptions(user_id);
-
--- RLS: usuário só vê a própria assinatura
+-- 2. Ativar RLS
 alter table public.subscriptions enable row level security;
 
-create policy "users can view own subscription"
-  on public.subscriptions for select
-  using (auth.uid() = user_id);
+-- 3. Limpar policies antigas (se existem)
+drop policy if exists "view_own" on public.subscriptions;
+drop policy if exists "admin_all" on public.subscriptions;
 
--- Service role (admin) pode inserir/atualizar
-create policy "service role can manage subscriptions"
-  on public.subscriptions for all
-  using (auth.role() = 'service_role');
+-- 4. Criar policies
+create policy "view_own" on public.subscriptions for select using (auth.uid() = user_id);
+create policy "admin_all" on public.subscriptions for all using (auth.role() = 'service_role');
 
-
--- ── FUNÇÃO: cria trial automático no cadastro ─────────────────────────────
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
+-- 5. Criar função para trial automático
+create or replace function public.new_user_trial()
+returns trigger as $$
 begin
   insert into public.subscriptions (user_id, plan, status, expires_at)
-  values (
-    new.id,
-    'trial',
-    'active',
-    now() + interval '7 days'   -- 7 dias de trial gratuito
-  );
+  values (new.id, 'trial', 'active', now() + interval '7 days');
   return new;
 end;
-$$;
+$$ language plpgsql security definer;
 
--- Trigger: dispara ao criar usuário
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute procedure public.handle_new_user();
+-- 6. Criar trigger
+drop trigger if exists new_user_trial on auth.users;
+create trigger new_user_trial after insert on auth.users
+for each row execute function public.new_user_trial();
 
+-- 7. Criar índice
+create index if not exists idx_sub_user on public.subscriptions(user_id);
 
--- ── EXEMPLO: criar assinatura manual para um usuário ─────────────────────
--- insert into public.subscriptions (user_id, plan, status, expires_at)
--- values ('<user_uuid_aqui>', 'mensal', 'active', now() + interval '30 days');
+-- ✅ PRONTO! Agora o EasyDrive funciona com login + assinatura

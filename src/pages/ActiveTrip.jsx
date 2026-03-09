@@ -5,18 +5,13 @@ import { fmt } from '../utils/format'
 import SafetyCard from '../components/SafetyCard'
 import RouteMap from '../components/RouteMap'
 import { reverseGeocode } from '../utils/safety'
-import { parseRideText } from '../utils/rideParser'
+import { parseRideText, PLATFORM_LIST } from '../utils/rideParser'
 import {
   Navigation, MapPin, Flag, Play, Pause, Square,
-  Fuel, Clock, Search, Loader, CheckCircle, Clipboard, X
+  Fuel, Clock, Search, Loader, CheckCircle, Clipboard, X, ChevronDown, ChevronUp
 } from 'lucide-react'
 
-const PLATFORMS = [
-  { id: 'uber', label: 'Uber' },
-  { id: '99', label: '99' },
-  { id: 'inDriver', label: 'inDrive' },
-  { id: 'outro', label: 'Outro' },
-]
+const PLATFORMS = PLATFORM_LIST
 
 // Busca endereço pelo texto digitado via Nominatim
 async function searchAddress(query) {
@@ -41,6 +36,7 @@ export default function ActiveTrip({ sharedRide }) {
   const [earningsInput, setEarningsInput] = useState('')
   const [showFinish, setShowFinish] = useState(false)
   const [platform, setPlatform] = useState('uber')
+  const [showAllPlatforms, setShowAllPlatforms] = useState(false)
 
   // Detecção automática via clipboard / share
   const [detectedRide, setDetectedRide] = useState(sharedRide || null)
@@ -53,14 +49,21 @@ export default function ActiveTrip({ sharedRide }) {
   const [destSearching, setDestSearching] = useState(false)
   const searchTimeout = useRef(null)
 
-  // Monitora clipboard quando usuário retorna do Uber/99
+  // Monitora clipboard quando usuário retorna do app de corrida/delivery
+  const lastClipRef = useRef('')
   useEffect(() => {
     const handleVisibility = async () => {
       if (document.visibilityState !== 'visible') return
       try {
         const text = await navigator.clipboard.readText()
+        if (text === lastClipRef.current) return // mesmo texto, ignora
+        lastClipRef.current = text
         const parsed = parseRideText(text)
-        if (parsed) setDetectedRide(parsed)
+        if (parsed) {
+          setDetectedRide(parsed)
+          // Auto-seleciona plataforma se detectou
+          if (parsed.platform) setPlatform(parsed.platform)
+        }
       } catch {}
     }
     document.addEventListener('visibilitychange', handleVisibility)
@@ -154,23 +157,39 @@ export default function ActiveTrip({ sharedRide }) {
 
         {/* Plataforma */}
         <SectionLabel>Plataforma</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 20 }}>
-          {PLATFORMS.map((p) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
+          {(showAllPlatforms ? PLATFORMS : PLATFORMS.slice(0, 8)).map((p) => (
             <button
               key={p.id}
               onClick={() => setPlatform(p.id)}
               style={{
                 background: platform === p.id ? '#3b82f620' : '#1e293b',
                 border: `2px solid ${platform === p.id ? '#3b82f6' : '#334155'}`,
-                borderRadius: 10, padding: '10px 0',
+                borderRadius: 10, padding: '8px 4px',
                 color: platform === p.id ? '#3b82f6' : '#64748b',
-                fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                fontWeight: 700, fontSize: 11, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
               }}
             >
+              <span style={{ fontSize: 18 }}>{p.emoji}</span>
               {p.label}
             </button>
           ))}
         </div>
+        {PLATFORMS.length > 8 && (
+          <button
+            onClick={() => setShowAllPlatforms(v => !v)}
+            style={{
+              width: '100%', padding: '7px', background: '#1e293b',
+              border: '1px solid #334155', borderRadius: 8, color: '#64748b',
+              fontSize: 12, cursor: 'pointer', marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}
+          >
+            {showAllPlatforms ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showAllPlatforms ? 'Ver menos' : `Ver mais ${PLATFORMS.length - 8} plataformas`}
+          </button>
+        )}
 
         {/* Destino (opcional pré-viagem) */}
         <SectionLabel>Destino (opcional)</SectionLabel>
@@ -217,7 +236,12 @@ export default function ActiveTrip({ sharedRide }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <Clipboard size={14} color='#3b82f6' />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>Corrida detectada!</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>
+                {detectedRide.platform
+                  ? `${PLATFORMS.find(p => p.id === detectedRide.platform)?.emoji || '📋'} ${PLATFORMS.find(p => p.id === detectedRide.platform)?.label || 'Pedido'} detectado!`
+                  : 'Corrida detectada!'
+                }
+              </span>
               <button onClick={() => setDetectedRide(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}>
                 <X size={14} />
               </button>
@@ -228,8 +252,13 @@ export default function ActiveTrip({ sharedRide }) {
               </p>
             )}
             {detectedRide.dest && (
-              <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 10 }}>
-                🏁 <strong>Destino:</strong> {detectedRide.dest}
+              <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>
+                🏁 <strong>Entrega:</strong> {detectedRide.dest}
+              </p>
+            )}
+            {detectedRide.value && (
+              <p style={{ fontSize: 12, color: '#22c55e', marginBottom: 4 }}>
+                💰 <strong>Valor:</strong> R$ {detectedRide.value.toFixed(2)}
               </p>
             )}
             <button

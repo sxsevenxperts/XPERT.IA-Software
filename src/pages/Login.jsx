@@ -43,14 +43,17 @@ export default function Login({ onAuth }) {
       return
     }
 
+    const timeout = setTimeout(() => setChecking(false), 5000)
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout)
       if (session?.user) {
         const sub = await checkSubscription(session.user.id)
         onAuth({ user: session.user, subscription: sub })
       } else {
         setChecking(false)
       }
-    })
+    }).catch(() => { clearTimeout(timeout); setChecking(false) })
 
     const { data: { subscription: listener } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
@@ -75,12 +78,34 @@ export default function Login({ onAuth }) {
       return
     }
 
+    // Tenta login
     const { data, error: err } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (err && err.message === 'Invalid login credentials') {
+      // Conta não existe → cria automaticamente
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password })
+      if (signUpErr) {
+        setError(signUpErr.message)
+        setLoading(false)
+        return
+      }
+      // Supabase pode exigir confirmação de email
+      if (signUpData.user && !signUpData.session) {
+        setError('Conta criada! Verifique seu e-mail para confirmar.')
+        setLoading(false)
+        return
+      }
+      const sub = await checkSubscription(signUpData.user.id)
+      onAuth({ user: signUpData.user, subscription: sub })
+      return
+    }
+
     if (err) {
-      setError(err.message === 'Invalid login credentials' ? 'E-mail ou senha incorretos' : err.message)
+      setError(err.message)
       setLoading(false)
       return
     }
+
     const sub = await checkSubscription(data.user.id)
     onAuth({ user: data.user, subscription: sub })
   }

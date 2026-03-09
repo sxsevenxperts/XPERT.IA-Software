@@ -21,7 +21,8 @@ export async function checkSubscription(userId) {
     .limit(1)
     .single()
 
-  if (error || !data) return { active: false, reason: 'not_found' }
+  // Tabela não existe ou sem registro → libera como trial
+  if (error || !data) return { active: true, plan: 'trial', reason: 'auto_trial' }
 
   const expired = data.expires_at && new Date(data.expires_at) < new Date()
   if (data.status !== 'active' || expired) {

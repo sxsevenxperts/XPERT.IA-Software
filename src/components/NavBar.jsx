@@ -1,11 +1,11 @@
-import { LayoutDashboard, Navigation, History, Settings, BarChart2 } from 'lucide-react'
+import { LayoutDashboard, Navigation, History, Trophy, Settings } from 'lucide-react'
 import { useStore } from '../store'
 
 const tabs = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Início' },
   { id: 'trip', icon: Navigation, label: 'Viagem' },
   { id: 'history', icon: History, label: 'Histórico' },
-  { id: 'stats', icon: BarChart2, label: 'Gráficos' },
+  { id: 'stats', icon: Trophy, label: 'Conquistas' },
   { id: 'settings', icon: Settings, label: 'Config' },
 ]
 
@@ -34,7 +34,7 @@ export default function NavBar({ active, onTab }) {
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               gap: 3, padding: '10px 0 8px',
               background: 'none', border: 'none', cursor: 'pointer',
-              color: isActive ? '#3b82f6' : '#64748b',
+              color: isActive ? '#22c55e' : '#64748b',
               position: 'relative',
               transition: 'color 0.15s',
             }}
@@ -61,7 +61,7 @@ export default function NavBar({ active, onTab }) {
             {isActive && (
               <span style={{
                 position: 'absolute', bottom: 0, left: '25%', right: '25%',
-                height: 2, background: '#3b82f6', borderRadius: '2px 2px 0 0',
+                height: 2, background: '#22c55e', borderRadius: '2px 2px 0 0',
               }} />
             )}
           </button>
