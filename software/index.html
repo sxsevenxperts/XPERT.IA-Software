@@ -1266,6 +1266,36 @@
     a, button, .nav-item, .card, .btn-save, .btn-secondary, .btn-primary,
     .mkt-addon-card, .pricing-card, .equipe-card, .stat-card { transition:all .18s cubic-bezier(0.4,0,0.2,1); }
 
+    /* ── CONTA TABS - Responsivo ──────────────────────────────── */
+    .conta-tab-btn {
+      color:var(--text-secondary);
+      border-bottom:3px solid transparent;
+      transition:all 0.2s ease;
+    }
+    .conta-tab-btn:hover {
+      color:var(--text);
+      border-bottom-color:var(--border);
+    }
+    .conta-tab-btn.active {
+      color:var(--text);
+      border-bottom-color:#a3e635;
+    }
+    .conta-tab-pane {
+      animation:fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity:0; }
+      to { opacity:1; }
+    }
+
+    /* Responsivo para mobile */
+    @media (max-width:640px) {
+      .conta-tab-btn {
+        padding:12px 16px !important;
+        font-size:12px !important;
+      }
+    }
+
   </style>
   <link rel="stylesheet" href="https://unpkg.com/drawflow/dist/drawflow.min.css" />
 </head>
@@ -1362,16 +1392,10 @@
       </div>
       <div class="nav-section">Conta</div>
       <div class="nav-item membro-hidden" onclick="showPage('kpis', this)">
-        <span class="icon">📊</span> KPIs & OKRs
+        <span class="icon"></span> KPIs & OKRs
       </div>
-      <div class="nav-item membro-hidden" onclick="showPage('faturamento', this)">
-        <span class="icon"></span> Faturamento
-      </div>
-      <div class="nav-item membro-hidden" onclick="showPage('integracoes', this)">
-        <span class="icon">🔗</span> Integrações
-      </div>
-      <div class="nav-item" onclick="showPage('configuracoes', this)">
-        <span class="icon">⚙️</span> Configurações
+      <div class="nav-item" onclick="showPage('conta', this)">
+        <span class="icon"></span> Gerenciar Conta
       </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
       <div class="nav-item admin-only" onclick="showPage('monitoramento', this)">
@@ -2643,7 +2667,47 @@
     </div>
 
     <!-- FATURAMENTO -->
-    <div class="page" id="page-faturamento">
+    <!-- GERENCIAR CONTA - COM ABAS -->
+    <div class="page" id="page-conta">
+      <div class="page-header">
+        <h1>Gerenciar Conta</h1>
+        <p>Configure sua assinatura, integrações e preferências</p>
+      </div>
+
+      <!-- CONTAINER DE ABAS RESPONSIVO -->
+      <div style="border-bottom:2px solid var(--border);margin-bottom:24px;">
+        <div style="display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+          <button class="conta-tab-btn active" onclick="selecionarAbaContas('faturamento', this)"
+            style="padding:14px 20px;border:none;background:none;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.2s;">
+            Faturamento
+          </button>
+          <button class="conta-tab-btn" onclick="selecionarAbaContas('integracoes', this)"
+            style="padding:14px 20px;border:none;background:none;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.2s;">
+            Integrações
+          </button>
+          <button class="conta-tab-btn" onclick="selecionarAbaContas('configuracoes', this)"
+            style="padding:14px 20px;border:none;background:none;color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:all 0.2s;">
+            Configurações
+          </button>
+        </div>
+      </div>
+
+      <!-- CONTEÚDO DAS ABAS -->
+      <div id="conta-aba-faturamento" class="conta-tab-pane active" style="display:block;">
+        <!-- FATURAMENTO AQUI (será preenchido dinamicamente) -->
+      </div>
+
+      <div id="conta-aba-integracoes" class="conta-tab-pane" style="display:none;">
+        <!-- INTEGRAÇÕES AQUI (será preenchido dinamicamente) -->
+      </div>
+
+      <div id="conta-aba-configuracoes" class="conta-tab-pane" style="display:none;">
+        <!-- CONFIGURAÇÕES AQUI (será preenchido dinamicamente) -->
+      </div>
+    </div>
+
+    <!-- PÁGINA ANTIGA DE FATURAMENTO (OCULTA) -->
+    <div class="page" id="page-faturamento" style="display:none;">
       <div class="page-header"><h1>Faturamento</h1><p>Gerencie sua assinatura e adicione recursos ao plano</p></div>
 
       <!-- Tabs de navegação -->
@@ -4030,6 +4094,7 @@
     }
     if (name === 'equipe') loadEquipePage();
     if (name === 'calendario') loadCalendario();
+    if (name === 'conta') loadPageConta();
     if (name === 'integracoes') loadIntegracoes();
     if (name === 'configuracoes') loadConfiguracoes();
     if (name === 'fluxos') {
@@ -9462,6 +9527,55 @@
     }
     // Refresh reminder badge
     checkReminders();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // GERENCIAR CONTA - ABAS
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadPageConta() {
+    // Carrega o conteúdo inicial da aba Faturamento
+    await selecionarAbaContas('faturamento');
+  }
+
+  async function selecionarAbaContas(aba) {
+    // Remove classe active de todas as abas e botões
+    document.querySelectorAll('.conta-tab-pane').forEach(p => {
+      p.style.display = 'none';
+      p.classList.remove('active');
+    });
+    document.querySelectorAll('.conta-tab-btn').forEach(b => b.classList.remove('active'));
+
+    // Mostra a aba selecionada
+    const paineId = `conta-aba-${aba}`;
+    const paine = document.getElementById(paineId);
+    if (paine) {
+      paine.style.display = 'block';
+      paine.classList.add('active');
+    }
+
+    // Marca botão como ativo
+    event.target.classList.add('active');
+
+    // Carrega conteúdo baseado na aba
+    if (aba === 'faturamento') {
+      loadBilling();
+      loadCredits();
+      if (currentProfile?.role === 'admin') {
+        const adminCard = document.getElementById('billing-admin-card');
+        const pedidosCard = document.getElementById('admin-pedidos-card');
+        const banner = document.getElementById('admin-marketplace-banner');
+        if (adminCard) adminCard.classList.add('visible');
+        if (pedidosCard) pedidosCard.classList.add('visible');
+        if (banner) banner.style.display = 'flex';
+        loadAdminBilling();
+        loadAdminPedidos();
+      }
+    } else if (aba === 'integracoes') {
+      await loadIntegracoes();
+    } else if (aba === 'configuracoes') {
+      await loadConfiguracoes();
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════
