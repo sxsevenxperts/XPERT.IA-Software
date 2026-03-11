@@ -443,9 +443,6 @@
     .membro-hidden { display:none !important; }
     .membro-hidden.visible { display:flex !important; }
     .nav-section.membro-hidden.visible { display:block !important; }
-    .client-only { display:none !important; }
-    .client-only.visible { display:flex !important; }
-    .nav-section.client-only.visible { display:block !important; }
     .client-tag { font-size:10px; background:#f0fdf4; color:#16a34a; padding:2px 7px; border-radius:10px; font-weight:700; }
     .client-tag.inactive { background:#fee2e2; color:#dc2626; }
 
@@ -1332,7 +1329,7 @@
       <div class="nav-item membro-hidden" onclick="showPage('calendario', this)">
         <span class="icon">📅</span> Calendário
       </div>
-      <div class="nav-item client-only" onclick="showPage('equipe', this)">
+      <div class="nav-item membro-hidden" onclick="showPage('equipe', this)">
         <span class="icon">👥</span> Equipe
       </div>
       <div class="nav-section membro-hidden">Configuração</div>
@@ -1370,6 +1367,9 @@
         <span class="icon">⚙️</span> Configurações
       </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
+      <div class="nav-item admin-only" onclick="showPage('monitoramento', this)">
+        <span class="icon">📊</span> Monitoramento
+      </div>
       <div class="nav-item admin-only" id="admin-nav-clientes" onclick="showPage('clientes', this)">
         <span class="icon"></span> Clientes
       </div>
@@ -2472,7 +2472,7 @@
     </div>
 
     <!-- EQUIPE -->
-    <div class="page client-only" id="page-equipe">
+    <div class="page" id="page-equipe">
       <div class="page-header">
         <div>
           <h1>👥 Equipe</h1>
@@ -3075,8 +3075,20 @@
       </div>
     </div>
 
+    <!-- MONITORAMENTO (admin only) -->
+    <div class="page admin-only" id="page-monitoramento">
+      <div class="page-header">
+        <h1>📊 Monitoramento</h1>
+        <p>Saúde e performance de todos os clientes</p>
+      </div>
+      <div class="card">
+        <h3>Clientes Ativos</h3>
+        <div id="monitoramento-tabela"><p class="loading">Carregando...</p></div>
+      </div>
+    </div>
+
     <!-- CLIENTES (admin only) -->
-    <div class="page" id="page-clientes">
+    <div class="page admin-only" id="page-clientes">
       <div class="page-header">
         <h1>Clientes</h1>
         <p>Gerencie as contas dos seus clientes</p>
@@ -3681,13 +3693,9 @@
       // membro usa owner_id (dados do chefe), outros usam o próprio id
       _effectiveUserId = (isMembro && profile?.owner_id) ? profile.owner_id : user.id;
 
-      // Se admin: exibe menu de clientes (e oculta client-only)
+      // Se admin: exibe menu de clientes
       if (profile?.role === 'admin') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.add('visible'));
-        document.querySelectorAll('.client-only').forEach(el => el.classList.remove('visible'));
-      } else {
-        // regular user: mostra client-only
-        document.querySelectorAll('.client-only').forEach(el => el.classList.add('visible'));
       }
 
       // Se membro: oculta itens restritos, mostra página inicial correta
@@ -3739,6 +3747,7 @@
     if (name === 'pdfs') loadPDFList();
     if (name === 'analytics') loadDashboard();
     if (name === 'scoring') loadScoring();
+    if (name === 'monitoramento') loadMonitoramentoPage();
     if (name === 'clientes') { loadClients(); loadTokenUsageAdmin(); }
     if (name === 'faturamento') {
       loadBilling();
@@ -6159,6 +6168,70 @@
         </tr>`;
       }).join('')}</tbody>
     </table>`
+  }
+
+  async function loadMonitoramentoPage() {
+    if (currentProfile?.role !== 'admin') return;
+    const el = document.getElementById('monitoramento-tabela');
+    el.innerHTML = '<p class="loading">Carregando...</p>';
+
+    const { data: profiles } = await db.from('profiles')
+      .select('id, display_name, evo_instance, active')
+      .eq('role', 'client')
+      .order('display_name');
+
+    if (!profiles || !profiles.length) {
+      el.innerHTML = '<p class="empty-state">Nenhum cliente cadastrado.</p>';
+      return;
+    }
+
+    // Carrega leads iniciados e finalizados para cada cliente
+    const { data: leads } = await db.from('leads').select('user_id, stage, id');
+    const leadsMap = {};
+    (leads || []).forEach(l => {
+      if (!leadsMap[l.user_id]) leadsMap[l.user_id] = { total: 0, concluidos: 0 };
+      leadsMap[l.user_id].total++;
+      if (l.stage === 'qualificado' || l.stage === 'desqualificado' || l.stage === 'finalizado') {
+        leadsMap[l.user_id].concluidos++;
+      }
+    });
+
+    el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+      <thead style="background:var(--bg-card2);border-bottom:1px solid var(--border);">
+        <tr>
+          <th style="padding:12px;text-align:left;font-weight:700;font-size:13px;">Cliente</th>
+          <th style="padding:12px;text-align:center;font-weight:700;font-size:13px;">Status</th>
+          <th style="padding:12px;text-align:center;font-weight:700;font-size:13px;">Leads Total</th>
+          <th style="padding:12px;text-align:center;font-weight:700;font-size:13px;">Finalizados</th>
+          <th style="padding:12px;text-align:center;font-weight:700;font-size:13px;">Taxa %</th>
+          <th style="padding:12px;text-align:center;font-weight:700;font-size:13px;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${profiles.map(p => {
+          const stats = leadsMap[p.id] || { total: 0, concluidos: 0 };
+          const taxa = stats.total > 0 ? ((stats.concluidos / stats.total) * 100).toFixed(1) : '—';
+          return `<tr style="border-bottom:1px solid var(--border2);">
+            <td style="padding:12px;"><strong>${escapeHtml(p.display_name || '—')}</strong><br><code style="font-size:11px;color:var(--text2);">${escapeHtml(p.evo_instance || '—')}</code></td>
+            <td style="padding:12px;text-align:center;"><span style="font-weight:700;${p.active ? 'color:#16a34a' : 'color:#dc2626'}'>${p.active ? '● Online' : '● Offline'}</span></td>
+            <td style="padding:12px;text-align:center;font-weight:700;">${stats.total}</td>
+            <td style="padding:12px;text-align:center;font-weight:700;">${stats.concluidos}</td>
+            <td style="padding:12px;text-align:center;font-weight:700;${taxa === '—' ? 'color:var(--text3)' : taxa >= 50 ? 'color:#16a34a' : taxa >= 25 ? 'color:#ca8a04' : 'color:#dc2626'}">${taxa}%</td>
+            <td style="padding:12px;text-align:center;display:flex;gap:6px;justify-content:center;">
+              <button class="btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="entrarComoCliente('${p.id}','${escapeHtml(p.display_name||'')}')">🔑 Entrar como</button>
+              <button class="btn-secondary" style="font-size:11px;padding:5px 10px;" onclick="verEquipeAdmin('${p.id}','${escapeHtml(p.display_name||'')}')">👥 Equipe</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  async function entrarComoCliente(clientId, clientNome) {
+    if (!confirm(`Entrar como "${clientNome}"?\n\nVocê acessará a conta dele como técnico admin.`)) return;
+    // Aqui seria necessário implementar um sistema de impersonação
+    // Por enquanto, vamos apenas redirecionar para a dashboard do cliente
+    alert('⚠️ Função de impersonação em desenvolvimento.\n\nPor enquanto, peça ao cliente suas credenciais.');
   }
 
   async function verEquipeAdmin(clientId, clientNome) {
