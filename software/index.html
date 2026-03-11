@@ -1052,6 +1052,7 @@
     /* Modal Usuário Extra */
     #modal-usuario-extra { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1000; display:none; align-items:center; justify-content:center; }
     #modal-usuario-extra.open { display:flex; }
+    #modal-admin-equipe.open { display:flex; }
     .usuario-modal-box { background:#161b22; border:1px solid #30363d; border-radius:16px; padding:28px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; }
     .usuario-modal-title { font-size:16px; font-weight:700; color:#e6edf3; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
     .usuario-cor-picker { display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
@@ -2552,6 +2553,17 @@
           <button class="btn-primary" style="flex:1;" onclick="salvarUsuarioExtra()">💾 Salvar</button>
           <button class="btn-secondary" style="flex:1;" onclick="fecharModalUsuario()">Cancelar</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal Admin: Ver Equipe de um cliente -->
+    <div id="modal-admin-equipe" style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;width:520px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--border2);">
+          <span id="admin-equipe-titulo" style="font-weight:700;font-size:15px;"></span>
+          <button onclick="fecharModalAdminEquipe()" style="background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;line-height:1;">✕</button>
+        </div>
+        <div id="admin-equipe-lista" style="overflow-y:auto;flex:1;"></div>
       </div>
     </div>
 
@@ -6140,11 +6152,59 @@
             ${p.role !== 'admin' ? `
               <button onclick="toggleClient('${p.id}',${p.active})" style="padding:5px 10px;font-size:12px;" class="btn-secondary">${p.active?'Desativar':'Ativar'}</button>
               <button onclick="openAddCreditsModal('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-success">💰 Créditos</button>
+              <button onclick="verEquipeAdmin('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">👥 Equipe</button>
             ` : '<span style="color:#bbb;font-size:12px;">—</span>'}
           </td>
         </tr>`;
       }).join('')}</tbody>
     </table>`
+  }
+
+  async function verEquipeAdmin(clientId, clientNome) {
+    const modal = document.getElementById('modal-admin-equipe');
+    document.getElementById('admin-equipe-titulo').textContent = `👥 Equipe de ${clientNome}`;
+    document.getElementById('admin-equipe-lista').innerHTML = '<p style="color:#8b949e;padding:20px;text-align:center;">Carregando...</p>';
+    modal.classList.add('open');
+
+    const { data: membros } = await db.from('usuarios_extras')
+      .select('id, nome, cargo, email, ativo')
+      .eq('owner_id', clientId)
+      .order('nome');
+
+    const lista = document.getElementById('admin-equipe-lista');
+    if (!membros || !membros.length) {
+      lista.innerHTML = '<p style="color:#8b949e;padding:20px;text-align:center;">Nenhum membro cadastrado.</p>';
+      return;
+    }
+    lista.innerHTML = membros.map(m => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border2);">
+        <div>
+          <div style="font-weight:600;font-size:13px;">${escapeHtml(m.nome)}</div>
+          <div style="font-size:11px;color:#8b949e;">${escapeHtml(m.cargo||'Colaborador')}${m.email ? ' · ' + escapeHtml(m.email) : ''}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:11px;font-weight:700;${m.ativo ? 'color:#a3e635' : 'color:#6e7681'};">${m.ativo ? '● Ativo' : '○ Inativo'}</span>
+          ${m.ativo
+            ? `<button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="revogarAcessoAdmin('${m.id}','${escapeHtml(m.nome)}','${clientId}','${escapeHtml(clientNome)}')">🚫 Revogar</button>`
+            : `<button class="btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="reativarAcessoAdmin('${m.id}','${escapeHtml(m.nome)}','${clientId}','${escapeHtml(clientNome)}')">✅ Reativar</button>`
+          }
+        </div>
+      </div>`).join('');
+  }
+
+  async function revogarAcessoAdmin(membroId, membroNome, clientId, clientNome) {
+    if (!confirm(`Revogar acesso de "${membroNome}"?\n\nEle não conseguirá mais fazer login no painel.`)) return;
+    await db.from('usuarios_extras').update({ ativo: false }).eq('id', membroId);
+    verEquipeAdmin(clientId, clientNome);
+  }
+
+  async function reativarAcessoAdmin(membroId, membroNome, clientId, clientNome) {
+    await db.from('usuarios_extras').update({ ativo: true }).eq('id', membroId);
+    verEquipeAdmin(clientId, clientNome);
+  }
+
+  function fecharModalAdminEquipe() {
+    document.getElementById('modal-admin-equipe').classList.remove('open');
   }
 
   function openCreateClientModal() {
@@ -6852,6 +6912,8 @@
         <select class="etapa-select etapa-numero">ETAPA_NUMEROS_OPTIONS</select>
         <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">🤖 Agente de IA</label>
         <select class="etapa-select etapa-agente">ETAPA_AGENTES_OPTIONS</select>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">👤 Colaborador responsável</label>
+        <select class="etapa-select etapa-colaborador">ETAPA_COLABORADORES_OPTIONS</select>
         <label class="etapa-relatorio-wrap" title="O resumo do atendimento anterior é enviado para este agente antes de ele responder">
           <input type="checkbox" class="etapa-relatorio" checked />
           📊 Receber relatório do atendimento anterior
@@ -7876,10 +7938,11 @@
   }
 
   // ── Dados de plano carregados para o designer de fluxos ─────────────
-  let _fluxoNumeros  = [];    // carregado ao abrir Designer de Fluxos
-  let _fluxoAgentes  = [];
-  let _fluxoObjecao  = false; // true se o usuário comprou addon_objecao
-  let _fluxosSalvos  = [];    // lista {id,nome} para o nó Mudar de Fluxo
+  let _fluxoNumeros       = [];    // carregado ao abrir Designer de Fluxos
+  let _fluxoAgentes       = [];
+  let _fluxoColaboradores = [];    // membros da equipe (usuarios_extras)
+  let _fluxoObjecao       = false; // true se o usuário comprou addon_objecao
+  let _fluxosSalvos       = [];    // lista {id,nome} para o nó Mudar de Fluxo
 
   async function loadFluxosPage() {
     // 1. Inicializa Drawflow se necessário
@@ -7916,6 +7979,15 @@
 
     _fluxoAgentes = ['Agente 1 (Principal)'];
     for (let i = 1; i <= extraAgts; i++) _fluxoAgentes.push(`Agente ${i + 1}`);
+
+    // 4b. Carrega colaboradores da equipe
+    const efetivo = _effectiveUserId || user.id;
+    const { data: colaboradores } = await db.from('usuarios_extras')
+      .select('id, nome, cargo')
+      .eq('owner_id', efetivo)
+      .eq('ativo', true)
+      .order('nome');
+    _fluxoColaboradores = colaboradores || [];
 
     // 5. Atualiza badges de plano
     const statusEl = document.getElementById('flow-plan-status');
@@ -7979,6 +8051,7 @@
       const safeHtml = cfg.html
         .replace('ETAPA_NUMEROS_OPTIONS','')
         .replace('ETAPA_AGENTES_OPTIONS','')
+        .replace('ETAPA_COLABORADORES_OPTIONS','<option value="">— Sem responsável —</option>')
         .replace('FLUXOS_OPTIONS','<option value="">— carregando fluxos —</option>');
       editor.registerNode(type, {
         html: `<div class="title-box">${cfg.title}</div>${safeHtml}`,
@@ -8034,6 +8107,8 @@
       : '<option value="">Nenhum número configurado</option>';
     const agentesOpts = '<option value="">Sem agente (humano)</option>' +
       _fluxoAgentes.map((a, i) => `<option value="${i}">${escapeHtml(a)}</option>`).join('');
+    const colaboradoresOpts = '<option value="">— Sem responsável (qualquer) —</option>' +
+      _fluxoColaboradores.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nome)}${c.cargo ? ' · ' + escapeHtml(c.cargo) : ''}</option>`).join('');
     // Opções de fluxos salvos (usado em mudar_fluxo)
     const fluxosOpts = _fluxosSalvos.length
       ? _fluxosSalvos.map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('')
@@ -8043,7 +8118,8 @@
     if (type === 'etapa') {
       const body = cfg.html
         .replace('ETAPA_NUMEROS_OPTIONS', numerosOpts)
-        .replace('ETAPA_AGENTES_OPTIONS', agentesOpts);
+        .replace('ETAPA_AGENTES_OPTIONS', agentesOpts)
+        .replace('ETAPA_COLABORADORES_OPTIONS', colaboradoresOpts);
       nodeHtml = `<div class="title-box">📞 Etapa de Atendimento</div>${body}`;
     } else if (type === 'departamento') {
       // Popula o select de número do departamento
