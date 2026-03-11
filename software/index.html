@@ -9191,8 +9191,12 @@
     editor.editor_mode = 'edit';
     editor.zoom_min = 0.02;
     editor.start();
+    // Fix: transform-origin 0 0 garante coordenadas corretas no drop e zoom
+    if (editor.precanvas) editor.precanvas.style.transformOrigin = '0 0';
     // Zoom inicial afastado para ver mais canvas
     editor.zoom = 0.35;
+    editor.canvas_x = 0;
+    editor.canvas_y = 0;
     if (editor.precanvas) editor.precanvas.style.transform = 'translate(0px,0px) scale(0.35)';
     // Garanta que o precanvas e drawflow aceitam drag & drop
     const dfEl = document.getElementById('drawflow');
@@ -9200,6 +9204,23 @@
     dfEl.addEventListener('drop', drop);
     editor.precanvas.addEventListener('dragover', function(e) { e.preventDefault(); });
     editor.precanvas.addEventListener('drop', drop);
+    // Zoom centrado no cursor (como n8n) — substitui o handler padrão do Drawflow
+    dfEl.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const step = editor.zoom_value || 0.1;
+      const delta = e.deltaY < 0 ? step : -step;
+      const newZoom = Math.min(editor.zoom_max || 1.6, Math.max(editor.zoom_min || 0.02, editor.zoom + delta));
+      if (newZoom === editor.zoom) return;
+      const rect = dfEl.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      // Mantém o ponto sob o cursor fixo ao mudar o zoom
+      editor.canvas_x = cx - (cx - editor.canvas_x) * newZoom / editor.zoom;
+      editor.canvas_y = cy - (cy - editor.canvas_y) * newZoom / editor.zoom;
+      editor.zoom = newZoom;
+      if (editor.precanvas) editor.precanvas.style.transform = `translate(${editor.canvas_x}px,${editor.canvas_y}px) scale(${newZoom})`;
+    }, { passive: false, capture: true });
     // Registra tipos de nó (etapa usa placeholder – substituído no drop)
     Object.entries(NODE_TEMPLATES).forEach(([type, cfg]) => {
       const safeHtml = cfg.html
@@ -9249,11 +9270,11 @@
     const type = dragNodeType || event.dataTransfer.getData('text');
     if (!type || !NODE_TEMPLATES[type]) return;
     const cfg = NODE_TEMPLATES[type];
-    // Fórmula oficial Drawflow para converter coordenadas de tela → canvas
+    // Converte coordenadas de tela → canvas usando pan offset + zoom
     const zoom = editor.zoom || 1;
-    const preRect = editor.precanvas.getBoundingClientRect();
-    const x = (event.clientX - preRect.x) * (editor.precanvas.clientWidth  / (editor.precanvas.clientWidth  * zoom));
-    const y = (event.clientY - preRect.y) * (editor.precanvas.clientHeight / (editor.precanvas.clientHeight * zoom));
+    const rect = document.getElementById('drawflow').getBoundingClientRect();
+    const x = (event.clientX - rect.left - (editor.canvas_x || 0)) / zoom;
+    const y = (event.clientY - rect.top  - (editor.canvas_y || 0)) / zoom;
 
     // Opções de números (usadas em etapa e departamento)
     const numerosOpts = _fluxoNumeros.length
