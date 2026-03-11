@@ -1367,6 +1367,9 @@
       <div class="nav-item membro-hidden" onclick="showPage('faturamento', this)">
         <span class="icon"></span> Faturamento
       </div>
+      <div class="nav-item membro-hidden" onclick="showPage('integracoes', this)">
+        <span class="icon">🔗</span> Integrações
+      </div>
       <div class="nav-item" onclick="showPage('configuracoes', this)">
         <span class="icon">⚙️</span> Configurações
       </div>
@@ -3344,6 +3347,117 @@
       </div>
     </div>
 
+    <!-- INTEGRAÇÕES -->
+    <div class="page" id="page-integracoes">
+      <div class="page-header">
+        <h1>🔗 Integrações</h1>
+        <p>Conecte calendários e configure webhooks para automação</p>
+      </div>
+
+      <div style="max-width:1000px;display:flex;flex-direction:column;gap:24px;">
+
+        <!-- CALENDÁRIOS -->
+        <div class="card" style="padding:24px;">
+          <h2 style="margin:0 0 20px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
+            📅 Calendários
+          </h2>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+            <!-- Google Calendar Card -->
+            <div style="border:1.5px solid var(--border);border-radius:12px;padding:16px;background:var(--bg-card);">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+                <div>
+                  <h3 style="margin:0;font-size:14px;font-weight:600;">Google Calendar</h3>
+                  <p id="gcal-status" style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">Desconectado</p>
+                </div>
+                <div id="gcal-badge" style="display:none;width:10px;height:10px;border-radius:50%;background:#10b981;"></div>
+              </div>
+              <div id="gcal-email" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;display:none;"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-secondary" id="gcal-btn" onclick="conectarGoogleCalendar()" style="font-size:13px;padding:8px 12px;">🔗 Conectar</button>
+                <button class="btn-secondary" onclick="desconectarCalendar('google')" style="font-size:13px;padding:8px 12px;display:none;" id="gcal-disconnect">Desconectar</button>
+              </div>
+            </div>
+
+            <!-- Apple Calendar Card -->
+            <div style="border:1.5px solid var(--border);border-radius:12px;padding:16px;background:var(--bg-card);">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+                <div>
+                  <h3 style="margin:0;font-size:14px;font-weight:600;">Apple Calendar</h3>
+                  <p id="apple-status" style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">Desconectado</p>
+                </div>
+                <div id="apple-badge" style="display:none;width:10px;height:10px;border-radius:50%;background:#10b981;"></div>
+              </div>
+              <div id="apple-email" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;display:none;"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-secondary" id="apple-btn" onclick="abrirModalAppleCalendar()" style="font-size:13px;padding:8px 12px;">🔗 Conectar</button>
+                <button class="btn-secondary" onclick="desconectarCalendar('apple')" style="font-size:13px;padding:8px 12px;display:none;" id="apple-disconnect">Desconectar</button>
+              </div>
+            </div>
+
+            <!-- Calendly Card -->
+            <div style="border:1.5px solid var(--border);border-radius:12px;padding:16px;background:var(--bg-card);">
+              <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+                <div>
+                  <h3 style="margin:0;font-size:14px;font-weight:600;">Calendly</h3>
+                  <p id="calendly-status" style="margin:4px 0 0;font-size:12px;color:var(--text-secondary);">Desconectado</p>
+                </div>
+                <div id="calendly-badge" style="display:none;width:10px;height:10px;border-radius:50%;background:#10b981;"></div>
+              </div>
+              <div id="calendly-email" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;display:none;"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-secondary" id="calendly-btn" onclick="conectarCalendly()" style="font-size:13px;padding:8px 12px;">🔗 Conectar</button>
+                <button class="btn-secondary" onclick="desconectarCalendar('calendly')" style="font-size:13px;padding:8px 12px;display:none;" id="calendly-disconnect">Desconectar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WEBHOOKS OUTBOUND -->
+        <div class="card" style="padding:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2 style="margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
+              📤 Webhooks Saída (Outbound)
+            </h2>
+            <button class="btn-primary" onclick="abrirModalNovoWebhook()" style="font-size:12px;padding:8px 12px;">+ Novo</button>
+          </div>
+
+          <div id="webhooks-outbound-list" style="display:flex;flex-direction:column;gap:12px;">
+            <p style="color:var(--text-secondary);font-size:13px;text-align:center;padding:20px;">Nenhum webhook configurado</p>
+          </div>
+        </div>
+
+        <!-- WEBHOOKS INBOUND -->
+        <div class="card" style="padding:24px;">
+          <h2 style="margin:0 0 16px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
+            📥 Webhooks Entrada (Inbound)
+          </h2>
+
+          <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;margin-bottom:12px;">
+            <p style="margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-secondary);">URL PARA RECEBER WEBHOOKS</p>
+            <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px;">
+              <input type="text" id="inbound-webhook-url" readonly value=""
+                style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:12px;font-family:monospace;" />
+              <button class="btn-secondary" onclick="copiarWebhookURL()" style="padding:10px 14px;font-size:12px;">📋 Copiar</button>
+            </div>
+
+            <p style="margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-secondary);">SECRET TOKEN</p>
+            <div style="display:flex;gap:8px;align-items:stretch;">
+              <input type="password" id="inbound-webhook-token" readonly value=""
+                style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:12px;font-family:monospace;" />
+              <button class="btn-secondary" onclick="toggleTokenVisibility()" style="padding:10px 14px;font-size:12px;">👁️ Ver</button>
+              <button class="btn-secondary" onclick="regenerarSecretToken()" style="padding:10px 14px;font-size:12px;">🔄 Regenerar</button>
+            </div>
+
+            <p style="margin:12px 0 0;font-size:11px;color:var(--text-secondary);">
+              Use esta URL e token para configurar webhooks de entrada em sistemas externos.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- CONFIGURAÇÕES -->
     <div class="page" id="page-configuracoes">
       <div class="page-header">
@@ -3916,6 +4030,7 @@
     }
     if (name === 'equipe') loadEquipePage();
     if (name === 'calendario') loadCalendario();
+    if (name === 'integracoes') loadIntegracoes();
     if (name === 'configuracoes') loadConfiguracoes();
     if (name === 'fluxos') {
       setTimeout(() => loadFluxosPage(), 100);
@@ -9347,6 +9462,337 @@
     }
     // Refresh reminder badge
     checkReminders();
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // INTEGRAÇÕES: CALENDÁRIOS E WEBHOOKS
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadIntegracoes() {
+    // Carregar status dos calendários
+    await verificarStatusGoogleCalendar();
+    await verificarStatusAppleCalendar();
+    await verificarStatusCalendly();
+    await carregarWebhooksOutbound();
+    await carregarConfigWebhookInbound();
+  }
+
+  // ─── Google Calendar ───────────────────────────────────────────
+  async function conectarGoogleCalendar() {
+    const result = await callFunction('gcal-proxy', 'auth-url', {});
+    if (result?.url) {
+      window.open(result.url, 'google-calendar-auth', 'width=500,height=600');
+    } else {
+      alert('Erro ao iniciar autenticação do Google Calendar');
+    }
+  }
+
+  async function verificarStatusGoogleCalendar() {
+    const result = await callFunction('gcal-proxy', 'status', {});
+    const statusEl = document.getElementById('gcal-status');
+    const badgeEl = document.getElementById('gcal-badge');
+    const emailEl = document.getElementById('gcal-email');
+    const btnEl = document.getElementById('gcal-btn');
+    const disconnectEl = document.getElementById('gcal-disconnect');
+
+    if (result?.connected) {
+      statusEl.textContent = '✅ Conectado';
+      statusEl.style.color = '#10b981';
+      badgeEl.style.display = 'block';
+      emailEl.textContent = result.email || '';
+      emailEl.style.display = 'block';
+      btnEl.style.display = 'none';
+      disconnectEl.style.display = 'block';
+    } else {
+      statusEl.textContent = '❌ Desconectado';
+      badgeEl.style.display = 'none';
+      emailEl.style.display = 'none';
+      btnEl.style.display = 'block';
+      disconnectEl.style.display = 'none';
+    }
+  }
+
+  // ─── Apple Calendar ───────────────────────────────────────────
+  function abrirModalAppleCalendar() {
+    const modal = document.getElementById('modal-apple-calendar') || criarModalAppleCalendar();
+    modal.style.display = 'flex';
+  }
+
+  function criarModalAppleCalendar() {
+    const modal = document.createElement('div');
+    modal.id = 'modal-apple-calendar';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;width:400px;max-width:95vw;padding:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="margin:0;font-size:16px;font-weight:700;">Conectar Apple Calendar</h2>
+          <button onclick="this.closest('[id=modal-apple-calendar]').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Servidor CalDAV</label>
+            <input type="text" id="apple-server" placeholder="caldav.icloud.com" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:13px;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Nome de Usuário</label>
+            <input type="text" id="apple-username" placeholder="seu@icloud.com" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:13px;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Senha</label>
+            <input type="password" id="apple-password" placeholder="Sua senha" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:13px;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">E-mail</label>
+            <input type="email" id="apple-email-input" placeholder="seu@email.com" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:13px;box-sizing:border-box;" />
+          </div>
+        </div>
+
+        <button onclick="conectarAppleCalendar()" class="btn-primary" style="width:100%;margin-top:16px;">Conectar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  async function conectarAppleCalendar() {
+    const server = document.getElementById('apple-server')?.value;
+    const username = document.getElementById('apple-username')?.value;
+    const password = document.getElementById('apple-password')?.value;
+    const email = document.getElementById('apple-email-input')?.value;
+
+    if (!server || !username || !password) {
+      alert('Preencha todos os campos');
+      return;
+    }
+
+    const result = await callFunction('applecal-proxy', 'auth', { serverUrl: server, username, password, email });
+    if (result?.success) {
+      alert('Apple Calendar conectado com sucesso!');
+      document.getElementById('modal-apple-calendar').style.display = 'none';
+      await verificarStatusAppleCalendar();
+    } else {
+      alert('Erro ao conectar: ' + (result?.error || 'Desconhecido'));
+    }
+  }
+
+  async function verificarStatusAppleCalendar() {
+    const result = await callFunction('applecal-proxy', 'status', {});
+    const statusEl = document.getElementById('apple-status');
+    const badgeEl = document.getElementById('apple-badge');
+    const emailEl = document.getElementById('apple-email');
+    const btnEl = document.getElementById('apple-btn');
+    const disconnectEl = document.getElementById('apple-disconnect');
+
+    if (result?.connected) {
+      statusEl.textContent = '✅ Conectado';
+      statusEl.style.color = '#10b981';
+      badgeEl.style.display = 'block';
+      emailEl.textContent = result.email || '';
+      emailEl.style.display = 'block';
+      btnEl.style.display = 'none';
+      disconnectEl.style.display = 'block';
+    } else {
+      statusEl.textContent = '❌ Desconectado';
+      badgeEl.style.display = 'none';
+      emailEl.style.display = 'none';
+      btnEl.style.display = 'block';
+      disconnectEl.style.display = 'none';
+    }
+  }
+
+  // ─── Calendly ─────────────────────────────────────────────────
+  async function conectarCalendly() {
+    const result = await callFunction('calendly-proxy', 'auth-url', {});
+    if (result?.authUrl) {
+      window.open(result.authUrl, 'calendly-auth', 'width=500,height=600');
+    } else {
+      alert('Erro ao iniciar autenticação do Calendly');
+    }
+  }
+
+  async function verificarStatusCalendly() {
+    const result = await callFunction('calendly-proxy', 'status', {});
+    const statusEl = document.getElementById('calendly-status');
+    const badgeEl = document.getElementById('calendly-badge');
+    const emailEl = document.getElementById('calendly-email');
+    const btnEl = document.getElementById('calendly-btn');
+    const disconnectEl = document.getElementById('calendly-disconnect');
+
+    if (result?.connected) {
+      statusEl.textContent = '✅ Conectado';
+      statusEl.style.color = '#10b981';
+      badgeEl.style.display = 'block';
+      emailEl.textContent = result.email || '';
+      emailEl.style.display = 'block';
+      btnEl.style.display = 'none';
+      disconnectEl.style.display = 'block';
+    } else {
+      statusEl.textContent = '❌ Desconectado';
+      badgeEl.style.display = 'none';
+      emailEl.style.display = 'none';
+      btnEl.style.display = 'block';
+      disconnectEl.style.display = 'none';
+    }
+  }
+
+  // ─── Desconectar calendário ───────────────────────────────────
+  async function desconectarCalendar(provider) {
+    if (!confirm(`Desconectar ${provider.charAt(0).toUpperCase() + provider.slice(1)}?`)) return;
+
+    const functionName = provider === 'google' ? 'gcal-proxy' : provider === 'apple' ? 'applecal-proxy' : 'calendly-proxy';
+    const result = await callFunction(functionName, 'disconnect', {});
+
+    if (result?.success || result?.ok) {
+      alert('Desconectado com sucesso');
+      if (provider === 'google') await verificarStatusGoogleCalendar();
+      else if (provider === 'apple') await verificarStatusAppleCalendar();
+      else if (provider === 'calendly') await verificarStatusCalendly();
+    }
+  }
+
+  // ─── Webhooks Outbound ─────────────────────────────────────────
+  async function carregarWebhooksOutbound() {
+    const result = await callFunction('webhook-manager', 'list', {});
+    const list = document.getElementById('webhooks-outbound-list');
+
+    if (result?.length > 0) {
+      list.innerHTML = result.map(wh => `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg-secondary);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+            <div style="flex:1;">
+              <p style="margin:0;font-size:13px;font-weight:600;color:var(--text);">🔗 ${wh.url}</p>
+              <p style="margin:4px 0 0;font-size:11px;color:var(--text-secondary);">Eventos: ${wh.events?.join(', ') || 'nenhum'}</p>
+              <p style="margin:4px 0 0;font-size:11px;color:var(--text-secondary);">Status: ${wh.active ? '✅ Ativo' : '⏸️ Inativo'}</p>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn-secondary" onclick="testarWebhook('${wh.id}')" style="font-size:11px;padding:6px 10px;">Testar</button>
+              <button class="btn-secondary" onclick="deletarWebhook('${wh.id}')" style="font-size:11px;padding:6px 10px;color:#ef4444;">Deletar</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      list.innerHTML = '<p style="color:var(--text-secondary);font-size:13px;text-align:center;padding:20px;">Nenhum webhook configurado</p>';
+    }
+  }
+
+  function abrirModalNovoWebhook() {
+    const modal = document.getElementById('modal-novo-webhook') || criarModalNovoWebhook();
+    modal.style.display = 'flex';
+  }
+
+  function criarModalNovoWebhook() {
+    const modal = document.createElement('div');
+    modal.id = 'modal-novo-webhook';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;display:none;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;width:450px;max-width:95vw;padding:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <h2 style="margin:0;font-size:16px;font-weight:700;">Novo Webhook</h2>
+          <button onclick="this.closest('[id=modal-novo-webhook]').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;">✕</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">URL de Destino</label>
+            <input type="url" id="webhook-url" placeholder="https://seu-dominio.com/webhook" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:13px;box-sizing:border-box;" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Eventos a Disparar</label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="evt-lead-created" checked /> lead.created
+              </label>
+              <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="evt-lead-converted" checked /> lead.converted
+              </label>
+              <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="evt-lead-qualified" /> lead.qualified
+              </label>
+              <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
+                <input type="checkbox" id="evt-message-sent" /> message.sent
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="criarWebhook()" class="btn-primary" style="width:100%;margin-top:16px;">Criar Webhook</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  async function criarWebhook() {
+    const url = document.getElementById('webhook-url')?.value;
+    const events = [];
+    if (document.getElementById('evt-lead-created')?.checked) events.push('lead.created');
+    if (document.getElementById('evt-lead-converted')?.checked) events.push('lead.converted');
+    if (document.getElementById('evt-lead-qualified')?.checked) events.push('lead.qualified');
+    if (document.getElementById('evt-message-sent')?.checked) events.push('message.sent');
+
+    if (!url || events.length === 0) {
+      alert('Preencha a URL e selecione pelo menos um evento');
+      return;
+    }
+
+    const result = await callFunction('webhook-manager', 'create', { url, events });
+    if (result?.id) {
+      alert('Webhook criado com sucesso!');
+      document.getElementById('modal-novo-webhook').style.display = 'none';
+      document.getElementById('webhook-url').value = '';
+      await carregarWebhooksOutbound();
+    } else {
+      alert('Erro ao criar webhook: ' + (result?.error || 'Desconhecido'));
+    }
+  }
+
+  async function testarWebhook(webhookId) {
+    const result = await callFunction('webhook-manager', 'test', { webhookId });
+    if (result?.statusCode) {
+      alert(`Webhook testado! Status: ${result.statusCode} - Tempo: ${result.responseTime}ms`);
+    } else {
+      alert('Erro ao testar webhook');
+    }
+  }
+
+  async function deletarWebhook(webhookId) {
+    if (!confirm('Deletar webhook?')) return;
+    const result = await callFunction('webhook-manager', 'delete', { webhookId });
+    if (result?.success) {
+      await carregarWebhooksOutbound();
+    }
+  }
+
+  // ─── Webhooks Inbound ──────────────────────────────────────────
+  async function carregarConfigWebhookInbound() {
+    // Generate inbound webhook URL
+    const urlEl = document.getElementById('inbound-webhook-url');
+    const tokenEl = document.getElementById('inbound-webhook-token');
+
+    if (!currentProfile?.id) return;
+
+    // URL would be: /functions/v1/webhook-receiver?user_id={id}&token={secret}
+    // For now, show placeholder
+    urlEl.value = `${window.location.origin}/functions/v1/webhook-receiver?user_id=${currentProfile.id}&token=...`;
+    tokenEl.value = '• • • • • • • • (clique em Regenerar para gerar um novo)';
+  }
+
+  function toggleTokenVisibility() {
+    const el = document.getElementById('inbound-webhook-token');
+    el.type = el.type === 'password' ? 'text' : 'password';
+  }
+
+  async function regenerarSecretToken() {
+    alert('Funcionalidade de regenerar token será implementada via API');
+  }
+
+  function copiarWebhookURL() {
+    const url = document.getElementById('inbound-webhook-url').value;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('URL copiada para clipboard!');
+    });
   }
 </script>
 <script src="https://unpkg.com/drawflow/dist/drawflow.min.js"></script>
