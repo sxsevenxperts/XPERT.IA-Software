@@ -145,7 +145,7 @@ function AdminDashboard({ data, onViewUsers, onViewRankings, onViewPeakHours, on
 }
 
 // ── Lista de todos os motoristas ──
-function UserList({ users, onSelect, onBack }) {
+function UserList({ users, onSelect, onDelete, onBack }) {
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
@@ -225,7 +225,19 @@ function UserList({ users, onSelect, onBack }) {
                   R$ {Number(u.total_earnings || 0).toFixed(0)}
                 </p>
                 <p style={{ fontSize: 11, color: '#64748b' }}>{u.total_trips || 0} corridas</p>
-                <ChevronRight size={14} color='#475569' style={{ marginTop: 4 }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete?.(u.user_id); }}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: '#ef4444', padding: '4px 6px', display: 'flex', alignItems: 'center',
+                    }}
+                    title='Remover usuário'
+                  >
+                    <XCircle size={18} />
+                  </button>
+                  <ChevronRight size={14} color='#475569' />
+                </div>
               </div>
             </div>
           )
@@ -818,6 +830,27 @@ export default function AdminPanel({ user, onLogout }) {
     setView('users')
   }
 
+  async function deleteUser(userId) {
+    if (!window.confirm('⚠️ Tem certeza que deseja remover este usuário? Esta ação não pode ser desfeita!')) {
+      return
+    }
+    
+    try {
+      const { error } = await adminSupabase.auth.admin.deleteUser(userId)
+      if (error) throw error
+      
+      // Remover da lista local
+      setUsers(users.filter(u => u.user_id !== userId))
+      
+      // Recarregar dashboard
+      await loadDashboard()
+      
+      alert('✅ Usuário removido com sucesso!')
+    } catch (err) {
+      alert('❌ Erro ao remover usuário: ' + (err.message || 'Tente novamente'))
+    }
+  }
+
   return (
     <div style={{
       background: '#0f172a', minHeight: '100dvh', color: '#f1f5f9',
@@ -866,6 +899,7 @@ export default function AdminPanel({ user, onLogout }) {
               <UserList
                 users={users}
                 onSelect={(id) => { setSelectedUserId(id); setView('user_detail') }}
+                onDelete={deleteUser}
                 onBack={() => setView('dashboard')}
               />
             )}
