@@ -156,9 +156,13 @@ export default function App() {
   const handleAuth = async (result) => {
     setAuth(result)
 
-    // Verificar se é admin
+    // Verificar se é admin (por role no banco ou por email)
     if (result?.user?.id) {
-      const admin = await checkIsAdmin(result.user.id)
+      let admin = await checkIsAdmin(result.user.id)
+      // Override: marca como admin se for email específico
+      if (!admin && result.user.email === 'sevenxpertssxacadmy@gmail.com') {
+        admin = true
+      }
       setIsAdmin(admin)
     }
 
@@ -189,7 +193,9 @@ export default function App() {
   }
 
   // ── Assinatura expirada ──
-  if (auth?.user && auth.subscription && !auth.subscription.active) {
+  // (Exceto para contas de teste)
+  const isTestAccount = auth?.user?.email === 'motorista@easydrive.com'
+  if (auth?.user && auth.subscription && !auth.subscription.active && !isTestAccount) {
     return <SubscriptionExpired user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
   }
 
