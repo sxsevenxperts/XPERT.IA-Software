@@ -9,12 +9,20 @@ export default function RouteMap({ route = [], currentLocation, pickupLocation, 
   const markerPickupRef = useRef(null)
   const markerDestRef = useRef(null)
 
+  // Ref sempre atualizado com o currentLocation mais recente.
+  // Necessário porque o useEffect de init tem deps=[] (closure stale)
+  // e o import('leaflet') é assíncrono — o GPS pode chegar antes.
+  const currentLocationRef = useRef(currentLocation)
+  useEffect(() => { currentLocationRef.current = currentLocation }, [currentLocation])
+
   // Inicializa mapa uma única vez
   useEffect(() => {
     if (instanceRef.current || !mapRef.current) return
 
     // Importa Leaflet dinamicamente para evitar SSR issues
     import('leaflet').then((L) => {
+      if (!mapRef.current) return // componente desmontado durante o import
+
       // CSS do Leaflet
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link')
@@ -68,10 +76,29 @@ export default function RouteMap({ route = [], currentLocation, pickupLocation, 
 
       instanceRef.current = { map, L, currentIcon, pickupIcon, destIcon }
 
-      // Posição inicial — Brasil como fallback
-      const initLat = currentLocation?.lat ?? -15.77972
-      const initLon = currentLocation?.lon ?? -47.92972
-      map.setView([initLat, initLon], 15)
+      // Posição inicial: usa o ref que pode já ter o GPS real,
+      // mesmo que tenha chegado durante o import() assíncrono
+      const loc = currentLocationRef.current
+      if (loc?.lat) {
+        map.setView([loc.lat, loc.lon], 15)
+        markerCurrentRef.current = L.marker(
+          [loc.lat, loc.lon],
+          { icon: currentIcon, zIndexOffset: 1000 }
+        ).addTo(map)
+      } else {
+        // GPS ainda não chegou: pede posição rápida de baixa precisão
+        navigator.geolocation?.getCurrentPosition(
+          ({ coords }) => {
+            if (!instanceRef.current) return
+            map.setView([coords.latitude, coords.longitude], 15)
+          },
+          () => {
+            // Fallback final: mostra o Brasil inteiro (zoom 5) em vez de focar em Brasília
+            map.setView([-14.235, -51.925], 5)
+          },
+          { enableHighAccuracy: false, timeout: 5_000, maximumAge: 60_000 }
+        )
+      }
     })
 
     return () => {
