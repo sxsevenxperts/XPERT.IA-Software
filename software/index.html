@@ -6593,6 +6593,32 @@
         ? `Próxima cobrança: ${new Date(assin.proxima_cobranca + 'T00:00:00').toLocaleDateString('pt-BR')}`
         : 'Próxima cobrança: —';
 
+      // Atualiza valor total do plano com addons
+      let totalMensal = 497; // plano base
+      const addons = [];
+      if (assin.addon_objecao) {
+        totalMensal += 127;
+        addons.push('🛡️ Objeção IA');
+      }
+      if (assin.agentes_extras) {
+        totalMensal += assin.agentes_extras * 197;
+        addons.push(`${assin.agentes_extras} agente${assin.agentes_extras > 1 ? 's' : ''} extra`);
+      }
+      if (assin.numeros_extras) {
+        totalMensal += assin.numeros_extras * 97;
+        addons.push(`${assin.numeros_extras} número${assin.numeros_extras > 1 ? 's' : ''} extra`);
+      }
+      if (assin.usuarios_extras_limite) {
+        totalMensal += assin.usuarios_extras_limite * 57;
+        addons.push(`${assin.usuarios_extras_limite} usuário${assin.usuarios_extras_limite > 1 ? 's' : ''} extra`);
+      }
+      document.getElementById('billing-total-price').textContent = totalMensal;
+      document.getElementById('billing-addons-summary').textContent = addons.length > 0 ? `+ ${addons.join(', ')}` : '';
+
+      // Atualiza contadores de agentes e números
+      document.getElementById('billing-agentes-count').textContent = `${1 + (assin.agentes_extras || 0)}`;
+      document.getElementById('billing-numeros-count').textContent = `${1 + (assin.numeros_extras || 0)}`;
+
       // Mostra botão "Renovar" apenas quando assinatura está cancelada ou inadimplente
       const btnRenovar = document.getElementById('btn-renovar-assinatura');
       if (btnRenovar) {
