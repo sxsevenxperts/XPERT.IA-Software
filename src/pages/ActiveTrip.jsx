@@ -6,13 +6,13 @@ import SafetyCard from '../components/SafetyCard'
 import RouteMap from '../components/RouteMap'
 import { reverseGeocode } from '../utils/safety'
 import { parseRideText, PLATFORM_LIST } from '../utils/rideParser'
-import { fetchRoutes, rankRoutes, getTrafficInfo } from '../utils/routing'
+import { fetchRoutes, rankRoutes, getTrafficInfo, fmtDist } from '../utils/routing'
 import { fetchWeather } from '../utils/weather'
 import {
   Navigation, MapPin, Flag, Play, Pause, Square,
   Fuel, Clock, Search, Loader, CheckCircle, Clipboard,
   X, ChevronDown, ChevronUp, Route, Zap, TrendingDown,
-  AlertTriangle, Wind, CloudRain,
+  AlertTriangle, Wind, CloudRain, Gauge,
 } from 'lucide-react'
 
 const PLATFORMS = PLATFORM_LIST
@@ -58,6 +58,7 @@ export default function ActiveTrip({ sharedRide }) {
   const [routeInfo,    setRouteInfo]    = useState(null)   // ranked routes
   const [routeLoading, setRouteLoading] = useState(false)
   const [selectedRoute,setSelectedRoute]= useState(0)     // índice da rota selecionada
+  const [showNavSteps, setShowNavSteps] = useState(false)
 
   // Clima
   const [weather, setWeather] = useState(null)
@@ -352,39 +353,77 @@ export default function ActiveTrip({ sharedRide }) {
   // ══════════════════════════════════════════════════════════════════════
   const recRoute = routeInfo?.[selectedRoute]
 
+  // Velocidade atual do último ponto GPS
+  const currentSpeed = activeTrip?.route?.slice(-1)[0]?.speed || 0
+
+  // Riscos detectados em tempo real
+  const h = new Date().getHours()
+  const risks = []
+  if (h >= 23 || h < 5) risks.push({ icon: '🌙', text: 'Madrugada — redobre atenção. Zonas de risco elevado.', color: '#a855f7' })
+  if (traffic.level === 'pesado') risks.push({ icon: '🚦', text: `${traffic.label} — avalie rotas alternativas.`, color: '#ef4444' })
+  if (weather?.isRain) risks.push({ icon: '🌧️', text: `${weather.label} — reduza velocidade, evite frenagens bruscas.`, color: '#3b82f6' })
+  if (safetyScore?.score < 40) risks.push({ icon: '⚠️', text: `Zona de risco detectada (score ${safetyScore.score}/100) — fique alerta.`, color: '#ef4444' })
+  if (currentSpeed > 80) risks.push({ icon: '🏎️', text: `Velocidade alta (${currentSpeed} km/h) — reduza para maior segurança.`, color: '#f59e0b' })
+
   return (
     <div style={{ padding: '16px 16px 100px' }}>
 
-      {/* Status badge */}
-      <div style={{
-        background: tripStatus === 'trip' ? '#22c55e15' : '#f59e0b15',
-        border: `1px solid ${tripStatus === 'trip' ? '#22c55e40' : '#f59e0b40'}`,
-        borderRadius: 14, padding: '12px 16px', marginBottom: 14,
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <span style={{
-          width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
-          background: tripStatus === 'trip' ? '#22c55e' : '#f59e0b',
-          animation: 'pulse 1.5s infinite',
-        }} />
-        <div style={{ flex: 1 }}>
-          <p style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
-            {tripStatus === 'trip' ? 'Em viagem — rastreando rota' : tripStatus === 'paused' ? 'Pausado' : 'Aguardando'}
-          </p>
-          <p style={{ fontSize: 12, color: 'var(--text3)' }}>
-            {activeTrip?.platform?.toUpperCase()} • Iniciou às {fmt.time(activeTrip?.startTime)}
-          </p>
-        </div>
-        {weather && (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 1, flexShrink: 0,
-          }} title={weather.tip}>
-            <span style={{ fontSize: 20 }}>{weather.icon}</span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>{weather.temp}°C</span>
+      {/* Painel de navegação turn-by-turn */}
+      {activeTrip?.destination && tripStatus === 'trip' && recRoute && (
+        <NavPanel
+          route={recRoute}
+          dest={activeTrip.destination}
+          traffic={traffic}
+          showSteps={showNavSteps}
+          onToggleSteps={() => setShowNavSteps((v) => !v)}
+        />
+      )}
+
+      {/* Status badge (quando não em modo nav) */}
+      {!(activeTrip?.destination && tripStatus === 'trip' && recRoute) && (
+        <div style={{
+          background: tripStatus === 'trip' ? '#22c55e15' : '#f59e0b15',
+          border: `1px solid ${tripStatus === 'trip' ? '#22c55e40' : '#f59e0b40'}`,
+          borderRadius: 14, padding: '12px 16px', marginBottom: 14,
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span style={{
+            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+            background: tripStatus === 'trip' ? '#22c55e' : '#f59e0b',
+            animation: 'pulse 1.5s infinite',
+          }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
+              {tripStatus === 'trip' ? 'Em viagem — rastreando rota' : tripStatus === 'paused' ? 'Pausado' : 'Aguardando'}
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--text3)' }}>
+              {activeTrip?.platform?.toUpperCase()} • Iniciou às {fmt.time(activeTrip?.startTime)}
+            </p>
           </div>
-        )}
-      </div>
+          {weather && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, flexShrink: 0 }} title={weather.tip}>
+              <span style={{ fontSize: 20 }}>{weather.icon}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>{weather.temp}°C</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Alertas de risco em tempo real */}
+      {risks.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          {risks.map((r, i) => (
+            <div key={i} style={{
+              background: `${r.color}12`, border: `1px solid ${r.color}40`,
+              borderRadius: 12, padding: '9px 14px', marginBottom: 6,
+              display: 'flex', gap: 10, alignItems: 'center',
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{r.icon}</span>
+              <p style={{ fontSize: 12, color: r.color, fontWeight: 600 }}>{r.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Mapa */}
       <div style={{ marginBottom: 14 }}>
@@ -394,36 +433,16 @@ export default function ActiveTrip({ sharedRide }) {
           pickupLocation={activeTrip?.pickupLocation}
           destination={activeTrip?.destination}
           plannedRoutes={mapRoutes}
-          height={220}
+          height={activeTrip?.destination ? 260 : 220}
         />
       </div>
 
       {/* Carregando rota */}
       {routeLoading && <LoadingRoute />}
 
-      {/* Cards de rota (se tiver destino) */}
-      {routeInfo && (
+      {/* Cards de rota alternativos (só quando não há NavPanel) */}
+      {routeInfo && !(activeTrip?.destination && tripStatus === 'trip' && recRoute) && (
         <RouteCards routes={routeInfo} selected={selectedRoute} onSelect={setSelectedRoute} fuelPrice={settings.fuelPrice} />
-      )}
-
-      {/* Alerta de tráfego pesado */}
-      {traffic.level === 'pesado' && (
-        <TrafficBadge traffic={traffic} />
-      )}
-
-      {/* Clima durante viagem */}
-      {weather?.isRain && (
-        <div style={{
-          background: '#3b82f615', border: '1px solid #3b82f640',
-          borderRadius: 12, padding: '10px 14px', marginBottom: 12,
-          display: 'flex', gap: 10, alignItems: 'center',
-        }}>
-          <CloudRain size={16} color='#3b82f6' />
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{weather.icon} {weather.label}</p>
-            <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{weather.tip}</p>
-          </div>
-        </div>
       )}
 
       {/* Origem / Destino */}
@@ -448,18 +467,44 @@ export default function ActiveTrip({ sharedRide }) {
             onSelect={handleSelectDest}
           />
         ) : (
-          <RouteRow icon={<Flag size={13} color='#ef4444' />} label='DESTINO' value={activeTrip.destination.address} />
+          <>
+            <RouteRow icon={<Flag size={13} color='#ef4444' />} label='DESTINO' value={activeTrip.destination.address} />
+            {/* Links de navegação externa */}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <a href={`https://waze.com/ul?ll=${activeTrip.destination.lat},${activeTrip.destination.lon}&navigate=yes`}
+                target='_blank' rel='noopener noreferrer'
+                style={{ flex: 1, padding: '9px 4px', background: '#00bcd415', border: '1px solid #00bcd440', borderRadius: 10, color: '#00bcd4', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                🗺️ Waze
+              </a>
+              <a href={`https://www.google.com/maps/dir/?api=1&destination=${activeTrip.destination.lat},${activeTrip.destination.lon}&travelmode=driving`}
+                target='_blank' rel='noopener noreferrer'
+                style={{ flex: 1, padding: '9px 4px', background: '#4285F415', border: '1px solid #4285F440', borderRadius: 10, color: '#4285F4', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                📍 Google Maps
+              </a>
+              <a href={`maps://?daddr=${activeTrip.destination.lat},${activeTrip.destination.lon}&dirflg=d`}
+                target='_blank' rel='noopener noreferrer'
+                style={{ flex: 1, padding: '9px 4px', background: '#64748b15', border: '1px solid #64748b30', borderRadius: 10, color: '#94a3b8', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                🍎 Maps
+              </a>
+            </div>
+          </>
         )}
       </div>
 
       {/* Métricas */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
         <MetricBox icon={<Navigation size={15} color='#3b82f6' />} label='Distância' value={fmt.km(activeTrip?.km || 0)} />
         <MetricBox
           icon={<Fuel size={15} color='#f97316' />}
           label='Combustível'
           value={fmt.currency(fuelCost)}
-          sub={`${((activeTrip?.km || 0) / (settings.fuelConsumption || 35)).toFixed(2)} L`}
+          sub={`${((activeTrip?.km || 0) / (settings.fuelConsumption || 35)).toFixed(1)} L`}
+        />
+        <MetricBox
+          icon={<Gauge size={15} color='#a855f7' />}
+          label='Velocidade'
+          value={currentSpeed > 0 ? `${currentSpeed} km/h` : '—'}
+          sub='atual'
         />
       </div>
 
@@ -690,6 +735,122 @@ function RouteMetric({ icon, value, sub, subColor }) {
     <div>
       <p style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>{icon} {value}</p>
       {sub && <p style={{ fontSize: 10, color: subColor || 'var(--text3)', marginTop: 1 }}>{sub}</p>}
+    </div>
+  )
+}
+
+function NavPanel({ route, dest, traffic, showSteps, onToggleSteps }) {
+  const now = new Date()
+  const eta = new Date(now.getTime() + route.adjMin * 60_000)
+    .toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+  const steps = route.steps || []
+  const nextStep = steps.find((s) => s.type !== 'depart') ?? steps[0]
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+      border: '1px solid #3b82f640',
+      borderRadius: 16, marginBottom: 14, overflow: 'hidden',
+    }}>
+      {/* Instrução principal */}
+      {nextStep && (
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #ffffff10' }}>
+          <p style={{ fontSize: 11, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+            Próxima instrução
+          </p>
+          <p style={{ fontSize: 17, fontWeight: 800, color: '#f1f5f9', lineHeight: 1.3 }}>
+            {nextStep.instruction}
+          </p>
+          {nextStep.distanceM > 0 && (
+            <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 4 }}>
+              em {fmtDist(nextStep.distanceM)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Resumo: ETA + tempo restante + tráfego */}
+      <div style={{ padding: '12px 16px 4px', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+        <div>
+          <p style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>Chegada</p>
+          <p style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{eta}</p>
+        </div>
+        <div>
+          <p style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>Restante</p>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9' }}>{route.adjMin} min • {route.distanceKm} km</p>
+        </div>
+        <div>
+          <p style={{ fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4 }}>Trânsito</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: traffic.color }}>{traffic.icon} {traffic.label}</p>
+        </div>
+      </div>
+
+      {/* Links externos */}
+      <div style={{ padding: '10px 16px 14px', display: 'flex', gap: 8 }}>
+        <a
+          href={`https://waze.com/ul?ll=${dest.lat},${dest.lon}&navigate=yes`}
+          target='_blank' rel='noopener noreferrer'
+          style={{ flex: 1, padding: '8px 4px', background: '#00bcd420', border: '1px solid #00bcd440', borderRadius: 10, color: '#00bcd4', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+        >🗺️ Waze</a>
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lon}&travelmode=driving`}
+          target='_blank' rel='noopener noreferrer'
+          style={{ flex: 1, padding: '8px 4px', background: '#4285F420', border: '1px solid #4285F440', borderRadius: 10, color: '#4285F4', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+        >📍 Google</a>
+        <a
+          href={`maps://?daddr=${dest.lat},${dest.lon}&dirflg=d`}
+          target='_blank' rel='noopener noreferrer'
+          style={{ flex: 1, padding: '8px 4px', background: '#ffffff10', border: '1px solid #ffffff20', borderRadius: 10, color: '#94a3b8', textAlign: 'center', textDecoration: 'none', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+        >🍎 Maps</a>
+      </div>
+
+      {/* Expandir lista de passos */}
+      {steps.length > 0 && (
+        <>
+          <button
+            onClick={onToggleSteps}
+            style={{
+              width: '100%', padding: '10px 16px',
+              background: '#ffffff08', border: 'none', borderTop: '1px solid #ffffff10',
+              color: '#94a3b8', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              fontSize: 12, fontWeight: 700,
+            }}
+          >
+            {showSteps ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showSteps ? 'Ocultar passos' : `Ver todos os ${steps.length} passos`}
+          </button>
+
+          {showSteps && (
+            <div style={{ maxHeight: 280, overflowY: 'auto', borderTop: '1px solid #ffffff10' }}>
+              {steps.map((step, i) => (
+                <div key={i} style={{
+                  padding: '10px 16px',
+                  borderBottom: '1px solid #ffffff08',
+                  display: 'flex', gap: 10, alignItems: 'flex-start',
+                  background: step === nextStep ? '#3b82f610' : 'transparent',
+                }}>
+                  <span style={{
+                    width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                    background: step === nextStep ? '#3b82f6' : '#334155',
+                    color: '#fff', fontSize: 10, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>{i + 1}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, color: step === nextStep ? '#93c5fd' : '#cbd5e1', fontWeight: step === nextStep ? 700 : 400 }}>
+                      {step.instruction}
+                    </p>
+                    {step.distanceM > 0 && (
+                      <p style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{fmtDist(step.distanceM)}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
