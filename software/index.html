@@ -3339,8 +3339,7 @@
         </div>
 
         <!-- Canvas Drawflow -->
-        <div class="flow-canvas-wrap" id="flow-canvas-wrap"
-             ondrop="drop(event)" ondragover="allowDrop(event)">
+        <div class="flow-canvas-wrap" id="flow-canvas-wrap">
           <div id="drawflow"></div>
           <!-- Controles de zoom estilo n8n -->
           <div class="flow-zoom-controls">
@@ -9474,11 +9473,10 @@
   }
 
   // ── Dados de plano carregados para o designer de fluxos ─────────────
-  let _fluxoNumeros       = [];    // carregado ao abrir Designer de Fluxos
-  let _fluxoAgentes       = [];
-  let _fluxoColaboradores = [];    // membros da equipe (usuarios_extras)
-  let _fluxoObjecao       = false; // true se o usuário comprou addon_objecao
-  let _fluxosSalvos       = [];    // lista {id,nome} para o nó Mudar de Fluxo
+  let _fluxoNumeros  = [];    // carregado ao abrir Designer de Fluxos
+  let _fluxoAgentes  = [];
+  let _fluxoObjecao  = false; // true se o usuário comprou addon_objecao
+  let _fluxosSalvos  = [];    // lista {id,nome} para o nó Mudar de Fluxo
 
   async function loadFluxosPage() {
     // 1. Inicializa Drawflow se necessário
@@ -9596,27 +9594,17 @@
     editor.canvas_x = 0;
     editor.canvas_y = 0;
     if (editor.precanvas) editor.precanvas.style.transform = 'translate(0px,0px) scale(0.35)';
-    // Garanta que o precanvas e drawflow aceitam drag & drop
-    const dfEl = document.getElementById('drawflow');
-    dfEl.addEventListener('dragover', function(e) { e.preventDefault(); });
-    dfEl.addEventListener('drop', drop);
-    editor.precanvas.addEventListener('dragover', function(e) { e.preventDefault(); });
-    editor.precanvas.addEventListener('drop', drop);
-    // Zoom centrado no cursor (como n8n) — substitui o handler padrão do Drawflow
-    dfEl.addEventListener('wheel', function(e) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      // Passo menor = mais suave (igual n8n usa ~0.05–0.1 por tick)
-      const step = 0.08;
-      const delta = e.deltaY < 0 ? step : -step;
-      _dfApplyZoom(editor.zoom + delta, e.clientX, e.clientY);
-    }, { passive: false, capture: true });
+    // Drag & drop: listeners em CAPTURE phase no container — garante que
+    // o dragover é prevenido ANTES de qualquer handler interno do Drawflow,
+    // e que o drop dispara apenas uma vez (stopImmediatePropagation).
+    const wrap = document.getElementById('flow-canvas-wrap');
+    wrap.addEventListener('dragover', function(e) { e.preventDefault(); }, true);
+    wrap.addEventListener('drop', function(e) { e.preventDefault(); e.stopImmediatePropagation(); drop(e); }, true);
     // Registra tipos de nó (etapa usa placeholder – substituído no drop)
     Object.entries(NODE_TEMPLATES).forEach(([type, cfg]) => {
       const safeHtml = cfg.html
         .replace('ETAPA_NUMEROS_OPTIONS','')
         .replace('ETAPA_AGENTES_OPTIONS','')
-        .replace('ETAPA_COLABORADORES_OPTIONS','<option value="">— Sem responsável —</option>')
         .replace('FLUXOS_OPTIONS','<option value="">— carregando fluxos —</option>');
       editor.registerNode(type, {
         html: `<div class="title-box">${cfg.title}</div>${safeHtml}`,
@@ -9660,11 +9648,13 @@
     const type = dragNodeType || event.dataTransfer.getData('text');
     if (!type || !NODE_TEMPLATES[type]) return;
     const cfg = NODE_TEMPLATES[type];
-    // Converte coordenadas de tela → canvas usando pan offset + zoom
-    const zoom = editor.zoom || 1;
-    const rect = document.getElementById('drawflow').getBoundingClientRect();
-    const x = (event.clientX - rect.left - (editor.canvas_x || 0)) / zoom;
-    const y = (event.clientY - rect.top  - (editor.canvas_y || 0)) / zoom;
+    // Converte coordenadas de tela → coordenadas do canvas (zoom + pan)
+    const dfEl = document.getElementById('drawflow');
+    const rect  = dfEl.getBoundingClientRect();
+    const mat   = new DOMMatrix(getComputedStyle(editor.precanvas).transform);
+    const zoom  = editor.zoom || 1;
+    const x = (event.clientX - rect.left - mat.m41) / zoom;
+    const y = (event.clientY - rect.top  - mat.m42) / zoom;
 
     // Opções de números (usadas em etapa e departamento)
     const numerosOpts = _fluxoNumeros.length
@@ -9672,8 +9662,6 @@
       : '<option value="">Nenhum número configurado</option>';
     const agentesOpts = '<option value="">Sem agente (humano)</option>' +
       _fluxoAgentes.map((a, i) => `<option value="${i}">${escapeHtml(a)}</option>`).join('');
-    const colaboradoresOpts = '<option value="">— Sem responsável (qualquer) —</option>' +
-      _fluxoColaboradores.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.nome)}${c.cargo ? ' · ' + escapeHtml(c.cargo) : ''}</option>`).join('');
     // Opções de fluxos salvos (usado em mudar_fluxo)
     const fluxosOpts = _fluxosSalvos.length
       ? _fluxosSalvos.map(f => `<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('')
