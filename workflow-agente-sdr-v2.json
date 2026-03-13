@@ -80,8 +80,32 @@
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/agente_config?user_id=eq.$('Resolve cliente pelo instanceName').first().json[0]?.id&chave=in.(ai_provider,ai_model)&select=chave,valor",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        }
+      },
+      "id": "node-busca-config-ai",
+      "name": "Busca config AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
         "method": "POST",
-        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${$('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id}&model=gpt-4o` }}",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=${$('Busca config AI').first().json?.[0]?.ai_provider || 'openai'}&user_id=${$('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id}&model=${$('Busca config AI').first().json?.[0]?.ai_model || 'gpt-4o'}` }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -187,9 +211,12 @@
     },
     "node-if-saldo": {
       "main": [
-        [{"node": "node-llm-openai", "type": "main", "index": 0}],
+        [{"node": "node-busca-config-ai", "type": "main", "index": 0}],
         [{"node": "node-aviso-sem-tokens", "type": "main", "index": 0}]
       ]
+    },
+    "node-busca-config-ai": {
+      "main": [[{"node": "node-llm-openai", "type": "main", "index": 0}]]
     },
     "node-llm-openai": {
       "main": [[{"node": "node-envia-resposta", "type": "main", "index": 0}]]
