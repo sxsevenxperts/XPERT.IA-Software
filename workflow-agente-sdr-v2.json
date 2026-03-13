@@ -457,6 +457,134 @@
         "specifyBody": "json",
         "jsonBody": "={{ { resumo: `👤 Nome: $('Resolve cliente pelo instanceName').first().json[0]?.nome\\n📱 Celular: $('Resolve cliente pelo instanceName').first().json[0]?.celular\\n📌 Assunto: $('Resolve cliente pelo instanceName').first().json[0]?.assunto\\n\\n✅ QUALIFICADO` } }}"
       }
+    },
+    {
+      "id": "node-detecta-objecao",
+      "name": "Detecta objeção na resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        600
+      ],
+      "parameters": {
+        "jsCode": "const resposta = $('Chama OpenAI via llm-proxy').first().json.content || '';\nconst mensagemCliente = $('Normaliza e filtra mensagem').first().json.mensagem || '';\nconst conversaCompleta = resposta + ' ' + mensagemCliente;\n\nconst OBJECOES = {\n  preco: ['caro', 'preço', 'valor', 'investimento', 'custo', 'pagar'],\n  tempo: ['não tenho tempo', 'depois', 'mais tarde', 'agora não', 'ocupado', 'urgente'],\n  confianca: ['não confio', 'dúvida', 'suspeito', 'receio', 'incerteza', 'provado'],\n  necessidade: ['não preciso', 'não tenho necessidade', 'vai funcionar', 'dúvida se funciona'],\n  outro: []\n};\n\nlet tipoObjecao = null;\nfor (const [tipo, palavras] of Object.entries(OBJECOES)) {\n  for (const palavra of palavras) {\n    if (conversaCompleta.toLowerCase().includes(palavra)) {\n      tipoObjecao = tipo;\n      break;\n    }\n  }\n  if (tipoObjecao) break;\n}\n\nreturn [{ json: { temObjecao: !!tipoObjecao, tipoObjecao: tipoObjecao || 'outro', conversaCompleta } }];"
+      }
+    },
+    {
+      "id": "node-if-objecao",
+      "name": "Tem objeção?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        600
+      ],
+      "parameters": {
+        "options": {
+          "fuzzyCompare": true
+        },
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.temObjecao }}",
+              "operation": "equals",
+              "value2": "=true"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      }
+    },
+    {
+      "id": "node-gera-plano-acao",
+      "name": "Gera plano de ação contra objeção",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1800,
+        500
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=${$('Busca config AI').first().json?.[0]?.ai_provider || 'openai'}&user_id=${$('Resolve cliente pelo instanceName').first().json[0]?.id}&model=${$('Busca config AI').first().json?.[0]?.ai_modelo || 'gpt-4o'}` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messages: [{ role: 'user', content: `OBJEÇÃO DETECTADA: ${$('Detecta objeção na resposta').first().json.tipoObjecao}\\n\\nConversa:\\n${$('Detecta objeção na resposta').first().json.conversaCompleta}\\n\\nGere um PLANO DE AÇÃO específico para contornar esta objeção. Seja prático e direto. Inclua:\\n1. Estratégia (como abordar)\\n2. Argumento principal\\n3. Próximo passo recomendado` }], system: 'Você é um estrategista de vendas. Gere planos de ação para contornar objeções de clientes. Seja conciso e acionável.' }) }}"
+      }
+    },
+    {
+      "id": "node-salva-objecao",
+      "name": "Salva objeção no banco",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1900,
+        500
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/lead_objections",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { user_id: $('Resolve cliente pelo instanceName').first().json[0]?.id, lead_id: $('Resolve cliente pelo instanceName').first().json[0]?.id, numero_whatsapp: $('Normaliza e filtra mensagem').first().json.numero, tipo_objecao: $('Detecta objeção na resposta').first().json.tipoObjecao, descricao: $('Detecta objeção na resposta').first().json.conversaCompleta, plano_acao: $('Gera plano de ação contra objeção').first().json.content } }}"
+      }
+    },
+    {
+      "id": "node-envia-plano-ao-agente",
+      "name": "Envia plano de ação ao agente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        500
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $('Resolve cliente pelo instanceName').first().json[0]?.evo_instance, number: $('Busca config AI').first().json?.[0]?.numero_supervisor || '5511999999999', text: `🚨 OBJEÇÃO DETECTADA\\n\\n👤 Cliente: ${$('Resolve cliente pelo instanceName').first().json[0]?.nome}\\n📱 Número: ${$('Normaliza e filtra mensagem').first().json.numero}\\n\\n🎯 Tipo: ${$('Detecta objeção na resposta').first().json.tipoObjecao.toUpperCase()}\\n\\n📋 PLANO DE AÇÃO:\\n${$('Gera plano de ação contra objeção').first().json.content}` } }}"
+      }
     }
   ],
   "connections": {
@@ -581,7 +709,7 @@
       "main": [
         [
           {
-            "node": "node-extrai-tokens-usados",
+            "node": "node-detecta-objecao",
             "type": "main",
             "index": 0
           }
@@ -626,6 +754,68 @@
         [
           {
             "node": "node-envia-relatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node-detecta-objecao": {
+      "main": [
+        [
+          {
+            "node": "node-if-objecao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node-if-objecao": {
+      "main": [
+        [
+          {
+            "node": "node-gera-plano-acao",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "node-extrai-tokens-usados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node-gera-plano-acao": {
+      "main": [
+        [
+          {
+            "node": "node-salva-objecao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node-salva-objecao": {
+      "main": [
+        [
+          {
+            "node": "node-envia-plano-ao-agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node-envia-plano-ao-agente": {
+      "main": [
+        [
+          {
+            "node": "node-extrai-tokens-usados",
             "type": "main",
             "index": 0
           }
