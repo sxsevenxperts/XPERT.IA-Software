@@ -118,6 +118,33 @@
       ]
     },
     {
+      "id": "node-busca-prompt-sdr",
+      "name": "Busca prompt SDR configurado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1050,
+        350
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/agente_config?user_id=eq.$('Resolve cliente pelo instanceName').first().json[0]?.id&chave=in.(sistema_prompt,tipo_sdr)&select=chave,valor",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        }
+      }
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=${$('Busca config AI').first().json?.[0]?.ai_provider || 'openai'}&user_id=${$('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id}&model=${$('Busca config AI').first().json?.[0]?.ai_model || 'gpt-4o'}` }}",
@@ -132,7 +159,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ (() => { const historico = ($('Busca histórico da conversa').first().json || []).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.conteudo })); return JSON.stringify({ messages: [...historico, { role: 'user', content: $('Normaliza e filtra mensagem').first().json.mensagem }], system: 'Você é um assistente de vendas profissional. Qualifique o cliente baseado na conversa. Responda de forma concisa e persuasiva.' }); })() }}"
+        "jsonBody": "={{ (() => { const historico = ($('Busca histórico da conversa').first().json || []).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.conteudo })); const configMap = {}; ($('Busca prompt SDR configurado').first().json || []).forEach(c => { configMap[c.chave] = c.valor; }); const sistemPrompt = configMap.sistema_prompt || 'Você é um assistente de vendas profissional SDR. Qualifique o cliente. Responda conciso e persuasivo. Faça perguntas qualificantes.'; return JSON.stringify({ messages: [...historico, { role: 'user', content: $('Normaliza e filtra mensagem').first().json.mensagem }], system: sistemPrompt }); })() }}"
       },
       "id": "node-llm-openai",
       "name": "Chama OpenAI via llm-proxy",
@@ -843,7 +870,7 @@
       "main": [
         [
           {
-            "node": "node-llm-openai",
+            "node": "node-busca-prompt-sdr",
             "type": "main",
             "index": 0
           }
@@ -1074,6 +1101,17 @@
         [
           {
             "node": "node-envia-relatorio-grupo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "node-busca-prompt-sdr": {
+      "main": [
+        [
+          {
+            "node": "node-llm-openai",
             "type": "main",
             "index": 0
           }
