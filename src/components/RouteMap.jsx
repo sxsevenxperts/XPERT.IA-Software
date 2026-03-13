@@ -1,83 +1,82 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Crosshair } from 'lucide-react'
 
-// Mapa de rota em tempo real usando Leaflet + OpenStreetMap (gratuito, sem API key)
-export default function RouteMap({ route = [], currentLocation, pickupLocation, destination, height = 220 }) {
-  const mapRef = useRef(null)
-  const instanceRef = useRef(null)
-  const polylineRef = useRef(null)
-  const markerCurrentRef = useRef(null)
-  const markerPickupRef = useRef(null)
-  const markerDestRef = useRef(null)
+// ─── Mapa de rota em tempo real ─────────────────────────────────────────────
+// Leaflet + OpenStreetMap (gratuito, sem API key)
+// Suporta: GPS em tempo real, rota planejada OSRM, alternativas, legenda
 
-  // Ref sempre atualizado com o currentLocation mais recente.
-  // Necessário porque o useEffect de init tem deps=[] (closure stale)
-  // e o import('leaflet') é assíncrono — o GPS pode chegar antes.
+export default function RouteMap({
+  route          = [],   // trilha GPS percorrida [{lat, lon}]
+  currentLocation,       // posição atual do motorista
+  pickupLocation,        // origem
+  destination,           // destino
+  plannedRoutes  = [],   // rotas OSRM rankeadas [{points, isRecommended, ...}]
+  height         = 240,
+}) {
+  const mapRef             = useRef(null)
+  const instanceRef        = useRef(null)
+  const trailRef           = useRef(null)       // trilha GPS percorrida
+  const routePolylinesRef  = useRef([])         // polilinhas das rotas planejadas
+  const markerCurrentRef   = useRef(null)
+  const markerPickupRef    = useRef(null)
+  const markerDestRef      = useRef(null)
   const currentLocationRef = useRef(currentLocation)
+  const [following, setFollowing] = useState(true)
+
+  // Ref sempre atualizado (evita stale closure no init async)
   useEffect(() => { currentLocationRef.current = currentLocation }, [currentLocation])
 
-  // Inicializa mapa uma única vez
+  // ── Init: carrega Leaflet uma única vez ─────────────────────────────────
   useEffect(() => {
     if (instanceRef.current || !mapRef.current) return
 
-    // Importa Leaflet dinamicamente para evitar SSR issues
     import('leaflet').then((L) => {
-      if (!mapRef.current) return // componente desmontado durante o import
+      if (!mapRef.current) return
 
-      // CSS do Leaflet
+      // CSS do Leaflet (injeção única)
       if (!document.getElementById('leaflet-css')) {
         const link = document.createElement('link')
-        link.id = 'leaflet-css'
-        link.rel = 'stylesheet'
+        link.id   = 'leaflet-css'
+        link.rel  = 'stylesheet'
         link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
         document.head.appendChild(link)
       }
 
-      const map = L.map(mapRef.current, {
-        zoomControl: false,
-        attributionControl: false,
-      })
+      const map = L.map(mapRef.current, { zoomControl: false, attributionControl: false })
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-      }).addTo(map)
+      // Tiles OpenStreetMap
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map)
 
-      // Ícone de posição atual (pulsante)
+      // Ícones
+      const makeIcon = (color, size, rotate = false) =>
+        L.divIcon({
+          html: `<div style="
+            width:${size}px;height:${size}px;
+            border-radius:${rotate ? '3px' : '50%'};
+            background:${color};border:2px solid #fff;
+            box-shadow:0 2px 8px ${color}88;
+            transform:${rotate ? 'rotate(45deg)' : 'none'};
+          "></div>`,
+          className: '', iconSize: [size, size], iconAnchor: [size / 2, size / 2],
+        })
+
       const currentIcon = L.divIcon({
         html: `<div style="
-          width:18px;height:18px;border-radius:50%;
+          width:20px;height:20px;border-radius:50%;
           background:#3b82f6;border:3px solid #fff;
-          box-shadow:0 0 0 4px #3b82f640;
+          box-shadow:0 0 0 5px #3b82f655;
         "></div>`,
-        className: '',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
+        className: '', iconSize: [20, 20], iconAnchor: [10, 10],
       })
 
-      const pickupIcon = L.divIcon({
-        html: `<div style="
-          width:14px;height:14px;border-radius:50%;
-          background:#22c55e;border:2px solid #fff;
-        "></div>`,
-        className: '',
-        iconSize: [14, 14],
-        iconAnchor: [7, 7],
-      })
+      instanceRef.current = {
+        map, L,
+        currentIcon,
+        pickupIcon: makeIcon('#22c55e', 14),
+        destIcon:   makeIcon('#ef4444', 16, true),
+      }
 
-      const destIcon = L.divIcon({
-        html: `<div style="
-          width:16px;height:16px;border-radius:3px;
-          background:#ef4444;border:2px solid #fff;
-          transform:rotate(45deg);
-        "></div>`,
-        className: '',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      })
-
-      instanceRef.current = { map, L, currentIcon, pickupIcon, destIcon }
-
-      // Posição inicial: usa o ref que pode já ter o GPS real,
-      // mesmo que tenha chegado durante o import() assíncrono
+      // Posição inicial via ref (já pode ter GPS)
       const loc = currentLocationRef.current
       if (loc?.lat) {
         map.setView([loc.lat, loc.lon], 15)
@@ -86,19 +85,18 @@ export default function RouteMap({ route = [], currentLocation, pickupLocation, 
           { icon: currentIcon, zIndexOffset: 1000 }
         ).addTo(map)
       } else {
-        // GPS ainda não chegou: pede posição rápida de baixa precisão
         navigator.geolocation?.getCurrentPosition(
           ({ coords }) => {
             if (!instanceRef.current) return
             map.setView([coords.latitude, coords.longitude], 15)
           },
-          () => {
-            // Fallback final: mostra o Brasil inteiro (zoom 5) em vez de focar em Brasília
-            map.setView([-14.235, -51.925], 5)
-          },
+          () => map.setView([-14.235, -51.925], 5),
           { enableHighAccuracy: false, timeout: 5_000, maximumAge: 60_000 }
         )
       }
+
+      // Quando usuário arrasta o mapa → desativa "seguir GPS"
+      map.on('dragstart', () => setFollowing(false))
     })
 
     return () => {
@@ -107,12 +105,11 @@ export default function RouteMap({ route = [], currentLocation, pickupLocation, 
     }
   }, [])
 
-  // Atualiza posição atual e rota conforme GPS atualiza
+  // ── Atualiza posição atual ──────────────────────────────────────────────
   useEffect(() => {
     if (!instanceRef.current || !currentLocation) return
     const { map, L, currentIcon } = instanceRef.current
 
-    // Marcador de posição atual
     if (!markerCurrentRef.current) {
       markerCurrentRef.current = L.marker(
         [currentLocation.lat, currentLocation.lon],
@@ -122,89 +119,159 @@ export default function RouteMap({ route = [], currentLocation, pickupLocation, 
       markerCurrentRef.current.setLatLng([currentLocation.lat, currentLocation.lon])
     }
 
-    // Centraliza suavemente no motorista
-    map.panTo([currentLocation.lat, currentLocation.lon], { animate: true, duration: 0.5 })
-  }, [currentLocation])
+    if (following) {
+      map.panTo([currentLocation.lat, currentLocation.lon], { animate: true, duration: 0.6 })
+    }
+  }, [currentLocation, following])
 
-  // Atualiza polyline da rota percorrida
+  // ── Trilha GPS percorrida ───────────────────────────────────────────────
   useEffect(() => {
     if (!instanceRef.current || route.length < 2) return
     const { map, L } = instanceRef.current
-
     const latlngs = route.map((p) => [p.lat, p.lon])
 
-    if (!polylineRef.current) {
-      polylineRef.current = L.polyline(latlngs, {
-        color: '#3b82f6',
-        weight: 4,
-        opacity: 0.85,
-        lineJoin: 'round',
+    if (!trailRef.current) {
+      trailRef.current = L.polyline(latlngs, {
+        color: '#22c55e', weight: 3, opacity: 0.7,
+        dashArray: '6, 4', lineJoin: 'round',
       }).addTo(map)
     } else {
-      polylineRef.current.setLatLngs(latlngs)
+      trailRef.current.setLatLngs(latlngs)
     }
   }, [route])
 
-  // Marcador de origem (pickup)
+  // ── Rotas planejadas (OSRM) ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!instanceRef.current) return
+    const { map, L } = instanceRef.current
+
+    // Limpa polilinhas antigas
+    routePolylinesRef.current.forEach((pl) => pl.remove())
+    routePolylinesRef.current = []
+
+    if (!plannedRoutes?.length) return
+
+    // Alternativas primeiro (ficam embaixo), recomendada por último (fica em cima)
+    const sorted = [...plannedRoutes].reverse()
+
+    sorted.forEach((route) => {
+      const isRec = route.isRecommended
+      const pl = L.polyline(route.points, {
+        color:     isRec ? '#3b82f6' : '#94a3b8',
+        weight:    isRec ? 5 : 3,
+        opacity:   isRec ? 0.90 : 0.45,
+        dashArray: isRec ? null : '10, 8',
+        lineJoin:  'round',
+      }).addTo(map)
+      routePolylinesRef.current.push(pl)
+    })
+
+    // Ajusta zoom para mostrar a rota recomendada completa
+    const rec = plannedRoutes.find((r) => r.isRecommended) ?? plannedRoutes[0]
+    if (rec?.points?.length) {
+      try {
+        map.fitBounds(rec.points, { padding: [40, 40], maxZoom: 16 })
+      } catch {}
+    }
+  }, [plannedRoutes])
+
+  // ── Marcador de origem ──────────────────────────────────────────────────
   useEffect(() => {
     if (!instanceRef.current || !pickupLocation?.lat) return
     const { map, L, pickupIcon } = instanceRef.current
 
     if (!markerPickupRef.current) {
-      markerPickupRef.current = L.marker([pickupLocation.lat, pickupLocation.lon], { icon: pickupIcon })
-        .bindPopup('<b style="font-size:13px">📍 Origem</b>')
-        .addTo(map)
+      markerPickupRef.current = L.marker(
+        [pickupLocation.lat, pickupLocation.lon],
+        { icon: pickupIcon }
+      ).bindPopup('<b style="font-size:13px">📍 Origem</b>').addTo(map)
     } else {
       markerPickupRef.current.setLatLng([pickupLocation.lat, pickupLocation.lon])
     }
   }, [pickupLocation?.lat, pickupLocation?.lon])
 
-  // Marcador de destino
+  // ── Marcador de destino ─────────────────────────────────────────────────
   useEffect(() => {
     if (!instanceRef.current || !destination?.lat) return
     const { map, L, destIcon } = instanceRef.current
 
     if (!markerDestRef.current) {
-      markerDestRef.current = L.marker([destination.lat, destination.lon], { icon: destIcon })
-        .bindPopup('<b style="font-size:13px">🏁 Destino</b>')
-        .addTo(map)
+      markerDestRef.current = L.marker(
+        [destination.lat, destination.lon],
+        { icon: destIcon }
+      ).bindPopup('<b style="font-size:13px">🏁 Destino</b>').addTo(map)
     } else {
       markerDestRef.current.setLatLng([destination.lat, destination.lon])
     }
 
-    // Se tem origem E destino, ajusta zoom para mostrar os dois
-    if (markerPickupRef.current && instanceRef.current) {
-      const { map: m, L: Leaflet } = instanceRef.current
-      const bounds = Leaflet.latLngBounds(
-        [pickupLocation?.lat ?? destination.lat, pickupLocation?.lon ?? destination.lon],
-        [destination.lat, destination.lon]
-      )
-      m.fitBounds(bounds, { padding: [40, 40] })
+    // Sem rota OSRM ainda: ajusta zoom para mostrar origem + destino
+    if (!plannedRoutes?.length && markerPickupRef.current && instanceRef.current) {
+      const { map: m, L: Lx } = instanceRef.current
+      try {
+        const bounds = Lx.latLngBounds(
+          [pickupLocation?.lat ?? destination.lat, pickupLocation?.lon ?? destination.lon],
+          [destination.lat, destination.lon]
+        )
+        m.fitBounds(bounds, { padding: [40, 40] })
+      } catch {}
     }
   }, [destination?.lat, destination?.lon])
 
+  // ── Botão "Localizar" ──────────────────────────────────────────────────
+  const handleLocate = () => {
+    if (!instanceRef.current || !currentLocation) return
+    instanceRef.current.map.setView(
+      [currentLocation.lat, currentLocation.lon], 16,
+      { animate: true, duration: 0.8 }
+    )
+    setFollowing(true)
+  }
+
   return (
-    <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid #334155', position: 'relative' }}>
-      <div ref={mapRef} style={{ height, width: '100%', background: '#1e293b' }} />
+    <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)', position: 'relative', boxShadow: '0 4px 24px #0008' }}>
+      <div ref={mapRef} style={{ height, width: '100%', background: 'var(--bg3)' }} />
+
+      {/* Botão localizar */}
+      <button
+        onClick={handleLocate}
+        title='Centralizar na minha posição'
+        style={{
+          position: 'absolute', top: 10, right: 10, zIndex: 1000,
+          width: 36, height: 36, borderRadius: 10,
+          background: following ? '#3b82f6' : 'var(--bg2,#1e293b)',
+          border: `1px solid ${following ? '#3b82f6' : 'var(--border,#334155)'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', boxShadow: '0 2px 8px #0004',
+          transition: 'all 0.2s',
+        }}
+      >
+        <Crosshair size={16} color={following ? '#fff' : '#94a3b8'} />
+      </button>
+
       {/* Legenda */}
       <div style={{
-        position: 'absolute', bottom: 8, left: 8,
-        background: '#0f172aee', borderRadius: 8, padding: '6px 10px',
-        display: 'flex', gap: 10, zIndex: 1000,
+        position: 'absolute', bottom: 10, left: 10, zIndex: 1000,
+        background: '#0f172aee', borderRadius: 10, padding: '6px 12px',
+        display: 'flex', gap: 12, backdropFilter: 'blur(4px)',
+        border: '1px solid #ffffff10',
       }}>
-        <LegendItem color='#22c55e' label='Origem' />
-        <LegendItem color='#3b82f6' label='Você' />
-        <LegendItem color='#ef4444' label='Destino' />
+        <LegendDot color='#22c55e' label='Origem' />
+        <LegendDot color='#3b82f6' label={following ? 'Você ●' : 'Você'} />
+        {destination && <LegendDot color='#ef4444' label='Destino' />}
+        {plannedRoutes?.length > 0 && <LegendDot color='#3b82f6' label='Rota' line />}
       </div>
     </div>
   )
 }
 
-function LegendItem({ color, label }) {
+function LegendDot({ color, label, line }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-      <span style={{ fontSize: 10, color: '#94a3b8' }}>{label}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+      {line
+        ? <div style={{ width: 16, height: 3, background: color, borderRadius: 2 }} />
+        : <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+      }
+      <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 500 }}>{label}</span>
     </div>
   )
 }
