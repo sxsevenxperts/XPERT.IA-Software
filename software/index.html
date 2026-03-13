@@ -1412,7 +1412,7 @@
       <div class="nav-item membro-hidden" onclick="showPage('kpis', this)">
         <span class="icon"></span> KPIs & OKRs
       </div>
-      <div class="nav-item" onclick="showPage('conta', this)">
+      <div class="nav-item membro-hidden" onclick="showPage('conta', this)">
         <span class="icon"></span> Gerenciar Conta
       </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
@@ -4198,8 +4198,13 @@
       const isMembro = profile?.role === 'membro';
 
       // Define o ID efetivo para queries de dados:
-      // membro usa owner_id (dados do chefe), outros usam o próprio id
-      _effectiveUserId = (isMembro && profile?.owner_id) ? profile.owner_id : user.id;
+      // membro usa owner_id (via agent_id -> usuarios_extras), outros usam o próprio id
+      let effectiveId = user.id;
+      if (isMembro && profile?.agent_id) {
+        const { data: agentData } = await db.from('usuarios_extras').select('owner_id').eq('id', profile.agent_id).single();
+        effectiveId = agentData?.owner_id || user.id;
+      }
+      _effectiveUserId = effectiveId;
 
       // Se admin: exibe menu de clientes
       if (profile?.role === 'admin') {
