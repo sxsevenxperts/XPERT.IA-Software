@@ -4189,6 +4189,16 @@
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('dashboard-page').style.display = 'block';
 
+    // Verifica se retornou do OAuth do Google Calendar
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('gcal') === 'connected') {
+      showNotification('Google Calendar conectado com sucesso! 🎉', 'success');
+      // Remove parâmetro da URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Aguarda para garantir que o status está carregado
+      setTimeout(checkGCalStatus, 1500);
+    }
+
     // Carrega perfil do usuário logado
     const { data: { user } } = await db.auth.getUser();
     if (user) {
