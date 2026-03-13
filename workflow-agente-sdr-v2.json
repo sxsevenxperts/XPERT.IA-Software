@@ -12,7 +12,10 @@
       "name": "Webhook — Evolution API",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [0, 400],
+      "position": [
+        0,
+        400
+      ],
       "notes": "Configure este endpoint na Evolution API como webhook de mensagens recebidas."
     },
     {
@@ -23,7 +26,10 @@
       "name": "Normaliza e filtra mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 400]
+      "position": [
+        220,
+        400
+      ]
     },
     {
       "parameters": {
@@ -54,7 +60,10 @@
       "name": "Verifica saldo de tokens",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [780, 400]
+      "position": [
+        780,
+        400
+      ]
     },
     {
       "parameters": {
@@ -76,7 +85,10 @@
       "name": "Bloqueado por tokens?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1000, 400]
+      "position": [
+        1000,
+        400
+      ]
     },
     {
       "parameters": {
@@ -100,7 +112,10 @@
       "name": "Busca config AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1000, 200]
+      "position": [
+        1000,
+        200
+      ]
     },
     {
       "parameters": {
@@ -123,7 +138,10 @@
       "name": "Chama OpenAI via llm-proxy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1200, 300]
+      "position": [
+        1200,
+        300
+      ]
     },
     {
       "parameters": {
@@ -146,7 +164,10 @@
       "name": "Envia resposta ao lead",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1400, 300]
+      "position": [
+        1400,
+        300
+      ]
     },
     {
       "parameters": {
@@ -156,7 +177,10 @@
       "name": "Extrai tokens usados",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1350, 450]
+      "position": [
+        1350,
+        450
+      ]
     },
     {
       "parameters": {
@@ -187,7 +211,10 @@
       "name": "Desconta tokens da conta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1550, 450]
+      "position": [
+        1550,
+        450
+      ]
     },
     {
       "parameters": {
@@ -210,7 +237,10 @@
       "name": "Envia aviso: sem tokens",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1200, 500]
+      "position": [
+        1200,
+        500
+      ]
     },
     {
       "parameters": {
@@ -234,7 +264,10 @@
       "name": "Resolve cliente pelo instanceName",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [550, 400]
+      "position": [
+        550,
+        400
+      ]
     },
     {
       "parameters": {
@@ -257,7 +290,10 @@
       "name": "Qualifica lead com IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1700, 450]
+      "position": [
+        1700,
+        450
+      ]
     },
     {
       "parameters": {
@@ -288,45 +324,154 @@
       "name": "Atualiza stage do lead",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1850, 450]
+      "position": [
+        1850,
+        450
+      ]
     }
   ],
   "connections": {
     "node-webhook": {
-      "main": [[{"node": "node-normaliza", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-normaliza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-normaliza": {
-      "main": [[{"node": "node-resolve-cliente", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-resolve-cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-resolve-cliente": {
-      "main": [[{"node": "node-verifica-saldo", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-verifica-saldo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-verifica-saldo": {
-      "main": [[{"node": "node-if-saldo", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-if-saldo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-if-saldo": {
       "main": [
-        [{"node": "node-busca-config-ai", "type": "main", "index": 0}],
-        [{"node": "node-aviso-sem-tokens", "type": "main", "index": 0}]
+        [
+          {
+            "node": "node-busca-config-ai",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "node-aviso-sem-tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "node-busca-config-ai": {
-      "main": [[{"node": "node-llm-openai", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-llm-openai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-llm-openai": {
-      "main": [[{"node": "node-envia-resposta", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-envia-resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-envia-resposta": {
-      "main": [[{"node": "node-extrai-tokens-usados", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-extrai-tokens-usados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-extrai-tokens-usados": {
-      "main": [[{"node": "node-desconta-tokens", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-desconta-tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-desconta-tokens": {
-      "main": [[{"node": "node-qualifica-lead", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-qualifica-lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "node-qualifica-lead": {
-      "main": [[{"node": "node-atualiza-stage", "type": "main", "index": 0}]]
+      "main": [
+        [
+          {
+            "node": "node-atualiza-stage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
-  }
+  },
+  "meta": {
+    "description": "XPERT.IA — Agente SDR WhatsApp (v2 com llm-proxy, token accounting e lead qualification)",
+    "version": "7.0.0"
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    "whatsapp",
+    "sdr",
+    "tokens",
+    "qualification",
+    "llm-proxy"
+  ]
 }
