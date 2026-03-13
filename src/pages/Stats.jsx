@@ -19,11 +19,12 @@ const PERIODS = [
   { id: 'custom', label: 'Personalizado' },
 ]
 
-// Tabs: Gráficos | Combustível | Conquistas
+// Tabs: Lucro | Gráficos | Combustível | Conquistas
 const TABS = [
-  { id: 'charts',  label: 'Gráficos',    icon: TrendingUp },
-  { id: 'fuel',    label: 'Combustível', icon: Fuel },
-  { id: 'achievements', label: 'Conquistas', icon: Trophy },
+  { id: 'profits',      label: 'Lucro',       icon: TrendingUp },
+  { id: 'charts',       label: 'Gráficos',    icon: CalendarDays },
+  { id: 'fuel',         label: 'Combustível', icon: Fuel },
+  { id: 'achievements', label: 'Conquistas',  icon: Trophy },
 ]
 
 function dateKey(ts) {
@@ -60,8 +61,8 @@ const customTooltip = ({ active, payload, label }) => {
 }
 
 export default function Stats() {
-  const { trips, settings, fuelLogs, addFuelLog, deleteFuelLog } = useStore()
-  const [tab, setTab]       = useState('charts')
+  const { trips, settings, expenses, fuelLogs, addFuelLog, deleteFuelLog } = useStore()
+  const [tab, setTab]       = useState('profits')
   const [period, setPeriod] = useState('7d')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo]     = useState('')
@@ -267,6 +268,104 @@ export default function Stats() {
       }))
   }, [trips, settings])
 
+  // ── DADOS DE LUCRO (aba Lucro) ────────────────────────────────────
+  const profitData = useMemo(() => {
+    // Filtra pelo período selecionado
+    const pTrips = trips.filter((t) => {
+      const ts = t.endTime || t.startTime
+      return ts >= fromDate.getTime() && ts < toDate.getTime()
+    })
+    const pExpenses = (expenses || []).filter((e) => {
+      const ts = e.date || e.createdAt || 0
+      return ts >= fromDate.getTime() && ts < toDate.getTime()
+    })
+
+    const totalRevenue      = pTrips.reduce((a, t) => a + (t.earnings || 0), 0)
+    const totalFuelCost     = pTrips.reduce((a, t) => a + (t.fuelCost || 0), 0)
+    const totalOtherExp     = pExpenses.reduce((a, e) => a + (e.value || 0), 0)
+    const totalCost         = totalFuelCost + totalOtherExp
+    const netProfit         = totalRevenue - totalCost
+    const profitMargin      = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0
+    const totalKm           = pTrips.reduce((a, t) => a + (t.km || 0), 0)
+    const tripCount         = pTrips.length
+
+    // Dias ativos
+    const daySet = new Set(pTrips.map((t) => new Date(t.endTime || t.startTime).toDateString()))
+    const activeDays = daySet.size || 1
+
+    // Médias por dia ativo
+    const avgDailyRevenue = totalRevenue / activeDays
+    const avgDailyCost    = totalCost / activeDays
+    const avgDailyProfit  = netProfit / activeDays
+
+    // Médias por corrida
+    const avgRevPerTrip  = tripCount > 0 ? totalRevenue / tripCount : 0
+    const avgCostPerTrip = tripCount > 0 ? totalCost / tripCount : 0
+    const avgProfitPerTrip = tripCount > 0 ? netProfit / tripCount : 0
+    const avgProfitPerKm = totalKm > 0 ? netProfit / totalKm : 0
+
+    // Dias acima da meta de faturamento
+    const goalDaily = settings.goalDailyRevenue || 0
+    const goalDailyProfit = settings.goalDailyProfit || 0
+    const byDay = {}
+    pTrips.forEach((t) => {
+      const dk = new Date(t.endTime || t.startTime).toDateString()
+      if (!byDay[dk]) byDay[dk] = { revenue: 0, fuel: 0 }
+      byDay[dk].revenue += t.earnings || 0
+      byDay[dk].fuel    += t.fuelCost || 0
+    })
+    pExpenses.forEach((e) => {
+      const dk = new Date(e.date || e.createdAt || 0).toDateString()
+      if (!byDay[dk]) byDay[dk] = { revenue: 0, fuel: 0, other: 0 }
+      byDay[dk].other = (byDay[dk].other || 0) + (e.value || 0)
+    })
+    const dayValues = Object.values(byDay)
+    const daysAboveRevGoal   = goalDaily > 0   ? dayValues.filter((d) => d.revenue >= goalDaily).length : 0
+    const daysAboveProfGoal  = goalDailyProfit > 0 ? dayValues.filter((d) => (d.revenue - (d.fuel || 0) - (d.other || 0)) >= goalDailyProfit).length : 0
+
+    // Break-even: corridas mínimas por dia ativo para cobrir custos
+    const breakevenRevenue = avgDailyCost
+    const breakevenTrips   = avgRevPerTrip > 0 ? Math.ceil(breakevenRevenue / avgRevPerTrip) : 0
+
+    // Projeção mensal (baseada em dias úteis do período)
+    const periodDays = period === '7d' ? 7 : period === '15d' ? 15 : period === '30d' ? 30 : 30
+    const workRatio = activeDays / periodDays
+    const projMonthly = { revenue: avgDailyRevenue * 30 * workRatio, profit: avgDailyProfit * 30 * workRatio }
+
+    // Gráfico de lucro diário
+    const profitByDay = Object.entries(byDay).map(([dk, d]) => ({
+      date: new Date(dk).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      lucro: parseFloat((d.revenue - (d.fuel || 0) - (d.other || 0)).toFixed(2)),
+      receita: parseFloat(d.revenue.toFixed(2)),
+      custo: parseFloat(((d.fuel || 0) + (d.other || 0)).toFixed(2)),
+    })).sort((a, b) => a.date.localeCompare(b.date))
+
+    // Recomendações inteligentes
+    const recs = []
+    const fuelRatio = totalRevenue > 0 ? (totalFuelCost / totalRevenue) * 100 : 0
+    if (fuelRatio > 40) recs.push({ icon: '⛽', text: `Combustível consome ${fuelRatio.toFixed(0)}% do faturamento (ideal < 35%). Otimize rotas e evite trajetos vazios.`, color: '#ef4444' })
+    else if (fuelRatio > 30) recs.push({ icon: '⛽', text: `Combustível em ${fuelRatio.toFixed(0)}% do faturamento. Atenção ao consumo.`, color: '#f59e0b' })
+    else if (fuelRatio > 0) recs.push({ icon: '⛽', text: `Ótimo! Combustível apenas ${fuelRatio.toFixed(0)}% do faturamento.`, color: '#22c55e' })
+
+    if (profitMargin < 0) recs.push({ icon: '🔴', text: 'Você está no PREJUÍZO. Os custos superam o faturamento. Reduza despesas ou aumente as corridas.', color: '#ef4444' })
+    else if (profitMargin < 20) recs.push({ icon: '⚠️', text: `Margem de ${profitMargin.toFixed(0)}% está baixa. Meta: acima de 30%.`, color: '#f59e0b' })
+    else if (profitMargin >= 40) recs.push({ icon: '🚀', text: `Excelente! Margem de ${profitMargin.toFixed(0)}% — você está indo muito bem.`, color: '#22c55e' })
+
+    if (goalDaily > 0 && daysAboveRevGoal < activeDays * 0.5) recs.push({ icon: '🎯', text: `Meta diária atingida em ${daysAboveRevGoal}/${activeDays} dias. Tente aumentar o horário ou aceitar mais corridas nas horas de pico.`, color: '#f59e0b' })
+    if (avgProfitPerKm < 0.5 && totalKm > 10) recs.push({ icon: '🛣️', text: `Lucro de R$${avgProfitPerKm.toFixed(2)}/km — prefira corridas mais longas para melhorar a eficiência.`, color: '#f97316' })
+    if (totalOtherExp > totalFuelCost * 0.5) recs.push({ icon: '💸', text: `Despesas diversas (R$${totalOtherExp.toFixed(2)}) estão altas. Revise seus gastos operacionais.`, color: '#f59e0b' })
+
+    return {
+      totalRevenue, totalFuelCost, totalOtherExp, totalCost, netProfit,
+      profitMargin, totalKm, tripCount, activeDays,
+      avgDailyRevenue, avgDailyCost, avgDailyProfit,
+      avgRevPerTrip, avgCostPerTrip, avgProfitPerTrip, avgProfitPerKm,
+      goalDaily, goalDailyProfit, daysAboveRevGoal, daysAboveProfGoal,
+      breakevenTrips, breakevenRevenue,
+      projMonthly, profitByDay, recs, fuelRatio,
+    }
+  }, [trips, expenses, fromDate, toDate, settings, period])
+
   const handleAddFuelLog = () => {
     if (!fuelForm.liters || parseFloat(fuelForm.liters) <= 0) return
     addFuelLog({
@@ -297,29 +396,244 @@ export default function Stats() {
       <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>Análise e conquistas</p>
 
       {/* Tabs: Gráficos | Conquistas */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, background: '#1e293b', borderRadius: 12, padding: 4 }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: '#1e293b', borderRadius: 12, padding: 4 }}>
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             style={{
-              flex: 1, padding: '10px 0',
+              flex: 1, padding: '9px 0',
               background: tab === t.id ? '#22c55e20' : 'transparent',
               border: tab === t.id ? '1px solid #22c55e50' : '1px solid transparent',
               borderRadius: 10, color: tab === t.id ? '#22c55e' : '#64748b',
-              fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              fontSize: 11, fontWeight: 700, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'column', gap: 3,
             }}
           >
-            <t.icon size={15} />
-            {t.label}
+            <t.icon size={14} />
+            <span>{t.label}</span>
             {t.id === 'achievements' && <span style={{
-              background: '#22c55e', color: '#000', fontSize: 10,
-              fontWeight: 800, borderRadius: 8, padding: '2px 6px', marginLeft: 2,
+              background: '#22c55e', color: '#000', fontSize: 9,
+              fontWeight: 800, borderRadius: 8, padding: '1px 5px', marginTop: -1,
             }}>{unlockedCount}</span>}
           </button>
         ))}
       </div>
+
+      {/* ═══════ TAB: LUCRO ═══════ */}
+      {tab === 'profits' && (() => {
+        const p = profitData
+        const verdictColor = p.profitMargin < 0 ? '#ef4444' : p.profitMargin < 20 ? '#f59e0b' : p.profitMargin < 40 ? '#3b82f6' : '#22c55e'
+        const verdictEmoji = p.profitMargin < 0 ? '🔴' : p.profitMargin < 20 ? '⚠️' : p.profitMargin < 40 ? '📈' : '🚀'
+        const verdictText  = p.profitMargin < 0 ? 'Você está no prejuízo!' : p.profitMargin < 20 ? 'Margem baixa — melhore!' : p.profitMargin < 40 ? 'OK, mas pode crescer' : 'Ótimo desempenho!'
+        const fmtR = (v) => `R$ ${v.toFixed(2).replace('.', ',')}`
+        return (
+          <>
+            {/* Seletor de período */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              {PERIODS.map((pp) => (
+                <button key={pp.id} onClick={() => setPeriod(pp.id)}
+                  style={{
+                    padding: '7px 14px',
+                    background: period === pp.id ? '#22c55e20' : '#1e293b',
+                    border: `1px solid ${period === pp.id ? '#22c55e' : '#334155'}`,
+                    borderRadius: 20, color: period === pp.id ? '#22c55e' : '#64748b',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >{pp.label}</button>
+              ))}
+            </div>
+
+            {/* Veredicto */}
+            <div style={{
+              background: `${verdictColor}15`, border: `2px solid ${verdictColor}50`,
+              borderRadius: 16, padding: '16px 18px', marginBottom: 16,
+              display: 'flex', alignItems: 'center', gap: 14,
+            }}>
+              <span style={{ fontSize: 36 }}>{verdictEmoji}</span>
+              <div>
+                <p style={{ fontSize: 16, fontWeight: 900, color: verdictColor }}>{verdictText}</p>
+                <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 2 }}>
+                  Margem líquida: <strong style={{ color: verdictColor }}>{p.profitMargin.toFixed(1)}%</strong>
+                  {p.tripCount > 0 ? ` · ${p.tripCount} corridas · ${p.activeDays} dias ativos` : ''}
+                </p>
+              </div>
+            </div>
+
+            {/* Cards principais */}
+            {p.tripCount === 0 ? (
+              <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 24, textAlign: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: 40 }}>📊</span>
+                <p style={{ fontWeight: 700, color: '#f1f5f9', marginTop: 10, marginBottom: 4 }}>Sem corridas no período</p>
+                <p style={{ fontSize: 13, color: '#64748b' }}>Selecione um período com corridas para ver a análise de lucro.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+                  <AvgCard icon={<TrendingUp size={16} color='#22c55e' />} label='Faturamento' value={fmtR(p.totalRevenue)} sub={`Média ${fmtR(p.avgDailyRevenue)}/dia`} />
+                  <AvgCard icon={<Fuel size={16} color='#ef4444' />} label='Custo Total' value={fmtR(p.totalCost)} sub={`${p.fuelRatio.toFixed(0)}% combustível`} />
+                  <AvgCard icon={<Zap size={16} color={verdictColor} />} label='Lucro Líquido' value={fmtR(p.netProfit)} sub={`Média ${fmtR(p.avgDailyProfit)}/dia`} />
+                  <AvgCard icon={<Target size={16} color='#a855f7' />} label='Margem Lucro' value={`${p.profitMargin.toFixed(1)}%`} sub='sobre faturamento' />
+                </div>
+
+                {/* Gráfico lucro diário */}
+                {p.profitByDay.length > 1 && (
+                  <ChartCard title='Lucro líquido por dia (R$)'>
+                    <ResponsiveContainer width='100%' height={200}>
+                      <BarChart data={p.profitByDay} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray='3 3' stroke='#334155' />
+                        <XAxis dataKey='date' tick={{ fill: '#64748b', fontSize: 11 }} />
+                        <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
+                        <Tooltip content={customTooltip} />
+                        <ReferenceLine y={0} stroke='#64748b' strokeDasharray='4 2' />
+                        {settings.goalDailyProfit > 0 && <ReferenceLine y={settings.goalDailyProfit} stroke='#22c55e' strokeDasharray='6 3' label={{ value: 'Meta', fill: '#22c55e', fontSize: 10 }} />}
+                        <Bar dataKey='lucro' name='Lucro R$' fill={verdictColor} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                )}
+
+                {/* Receita vs Custo */}
+                {p.profitByDay.length > 1 && (
+                  <ChartCard title='Receita × Custo por dia (R$)'>
+                    <ResponsiveContainer width='100%' height={180}>
+                      <LineChart data={p.profitByDay} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray='3 3' stroke='#334155' />
+                        <XAxis dataKey='date' tick={{ fill: '#64748b', fontSize: 11 }} />
+                        <YAxis tick={{ fill: '#64748b', fontSize: 11 }} />
+                        <Tooltip content={customTooltip} />
+                        <Legend wrapperStyle={{ fontSize: 12, color: '#94a3b8' }} />
+                        <Line type='monotone' dataKey='receita' name='Receita' stroke='#22c55e' strokeWidth={2} dot={false} />
+                        <Line type='monotone' dataKey='custo'   name='Custo'   stroke='#ef4444' strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartCard>
+                )}
+
+                {/* Breakdown de custos */}
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 12 }}>💸 Breakdown de custos</p>
+                  {[
+                    { label: 'Combustível', value: p.totalFuelCost, color: '#f97316', pct: p.totalCost > 0 ? p.totalFuelCost / p.totalCost * 100 : 0 },
+                    { label: 'Despesas diversas', value: p.totalOtherExp, color: '#ef4444', pct: p.totalCost > 0 ? p.totalOtherExp / p.totalCost * 100 : 0 },
+                  ].map((item) => (
+                    <div key={item.label} style={{ marginBottom: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, color: '#f1f5f9' }}>{item.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: item.color }}>{fmtR(item.value)} ({item.pct.toFixed(0)}%)</span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 4, background: '#0f172a', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${item.pct}%`, background: item.color, borderRadius: 4, transition: 'width 0.6s ease' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Métricas por corrida */}
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 12 }}>📋 Por corrida / por km</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {[
+                      { label: 'Receita/corrida', value: fmtR(p.avgRevPerTrip), color: '#22c55e' },
+                      { label: 'Custo/corrida', value: fmtR(p.avgCostPerTrip), color: '#ef4444' },
+                      { label: 'Lucro/corrida', value: fmtR(p.avgProfitPerTrip), color: p.avgProfitPerTrip >= 0 ? '#3b82f6' : '#ef4444' },
+                      { label: 'Lucro/km rodado', value: `R$ ${p.avgProfitPerKm.toFixed(2)}/km`, color: p.avgProfitPerKm >= 0 ? '#a855f7' : '#ef4444' },
+                    ].map((m) => (
+                      <div key={m.label} style={{ background: '#0f172a', borderRadius: 10, padding: '10px 12px', border: '1px solid #1e293b' }}>
+                        <p style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>{m.label}</p>
+                        <p style={{ fontSize: 16, fontWeight: 800, color: m.color }}>{m.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Ponto de equilíbrio e metas */}
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 12 }}>🎯 Metas e ponto de equilíbrio</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {/* Break-even */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0f172a', borderRadius: 10, border: '1px solid #1e293b' }}>
+                      <div>
+                        <p style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Ponto de equilíbrio</p>
+                        <p style={{ fontSize: 11, color: '#475569' }}>Corridas mínimas por dia para não ter prejuízo</p>
+                      </div>
+                      <p style={{ fontSize: 20, fontWeight: 900, color: '#f59e0b' }}>{p.breakevenTrips} corridas</p>
+                    </div>
+                    {/* Meta faturamento */}
+                    {p.goalDaily > 0 && (
+                      <div style={{ padding: '10px 12px', background: '#0f172a', borderRadius: 10, border: '1px solid #1e293b' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Meta faturamento/dia ({fmtR(p.goalDaily)})</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: p.daysAboveRevGoal >= p.activeDays * 0.7 ? '#22c55e' : '#f59e0b' }}>
+                            {p.daysAboveRevGoal}/{p.activeDays} dias ✓
+                          </span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: '#334155', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${p.activeDays > 0 ? (p.daysAboveRevGoal / p.activeDays * 100) : 0}%`, background: '#22c55e', borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    )}
+                    {/* Meta lucro */}
+                    {p.goalDailyProfit > 0 && (
+                      <div style={{ padding: '10px 12px', background: '#0f172a', borderRadius: 10, border: '1px solid #1e293b' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>Meta lucro/dia ({fmtR(p.goalDailyProfit)})</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: p.daysAboveProfGoal >= p.activeDays * 0.7 ? '#22c55e' : '#f59e0b' }}>
+                            {p.daysAboveProfGoal}/{p.activeDays} dias ✓
+                          </span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: '#334155', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${p.activeDays > 0 ? (p.daysAboveProfGoal / p.activeDays * 100) : 0}%`, background: '#3b82f6', borderRadius: 3 }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Projeção mensal */}
+                {p.activeDays > 0 && (
+                  <div style={{ background: 'linear-gradient(135deg, #22c55e15, #3b82f615)', border: '1px solid #22c55e30', borderRadius: 14, padding: 14, marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>📅 Projeção mensal (se manter ritmo)</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div style={{ background: '#0f172a80', borderRadius: 10, padding: 12, textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', marginBottom: 4 }}>Faturamento</p>
+                        <p style={{ fontSize: 18, fontWeight: 900, color: '#22c55e' }}>{fmtR(p.projMonthly.revenue)}</p>
+                      </div>
+                      <div style={{ background: '#0f172a80', borderRadius: 10, padding: 12, textAlign: 'center' }}>
+                        <p style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', marginBottom: 4 }}>Lucro líquido</p>
+                        <p style={{ fontSize: 18, fontWeight: 900, color: p.projMonthly.profit >= 0 ? '#3b82f6' : '#ef4444' }}>{fmtR(p.projMonthly.profit)}</p>
+                      </div>
+                    </div>
+                    {settings.goalMonthlyRevenue > 0 && (
+                      <p style={{ fontSize: 11, color: '#64748b', marginTop: 10, textAlign: 'center' }}>
+                        Meta mensal: {fmtR(settings.goalMonthlyRevenue)} — projeção é {p.projMonthly.revenue >= settings.goalMonthlyRevenue ? '✅ acima' : '⚠️ abaixo'} da meta
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Recomendações */}
+                {p.recs.length > 0 && (
+                  <div style={{ marginBottom: 16 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#94a3b8', marginBottom: 10 }}>💡 Recomendações</p>
+                    {p.recs.map((r, i) => (
+                      <div key={i} style={{
+                        background: `${r.color}10`, border: `1px solid ${r.color}40`,
+                        borderRadius: 12, padding: '11px 13px', marginBottom: 8,
+                        display: 'flex', gap: 10, alignItems: 'flex-start',
+                      }}>
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>{r.icon}</span>
+                        <p style={{ fontSize: 13, color: '#cbd5e1', lineHeight: 1.5 }}>{r.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )
+      })()}
 
       {/* ═══════ TAB: CONQUISTAS ═══════ */}
       {tab === 'achievements' && (
