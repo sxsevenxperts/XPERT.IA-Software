@@ -204,7 +204,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { number: $json.numero, text: '⚠️ Nosso sistema está temporariamente indisponível. Tente novamente mais tarde.' } }}"
+        "jsonBody": "={{ { number: $json.numero, text: '🔋 Seus tokens acabaram! Adquira mais no Marketplace da XPERT.IA para continuar usando o agente. Acesse: https://xpert.sevenxperts.com (Marketplace > Tokens)' } }}"
       },
       "id": "node-aviso-sem-tokens",
       "name": "Envia aviso: sem tokens",
