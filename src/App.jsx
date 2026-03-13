@@ -10,6 +10,7 @@ import ActiveTrip from './pages/ActiveTrip'
 import History from './pages/History'
 import Settings from './pages/Settings'
 import Stats from './pages/Stats'
+import Chat from './pages/Chat'
 import Billing from './pages/Billing'
 import AdminPanel from './pages/AdminPanel'
 import Login, { SubscriptionExpired } from './pages/Login'
@@ -134,10 +135,11 @@ function MainApp({ sharedRide, user, subscription, onLogout }) {
         minHeight: '100dvh', position: 'relative',
       }}>
         {tab === 'dashboard' && <Dashboard onTab={setTab} />}
-        {tab === 'trip' && <ActiveTrip sharedRide={sharedRide} />}
-        {tab === 'history' && <History />}
-        {tab === 'stats' && <Stats />}
-        {tab === 'settings' && <Settings user={user} subscription={subscription} onTab={setTab} onLogout={onLogout} />}
+        {tab === 'trip'      && <ActiveTrip sharedRide={sharedRide} />}
+        {tab === 'history'   && <History />}
+        {tab === 'stats'     && <Stats />}
+        {tab === 'chat'      && <Chat user={user} />}
+        {tab === 'settings'  && <Settings user={user} subscription={subscription} onTab={setTab} onLogout={onLogout} />}
 
         {/* Footer */}
         <div style={{

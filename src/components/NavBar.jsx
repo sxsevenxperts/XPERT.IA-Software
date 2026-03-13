@@ -1,12 +1,13 @@
-import { LayoutDashboard, Navigation, History, Trophy, Settings } from 'lucide-react'
+import { LayoutDashboard, Navigation, History, Trophy, Settings, MessageCircle } from 'lucide-react'
 import { useStore } from '../store'
 
 const tabs = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Início' },
-  { id: 'trip', icon: Navigation, label: 'Viagem' },
-  { id: 'history', icon: History, label: 'Histórico' },
-  { id: 'stats', icon: Trophy, label: 'Conquistas' },
-  { id: 'settings', icon: Settings, label: 'Config' },
+  { id: 'trip',      icon: Navigation,      label: 'Viagem' },
+  { id: 'history',   icon: History,         label: 'Histórico' },
+  { id: 'chat',      icon: MessageCircle,   label: 'Chat' },
+  { id: 'stats',     icon: Trophy,          label: 'Stats' },
+  { id: 'settings',  icon: Settings,        label: 'Config' },
 ]
 
 export default function NavBar({ active, onTab }) {
@@ -36,7 +37,7 @@ export default function NavBar({ active, onTab }) {
             style={{
               flex: 1,
               display: 'flex', flexDirection: 'column', alignItems: 'center',
-              gap: 3, padding: '10px 0 8px',
+              gap: 2, padding: '8px 0 6px',
               background: 'none', border: 'none', cursor: 'pointer',
               color: isActive ? '#22c55e' : '#64748b',
               position: 'relative',
@@ -44,7 +45,7 @@ export default function NavBar({ active, onTab }) {
             }}
           >
             <div style={{ position: 'relative' }}>
-              <Icon size={22} strokeWidth={isActive ? 2.2 : 1.8} />
+              <Icon size={20} strokeWidth={isActive ? 2.2 : 1.8} />
               {isTripActive && (
                 <span style={{
                   position: 'absolute', top: -4, right: -4,
@@ -68,7 +69,7 @@ export default function NavBar({ active, onTab }) {
                 }} />
               )}
             </div>
-            <span style={{ fontSize: 10, fontWeight: isActive ? 600 : 400 }}>{label}</span>
+            <span style={{ fontSize: 9, fontWeight: isActive ? 700 : 400 }}>{label}</span>
             {isActive && (
               <span style={{
                 position: 'absolute', bottom: 0, left: '25%', right: '25%',
