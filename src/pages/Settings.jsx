@@ -28,7 +28,7 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
   const [form, setForm] = useState({ ...settings })
   const [notifStatus, setNotifStatus] = useState(getPermissionStatus())
   // change password state
-  const [pwdForm, setPwdForm] = useState({ current: '', new: '', confirm: '' })
+  const [pwdForm, setPwdForm] = useState({ new: '', confirm: '' })
   const [pwdLoading, setPwdLoading] = useState(false)
   const [pwdError, setPwdError] = useState('')
   const [pwdOk, setPwdOk] = useState(false)
@@ -69,14 +69,11 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
     if (!supabase) { setPwdError('Sem conexão com servidor'); return }
     setPwdLoading(true)
     try {
-      // Re-autenticar primeiro
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user?.email, password: pwdForm.current })
-      if (signInErr) { setPwdError('Senha atual incorreta'); setPwdLoading(false); return }
-      // Atualizar senha
+      // Usuário já autenticado — atualiza senha diretamente sem precisar da senha atual
       const { error } = await supabase.auth.updateUser({ password: pwdForm.new })
       if (error) { setPwdError(error.message); setPwdLoading(false); return }
       setPwdOk(true)
-      setPwdForm({ current: '', new: '', confirm: '' })
+      setPwdForm({ new: '', confirm: '' })
       setTimeout(() => setPwdOk(false), 4000)
     } catch { setPwdError('Erro ao alterar senha') }
     setPwdLoading(false)
@@ -91,7 +88,7 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
           {[
             { id: 'dark',   label: 'Dark',    icon: <Moon size={16} /> },
-            { id: 'light',  label: 'Normal',  icon: <Sun size={16} /> },
+            { id: 'light',  label: 'Light',   icon: <Sun size={16} /> },
             { id: 'system', label: 'Sistema', icon: <Monitor size={16} /> },
           ].map((t) => {
             const active = theme === t.id
@@ -386,14 +383,14 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
               <span style={{ fontSize: 13, color: '#22c55e' }}>Senha alterada com sucesso!</span>
             </div>
           )}
-          {['current', 'new', 'confirm'].map((field) => (
+          {['new', 'confirm'].map((field) => (
             <div key={field} style={{ position: 'relative', marginBottom: 10 }}>
               <Lock size={14} color='#64748b' style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type={showPwd ? 'text' : 'password'}
                 value={pwdForm[field]}
                 onChange={(e) => setPwdForm({ ...pwdForm, [field]: e.target.value })}
-                placeholder={field === 'current' ? 'Senha atual' : field === 'new' ? 'Nova senha (mín. 6 char)' : 'Confirmar nova senha'}
+                placeholder={field === 'new' ? 'Nova senha (mín. 6 caracteres)' : 'Confirmar nova senha'}
                 style={{ ...inputStyle, paddingLeft: 36, paddingRight: 36 }}
               />
               {field === 'confirm' && (
