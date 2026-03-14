@@ -1469,6 +1469,9 @@
       <div class="nav-item membro-hidden" id="nav-numeros-extras" onclick="showPage('numeros-extras', this)" style="display:none;">
         <span class="icon">🔢</span> Números Extras
       </div>
+      <div class="nav-item membro-hidden" onclick="showPage('workflows', this)">
+        <span class="icon">⚙️</span> Workflows
+      </div>
       <div class="nav-item membro-hidden" onclick="showPage('comunicacao', this)">
         <span class="icon"></span> Comunicação
       </div>
@@ -2527,6 +2530,23 @@
       <div class="card">
         <div class="card-title">Seus Números Extras</div>
         <div id="numeros-extras-list" style="display:grid;gap:12px;"></div>
+      </div>
+    </div>
+
+    <!-- WORKFLOWS -->
+    <div class="page membro-hidden" id="page-workflows">
+      <div class="page-header">
+        <h1>⚙️ Workflows / Design de Fluxo</h1>
+        <p>Crie e gerencie templates com diferentes configurações de atendimento</p>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:20px;">
+        <button class="btn-save" onclick="criarNovoWorkflow()">➕ Novo Workflow</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Seus Workflows</div>
+        <div id="workflows-list" style="display:grid;gap:12px;"></div>
       </div>
     </div>
 
@@ -6756,6 +6776,9 @@
         }
       });
     }
+    
+    // Carrega workflows
+    await loadWorkflows();
   }
 
   function resetAddonConfig(fieldKey, pageId) {
@@ -6764,6 +6787,130 @@
     if (el) {
       el.value = 'Configure o prompt específico para este agente aqui...';
     }
+  }
+
+  // =====================
+  // WORKFLOWS / DESIGNS DE FLUXO
+  // =====================
+  async function loadWorkflows() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    
+    const { data: workflows } = await db.from('workflow_designs')
+      .select('id,nome,descricao,criado_em')
+      .eq('user_id', user.id)
+      .order('criado_em', { ascending: false });
+    
+    const listEl = document.getElementById('workflows-list');
+    if (!listEl) return;
+    
+    if (!workflows || workflows.length === 0) {
+      listEl.innerHTML = '<p style="color:#8b949e;text-align:center;padding:20px;">Nenhum workflow criado. Clique em "Novo Workflow" para começar.</p>';
+      return;
+    }
+    
+    listEl.innerHTML = '';
+    workflows.forEach(wf => {
+      const card = document.createElement('div');
+      card.style.cssText = 'border:1px solid #30363d;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;';
+      card.innerHTML = `
+        <div>
+          <div style="font-weight:600;color:#e6edf3;">${wf.nome}</div>
+          <div style="font-size:12px;color:#8b949e;margin-top:4px;">${wf.descricao || 'Sem descrição'}</div>
+          <div style="font-size:11px;color:#6e7681;margin-top:4px;">Criado em ${new Date(wf.criado_em).toLocaleDateString('pt-BR')}</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="duplicarWorkflow('${wf.id}')">📋 Duplicar</button>
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="renomearWorkflow('${wf.id}','${wf.nome}')">✏️ Renomear</button>
+          <button style="padding:6px 12px;font-size:12px;background:#dc2626;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="deletarWorkflow('${wf.id}','${wf.nome}')">🗑️ Deletar</button>
+        </div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+
+  function criarNovoWorkflow() {
+    const nome = prompt('Nome do novo workflow:');
+    if (!nome || !nome.trim()) return;
+    
+    const descricao = prompt('Descrição (opcional):');
+    
+    (async () => {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      
+      const { error } = await db.from('workflow_designs').insert({
+        user_id: user.id,
+        nome: nome.trim(),
+        descricao: descricao?.trim() || null
+      });
+      
+      if (error) {
+        alert('Erro ao criar workflow: ' + error.message);
+        return;
+      }
+      
+      alert('✅ Workflow criado! Configure seus settings na página de Agente & Prompt');
+      loadWorkflows();
+    })();
+  }
+
+  async function duplicarWorkflow(workflowId) {
+    const { data: workflow } = await db.from('workflow_designs').select('nome,descricao').eq('id', workflowId).single();
+    if (!workflow) return;
+    
+    const novoNome = prompt(`Duplicar "${workflow.nome}" como:`, `${workflow.nome} (cópia)`);
+    if (!novoNome || !novoNome.trim()) return;
+    
+    const { data: { user } } = await db.auth.getUser();
+    const { error } = await db.from('workflow_designs').insert({
+      user_id: user.id,
+      nome: novoNome.trim(),
+      descricao: workflow.descricao
+    });
+    
+    if (error) {
+      alert('Erro ao duplicar: ' + error.message);
+      return;
+    }
+    
+    alert('✅ Workflow duplicado com sucesso!');
+    loadWorkflows();
+  }
+
+  function renomearWorkflow(workflowId, nomeAtual) {
+    const novoNome = prompt('Novo nome:', nomeAtual);
+    if (!novoNome || novoNome.trim() === nomeAtual) return;
+    
+    (async () => {
+      const { error } = await db.from('workflow_designs')
+        .update({ nome: novoNome.trim() })
+        .eq('id', workflowId);
+      
+      if (error) {
+        alert('Erro ao renomear: ' + error.message);
+        return;
+      }
+      
+      alert('✅ Workflow renomeado!');
+      loadWorkflows();
+    })();
+  }
+
+  function deletarWorkflow(workflowId, nome) {
+    if (!confirm(`Deletar o workflow "${nome}"? Esta ação não pode ser desfeita.`)) return;
+    
+    (async () => {
+      const { error } = await db.from('workflow_designs').delete().eq('id', workflowId);
+      
+      if (error) {
+        alert('Erro ao deletar: ' + error.message);
+        return;
+      }
+      
+      alert('✅ Workflow deletado!');
+      loadWorkflows();
+    })();
   }
 
   // =====================
