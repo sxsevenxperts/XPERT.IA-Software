@@ -16,20 +16,25 @@ export default function Login({ onAuth }) {
   useEffect(() => {
     if (!hasSupabase) { setChecking(false); return }
 
-    // Limpar sessões antigas para forçar seletor de conta
-    const clearOldSessions = () => {
+    const tryLocalSession = () => {
       try {
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
         const host = new URL(supabaseUrl).hostname.split('.')[0]
-        const authKey = `sb-${host}-auth-token`
-        localStorage.removeItem(authKey)
-        localStorage.removeItem('accountType')
-        sessionStorage.clear()
+        const key = `sb-${host}-auth-token`
+        const stored = JSON.parse(localStorage.getItem(key))
+        if (stored?.access_token && stored.expires_at * 1000 > Date.now() + 60000) return stored
       } catch {}
+      return null
     }
-    clearOldSessions()
 
-    // Apenas verificar sessão ativa (não carregar do localStorage)
+    const localSession = tryLocalSession()
+    if (localSession) {
+      checkSubscription(localSession.user.id).then(sub => {
+        onAuth({ user: localSession.user, subscription: sub })
+      }).catch(() => setChecking(false))
+      return
+    }
+
     const timeout = setTimeout(() => setChecking(false), 12000)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       clearTimeout(timeout)
