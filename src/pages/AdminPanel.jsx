@@ -363,7 +363,7 @@ function UserDetail({ userId, onBack }) {
             onClick={grantFreeSubscription}
             disabled={grantingFree}
             style={{
-              width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+              width: '100%', padding: '14px', borderRadius: 12,
               background: data.subscription?.status === 'active' ? '#1e293b' : '#22c55e',
               color: data.subscription?.status === 'active' ? '#64748b' : '#fff',
               fontWeight: 800, fontSize: 15, cursor: grantingFree ? 'not-allowed' : 'pointer',
