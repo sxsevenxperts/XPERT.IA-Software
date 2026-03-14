@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 
 export default function Dashboard({ onTab }) {
-  const { stats, settings, alerts, clearAlerts, activeTrip, tripStatus, trips, expenses, currentLocation, maintenances } = useStore()
+  const { stats, settings, alerts, clearAlerts, activeTrip, tripStatus, trips, expenses, currentLocation, maintenances, appEnabled, toggleAppPower } = useStore()
   const { startPiP, stopPiP, updateData, isOpen, isSupported } = usePiP()
   const [weather, setWeather] = useState(null)
 
@@ -128,6 +128,26 @@ export default function Dashboard({ onTab }) {
 
   return (
     <div style={{ padding: '16px 16px 90px' }}>
+      {/* Banner quando app está desligado */}
+      {!appEnabled && (
+        <div style={{
+          background: '#64748b15', border: '1px solid #64748b40', borderRadius: 12,
+          padding: '14px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'center',
+        }}>
+          <span style={{ fontSize: 24 }}>⚫</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 700, fontSize: 14, color: '#f1f5f9', margin: 0 }}>App Desligado</p>
+            <p style={{ fontSize: 12, color: '#94a3b8', margin: '4px 0 0' }}>Dados preservados — ligue em Configurações</p>
+          </div>
+          <button onClick={() => toggleAppPower(true)} style={{
+            padding: '8px 16px', background: '#22c55e', border: 'none', borderRadius: 8,
+            color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap',
+          }}>
+            Ligar
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>

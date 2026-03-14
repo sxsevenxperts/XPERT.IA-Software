@@ -51,6 +51,10 @@ const defaultStats = {
 }
 
 export const useStore = create((set, get) => ({
+  // ── POWER STATE (on/off app) ──
+  appEnabled: saved.appEnabled !== false, // default true
+  toggleAppPower: (enabled) => set({ appEnabled: enabled }),
+
   // ── USUÁRIO LOGADO (para sync) ──
   userId: null,
   userEmail: null,

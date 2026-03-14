@@ -34,7 +34,7 @@ const MAINT_TYPES = [
 ]
 
 export default function Settings({ user, subscription, onTab, onLogout }) {
-  const { settings, updateSettings, trips, expenses, maintenances, addMaintenance, updateMaintenance, deleteMaintenance } = useStore()
+  const { settings, updateSettings, trips, expenses, maintenances, addMaintenance, updateMaintenance, deleteMaintenance, appEnabled, toggleAppPower } = useStore()
   const { theme, setTheme } = useTheme()
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ ...settings })
@@ -477,16 +477,40 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         </button>
       )}
 
-      {/* Reset Data - para separar trabalho/pessoal */}
-      <button onClick={() => setShowResetConfirm(true)} style={{
-        width: '100%', padding: '14px', background: 'none', border: '1px solid #f59e0b40',
-        borderRadius: 14, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        marginBottom: 12,
-      }}>
-        <Trash2 size={16} />
-        Limpar todos os dados
-      </button>
+      {/* ═════ SEÇÃO DE CONTROLE ═════ */}
+      <div style={{ marginBottom: 16, padding: 14, background: 'var(--bg3)', borderRadius: 14, border: '1px solid var(--border)' }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase' }}>⚙️ Controle</p>
+
+        {/* POWER ON/OFF */}
+        <button onClick={() => toggleAppPower(!appEnabled)} style={{
+          width: '100%', padding: '12px 14px', marginBottom: 10,
+          background: appEnabled ? '#22c55e15' : '#64748b15',
+          border: `1px solid ${appEnabled ? '#22c55e40' : '#64748b40'}`,
+          borderRadius: 10, color: appEnabled ? '#22c55e' : '#64748b',
+          fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 18 }}>{appEnabled ? '🟢' : '⚫'}</span>
+          {appEnabled ? 'App Ligado' : 'App Desligado'}
+        </button>
+
+        {!appEnabled && (
+          <div style={{ fontSize: 11, color: '#64748b', textAlign: 'center', marginBottom: 10, padding: '8px', background: '#64748b12', borderRadius: 8 }}>
+            ℹ️ App desligado — dados preservados, novo uso em breve
+          </div>
+        )}
+
+        {/* RESET DATA */}
+        <button onClick={() => setShowResetConfirm(true)} style={{
+          width: '100%', padding: '12px 14px',
+          background: '#f59e0b15', border: '1px solid #f59e0b40',
+          borderRadius: 10, color: '#f59e0b', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <Trash2 size={16} />
+          Resetar Tudo
+        </button>
+      </div>
 
       {/* Logout */}
       {onLogout && (
