@@ -1502,6 +1502,9 @@
       <div class="nav-item membro-hidden" onclick="showPage('conta', this)">
         <span class="icon"></span> Gerenciar Conta
       </div>
+      <div class="nav-item membro-hidden" onclick="showPage('perfil', this)">
+        <span class="icon">👤</span> Perfil
+      </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
       <div class="nav-item admin-only" onclick="showPage('monitoramento', this)">
         <span class="icon">📊</span> Monitoramento
@@ -2536,12 +2539,12 @@
     <!-- WORKFLOWS -->
     <div class="page membro-hidden" id="page-workflows">
       <div class="page-header">
-        <h1>⚙️ Workflows / Design de Fluxo</h1>
+        <h1>Workflows / Design de Fluxo</h1>
         <p>Crie e gerencie templates com diferentes configurações de atendimento</p>
       </div>
 
       <div style="display:flex;gap:12px;margin-bottom:20px;">
-        <button class="btn-save" onclick="criarNovoWorkflow()">➕ Novo Workflow</button>
+        <button class="btn-save" onclick="criarNovoWorkflow()">Novo Workflow</button>
       </div>
 
       <div class="card">
@@ -2553,7 +2556,7 @@
     <!-- WORKFLOW EDIT PAGE -->
     <div class="page" id="page-workflow-edit" style="display:none;">
       <div class="page-header">
-        <h1>⚙️ Configurar Workflow</h1>
+        <h1>Configurar Workflow</h1>
         <p id="workflow-edit-subtitle">Defina os parâmetros de execução e follow-up automático</p>
       </div>
 
@@ -2589,10 +2592,98 @@
       </div>
 
       <div style="display:flex;gap:12px;margin-top:20px;">
-        <button class="btn-save" onclick="saveWorkflowConfig()">💾 Salvar Configurações</button>
-        <button class="btn-secondary" onclick="voltarParaWorkflows()">← Voltar</button>
+        <button class="btn-save" onclick="saveWorkflowConfig()">Salvar Configurações</button>
+        <button class="btn-secondary" onclick="voltarParaWorkflows()">Voltar</button>
       </div>
       <span class="save-status" id="save-workflow-config"></span>
+    </div>
+
+    <!-- PERFIL -->
+    <div class="page membro-hidden" id="page-perfil">
+      <div class="page-header">
+        <h1>👤 Perfil</h1>
+        <p>Gerencie suas configurações de conta, empresa e notificações</p>
+      </div>
+
+      <!-- PERFIL DA EMPRESA -->
+      <div class="card">
+        <div class="card-title">Perfil da Empresa</div>
+        <div class="field-group">
+          <label>Nome da Empresa</label>
+          <input type="text" id="cfg-empresa-nome" placeholder="Ex: Minha Empresa LTDA" />
+        </div>
+        <div class="field-group">
+          <label>CPF / CNPJ</label>
+          <input type="text" id="cfg-empresa-cnpj" placeholder="Ex: 12.345.678/0001-90" />
+        </div>
+        <div class="field-group">
+          <label>Telefone</label>
+          <input type="tel" id="cfg-empresa-tel" placeholder="Ex: (11) 98765-4321" />
+        </div>
+        <div class="field-group">
+          <label>Email Corporativo</label>
+          <input type="email" id="cfg-empresa-email" placeholder="Ex: contato@empresa.com.br" />
+        </div>
+        <div class="field-group">
+          <label>Endereço</label>
+          <input type="text" id="cfg-empresa-endereco" placeholder="Ex: Rua das Flores, 123, Apt 456, São Paulo - SP" />
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="salvarPerfilEmpresa()">Salvar Perfil da Empresa</button>
+          <span class="save-status" id="save-empresa"></span>
+        </div>
+      </div>
+
+      <!-- TROCAR SENHA -->
+      <div class="card">
+        <div class="card-title">Alterar Senha</div>
+        <div class="field-group">
+          <label>Senha Atual</label>
+          <input type="password" id="cfg-senha-atual" placeholder="Digite sua senha atual" />
+        </div>
+        <div class="field-group">
+          <label>Nova Senha</label>
+          <input type="password" id="cfg-senha-nova" placeholder="Digite uma nova senha" />
+        </div>
+        <div class="field-group">
+          <label>Confirmar Nova Senha</label>
+          <input type="password" id="cfg-senha-confirma" placeholder="Confirme a nova senha" />
+        </div>
+        <div style="font-size:12px;color:#8b949e;margin-bottom:16px;">
+          A senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas e números
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="trocarSenha()">Alterar Senha</button>
+          <span class="save-status" id="save-senha"></span>
+        </div>
+      </div>
+
+      <!-- NOTIFICAÇÕES -->
+      <div class="card">
+        <div class="card-title">Notificações</div>
+        <div style="display:grid;gap:12px;font-size:13px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="checkbox" id="cfg-notif-novo-lead" style="width:18px;height:18px;cursor:pointer;" />
+            <label for="cfg-notif-novo-lead" style="cursor:pointer;flex:1;">Receber notificações de novos leads</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="checkbox" id="cfg-notif-qualificado" style="width:18px;height:18px;cursor:pointer;" />
+            <label for="cfg-notif-qualificado" style="cursor:pointer;flex:1;">Receber notificações de leads qualificados</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="checkbox" id="cfg-notif-sem-resposta" style="width:18px;height:18px;cursor:pointer;" />
+            <label for="cfg-notif-sem-resposta" style="cursor:pointer;flex:1;">Notificar sobre leads sem resposta há 24h</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="checkbox" id="cfg-notif-mensagem-entrada" style="width:18px;height:18px;cursor:pointer;" />
+            <label for="cfg-notif-mensagem-entrada" style="cursor:pointer;flex:1;">Notificar nova mensagem de entrada</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="salvarNotificacoes()">Salvar Notificações</button>
+          <span class="save-status" id="save-notif"></span>
+        </div>
+      </div>
     </div>
 
     <!-- PDFs -->
@@ -3264,7 +3355,7 @@
       </div>
 
       <div id="conta-aba-configuracoes" class="conta-tab-pane" style="display:none;">
-        <!-- CONFIGURAÇÕES AQUI (será preenchido dinamicamente) -->
+        <p style="color:#8b949e;text-align:center;padding:40px 20px;">As configurações de conta estão disponíveis na aba Workflows</p>
       </div>
     </div>
 
@@ -4757,6 +4848,7 @@
     if (name === 'conta') loadPageConta();
     if (name === 'integracoes') loadIntegracoes();
     if (name === 'configuracoes') loadConfiguracoes();
+    if (name === 'perfil') loadConfiguracoes();
     if (name === 'fluxos') {
       setTimeout(() => loadFluxosPage(), 100);
     }
@@ -11570,6 +11662,169 @@
     if (e.detail?.page === 'historico-leads') loadHistorico();
   });
 
+  // =====================
+  // CONFIGURAÇÕES DE CONTA - PERFIL, SENHA, NOTIFICAÇÕES
+  // =====================
+
+  async function loadConfiguracoes() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    
+    // Carrega perfil da empresa
+    const { data: perfil } = await db.from('agente_config')
+      .select('chave,valor')
+      .eq('user_id', user.id)
+      .in('chave', ['empresa_nome','empresa_cnpj','empresa_tel','empresa_email','empresa_endereco']);
+    
+    if (perfil) {
+      perfil.forEach(row => {
+        const el = document.getElementById('cfg-' + row.chave);
+        if (el) el.value = row.valor || '';
+      });
+    }
+
+    // Carrega notificações
+    const { data: notifs } = await db.from('agente_config')
+      .select('chave,valor')
+      .eq('user_id', user.id)
+      .in('chave', ['notif_novo_lead','notif_qualificado','notif_sem_resposta','notif_mensagem_entrada']);
+    
+    if (notifs) {
+      notifs.forEach(row => {
+        const el = document.getElementById('cfg-' + row.chave);
+        if (el && el.type === 'checkbox') {
+          el.checked = row.valor === 'true';
+        }
+      });
+    }
+  }
+
+  async function salvarPerfilEmpresa() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const dados = {
+      empresa_nome: document.getElementById('cfg-empresa-nome').value.trim(),
+      empresa_cnpj: document.getElementById('cfg-empresa-cnpj').value.trim(),
+      empresa_tel: document.getElementById('cfg-empresa-tel').value.trim(),
+      empresa_email: document.getElementById('cfg-empresa-email').value.trim(),
+      empresa_endereco: document.getElementById('cfg-empresa-endereco').value.trim()
+    };
+
+    // Deleta dados antigos e insere novos
+    await db.from('agente_config').delete().eq('user_id', user.id)
+      .in('chave', ['empresa_nome','empresa_cnpj','empresa_tel','empresa_email','empresa_endereco']);
+
+    const configs = Object.entries(dados).map(([k, v]) => ({
+      user_id: user.id,
+      chave: k,
+      valor: v
+    }));
+
+    const { error } = await db.from('agente_config').insert(configs);
+
+    if (error) {
+      showToast('Erro ao salvar: ' + error.message, 'error');
+      return;
+    }
+
+    const el = document.getElementById('save-empresa');
+    el.textContent = '✅ Perfil salvo!';
+    el.style.color = '#16a34a';
+    setTimeout(() => el.textContent = '', 3000);
+  }
+
+  async function trocarSenha() {
+    const atual = document.getElementById('cfg-senha-atual').value;
+    const nova = document.getElementById('cfg-senha-nova').value;
+    const confirma = document.getElementById('cfg-senha-confirma').value;
+
+    if (!atual || !nova || !confirma) {
+      showToast('Preencha todos os campos', 'error');
+      return;
+    }
+
+    if (nova !== confirma) {
+      showToast('As senhas não conferem', 'error');
+      return;
+    }
+
+    if (nova.length < 8) {
+      showToast('A senha deve ter no mínimo 8 caracteres', 'error');
+      return;
+    }
+
+    // Valida força da senha
+    if (!/[A-Z]/.test(nova) || !/[a-z]/.test(nova) || !/[0-9]/.test(nova)) {
+      showToast('A senha deve conter maiúsculas, minúsculas e números', 'error');
+      return;
+    }
+
+    const { data: { user }, error: userError } = await db.auth.getUser();
+    if (userError || !user?.email) {
+      showToast('Erro ao obter dados do usuário', 'error');
+      return;
+    }
+
+    // Tenta fazer login com a senha atual para validar
+    const { error: signInError } = await db.auth.signInWithPassword(user.email, atual);
+    if (signInError) {
+      showToast('Senha atual incorreta', 'error');
+      return;
+    }
+
+    // Altera a senha
+    const { error: updateError } = await db.auth.updateUser({ password: nova });
+    if (updateError) {
+      showToast('Erro ao alterar senha: ' + updateError.message, 'error');
+      return;
+    }
+
+    // Limpa campos
+    document.getElementById('cfg-senha-atual').value = '';
+    document.getElementById('cfg-senha-nova').value = '';
+    document.getElementById('cfg-senha-confirma').value = '';
+
+    const el = document.getElementById('save-senha');
+    el.textContent = '✅ Senha alterada com sucesso!';
+    el.style.color = '#16a34a';
+    setTimeout(() => el.textContent = '', 3000);
+  }
+
+  async function salvarNotificacoes() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const notificacoes = {
+      notif_novo_lead: document.getElementById('cfg-notif-novo-lead').checked,
+      notif_qualificado: document.getElementById('cfg-notif-qualificado').checked,
+      notif_sem_resposta: document.getElementById('cfg-notif-sem-resposta').checked,
+      notif_mensagem_entrada: document.getElementById('cfg-notif-mensagem-entrada').checked
+    };
+
+    // Deleta dados antigos
+    await db.from('agente_config').delete().eq('user_id', user.id)
+      .in('chave', Object.keys(notificacoes));
+
+    // Insere novos
+    const configs = Object.entries(notificacoes).map(([k, v]) => ({
+      user_id: user.id,
+      chave: k,
+      valor: String(v)
+    }));
+
+    const { error } = await db.from('agente_config').insert(configs);
+
+    if (error) {
+      showToast('Erro ao salvar: ' + error.message, 'error');
+      return;
+    }
+
+    const el = document.getElementById('save-notif');
+    el.textContent = '✅ Notificações salvas!';
+    el.style.color = '#16a34a';
+    setTimeout(() => el.textContent = '', 3000);
+  }
 
   // =====================
 
