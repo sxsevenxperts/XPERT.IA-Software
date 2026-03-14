@@ -4847,7 +4847,6 @@
     if (name === 'calendario') loadCalendario();
     if (name === 'conta') loadPageConta();
     if (name === 'integracoes') loadIntegracoes();
-    if (name === 'configuracoes') loadConfiguracoes();
     if (name === 'perfil') loadConfiguracoes();
     if (name === 'fluxos') {
       setTimeout(() => loadFluxosPage(), 100);
@@ -11223,8 +11222,6 @@
       }
     } else if (aba === 'integracoes') {
       await loadIntegracoes();
-    } else if (aba === 'configuracoes') {
-      await loadConfiguracoes();
     }
   }
 
