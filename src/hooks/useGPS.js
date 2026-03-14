@@ -144,8 +144,22 @@ function startGPS() {
   gps.watchId = navigator.geolocation.watchPosition(
     onPosition,
     (err) => console.warn('GPS:', err.message),
-    { enableHighAccuracy: true, timeout: 5_000, maximumAge: 0 }
+    {
+      enableHighAccuracy: true,  // máxima precisão
+      timeout: 5_000,            // timeout 5s (mais rápido)
+      maximumAge: 0              // sem cache — sempre fresco
+    }
   )
+
+  // Fallback: força atualização GPS a cada 1s para tempo REAL (máximo refresh)
+  const fallbackId = setInterval(() => {
+    if (!gpsStarted) return
+    navigator.geolocation.getCurrentPosition(
+      onPosition,
+      () => {},
+      { enableHighAccuracy: true, timeout: 2_000, maximumAge: 500 }
+    )
+  }, 1000)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') requestWakeLock()
   })
