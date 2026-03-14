@@ -1462,6 +1462,10 @@
       <div class="nav-item membro-hidden" onclick="showPage('agente', this)">
         <span class="icon"></span> Agente & Prompt
       </div>
+      <div class="nav-item membro-hidden addon-objecao-nav" id="nav-agente-objecao" onclick="showPage('agente-objecao', this)" style="display:none;">
+        <span class="icon">🛡️</span> Agente de Objeção
+      </div>
+      <div id="nav-agentes-extras-container"></div>
       <div class="nav-item membro-hidden" onclick="showPage('comunicacao', this)">
         <span class="icon"></span> Comunicação
       </div>
@@ -2491,6 +2495,25 @@
       </div>
     </div>
 
+    <!-- AGENTE DE OBJEÇÃO -->
+    <div class="page addon-objecao-page" id="page-agente-objecao" style="display:none;">
+      <div class="page-header"><h1>🛡️ Agente de Objeção</h1><p>Configure o prompt específico para o agente que trata objeções</p></div>
+      
+      <div class="card">
+        <div class="card-title">Prompt do Agente de Objeção</div>
+        <textarea id="cfg-prompt_agente_objecao" style="width:100%;min-height:300px;font-family:monospace;padding:12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#c9d1d9;font-size:13px;resize:vertical;"></textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <button class="btn-save" onclick="saveConfigs(['prompt_agente_objecao'],'agente-objecao')">Salvar Prompt</button>
+        <button class="btn-secondary" onclick="resetAddonConfig('prompt_agente_objecao','agente-objecao')">Restaurar Padrão</button>
+      </div>
+      <span class="save-status" id="save-agente-objecao"></span>
+    </div>
+
+    <!-- AGENTES EXTRAS -->
+    <div id="agentes-extras-pages-container"></div>
+
     <!-- PDFs -->
     <div class="page" id="page-pdfs">
       <div class="page-header"><h1>Base de Conhecimento</h1><p>PDFs e links que o Agente IA consulta automaticamente durante as conversas com leads</p></div>
@@ -2851,9 +2874,227 @@
 
         <!-- ======================== TAB: MARKETPLACE ======================== -->
         <div class="billing-tab-pane" id="billing-pane-marketplace">
-          <div id="admin-marketplace-banner" style="display:none;"></div>
-          <div id="marketplace-items-container"></div>
-        </div>
+
+          <!-- Banner Super Admin -->
+          <div id="admin-marketplace-banner" class="admin-only" style="display:none;background:linear-gradient(135deg,rgba(163,230,53,.12),rgba(74,222,128,.08));border:1.5px solid rgba(163,230,53,.4);border-radius:14px;padding:20px 24px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="font-size:36px;">🔑</div>
+              <div>
+                <div style="font-size:16px;font-weight:800;color:#a3e635;margin-bottom:4px;">Super Admin — Acesso Ilimitado e Gratuito</div>
+                <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5;">Como administrador da plataforma, você possui acesso irrestrito a todos os recursos: agentes ilimitados, tokens ilimitados, números WhatsApp ilimitados, Agente de Objeção IA, usuários extras ilimitados e todas as funcionalidades do Designer de Fluxos — sem custo adicional.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- O que está incluído no plano base -->
+          <div class="plan-includes-banner">
+            <h4>✅ Incluído no Plano Base — R$ 497/mês</h4>
+            <div class="plan-includes-items">
+              <span class="plan-inc-item">🤖 1 Agente de IA</span>
+              <span class="plan-inc-item">📱 1 Número WhatsApp</span>
+              <span class="plan-inc-item">🔢 5M tokens/mês</span>
+              <span class="plan-inc-item">🎙️ Transcrição de Áudio</span>
+              <span class="plan-inc-item">🔍 Pesquisa Web</span>
+              <span class="plan-inc-item">📎 Recebimento de Arquivos</span>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 1: TOKENS EXTRAS -->
+          <div class="mkt-section">
+            <div class="mkt-section-title">🔢 Tokens Extras</div>
+            <div class="mkt-section-sub">Seu plano já inclui 5M tokens/mês. Precisa atender mais leads? Adicione tokens a qualquer momento — somam ao saldo atual, sem prazo de validade.</div>
+            <div class="pricing-grid">
+              <div class="pricing-card">
+                <div class="pkg-name">Mini</div>
+                <div class="pkg-leads">+135 leads extras</div>
+                <div class="pkg-price"><sup>R$</sup>97</div>
+                <div class="pkg-tokens">+5 milhões de tokens</div>
+                <ul class="pkg-features">
+                  <li>+135 atendimentos</li>
+                  <li>Soma ao saldo atual</li>
+                  <li>Sem prazo de validade</li>
+                </ul>
+                <button id="btn-buy-mini" class="btn-buy" onclick="showBuyModal('mini')">Adicionar</button>
+              </div>
+              <div class="pricing-card popular">
+                <div class="pop-badge">Mais Popular</div>
+                <div class="pkg-name">Médio</div>
+                <div class="pkg-leads">+270 leads extras</div>
+                <div class="pkg-price"><sup>R$</sup>177</div>
+                <div class="pkg-tokens">+10 milhões de tokens</div>
+                <ul class="pkg-features">
+                  <li>+270 atendimentos</li>
+                  <li>Soma ao saldo atual</li>
+                  <li>Sem prazo de validade</li>
+                  <li>Melhor custo/benefício</li>
+                </ul>
+                <button id="btn-buy-medio" class="btn-buy" onclick="showBuyModal('medio')">Adicionar</button>
+              </div>
+              <div class="pricing-card">
+                <div class="pkg-name">Grande</div>
+                <div class="pkg-leads">+540 leads extras</div>
+                <div class="pkg-price"><sup>R$</sup>297</div>
+                <div class="pkg-tokens">+20 milhões de tokens</div>
+                <ul class="pkg-features">
+                  <li>+540 atendimentos</li>
+                  <li>Soma ao saldo atual</li>
+                  <li>Sem prazo de validade</li>
+                  <li>Suporte prioritário</li>
+                </ul>
+                <button id="btn-buy-grande" class="btn-buy" onclick="showBuyModal('grande')">Adicionar</button>
+              </div>
+              <div class="pricing-card">
+                <div class="pkg-name">Max</div>
+                <div class="pkg-leads">+1.350 leads extras</div>
+                <div class="pkg-price"><sup>R$</sup>597</div>
+                <div class="pkg-tokens">+50 milhões de tokens</div>
+                <ul class="pkg-features">
+                  <li>+1.350 atendimentos</li>
+                  <li>Soma ao saldo atual</li>
+                  <li>Sem prazo de validade</li>
+                  <li>Suporte dedicado</li>
+                </ul>
+                <button id="btn-buy-max" class="btn-buy" onclick="showBuyModal('max')">Adicionar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 2: IDENTIFICAÇÃO DE OBJEÇÃO IA (destaque) -->
+          <div class="mkt-section" style="border:1.5px solid rgba(220,38,38,.4);border-radius:14px;padding:20px;background:rgba(220,38,38,.03);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;">⭐ MAIS VENDIDO</span>
+            </div>
+            <div class="mkt-section-title" style="color:#fca5a5;">🛡️ Agente IA — Identificação de Objeção + Plano de Ação Completo</div>
+            <div class="mkt-section-sub">Um agente de IA especializado analisa toda a conversa com o lead, identifica a objeção com precisão, avalia o que dificultou a conversão (tempo de resposta, tom, engajamento), gera um plano de ação personalizado e envia o relatório completo + script de follow-up direto no WhatsApp do responsável.</div>
+            <div class="mkt-qty-card" style="border-color:#dc2626;">
+              <div class="mkt-qty-left">
+                <div style="font-size:42px;flex-shrink:0;">🛡️</div>
+                <div>
+                  <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente IA — Objeção + Diagnóstico + Plano de Ação</div>
+                  <ul class="mkt-addon-features" style="margin:0;">
+                    <li><strong>Dados do lead:</strong> analisa nome, celular, o que buscava e por que não fechou</li>
+                    <li><strong>Detecta 8 tipos de objeção:</strong> preço, urgência, confiança, necessidade, autoridade, medo, concorrência, desconfiança</li>
+                    <li><strong>Diagnostica o que dificultou:</strong> tempo de resposta do agente, horário, desengajamento, tom, informações insuficientes, abandono da conversa</li>
+                    <li><strong>Plano de ação preciso:</strong> argumentos personalizados + melhor momento para retomar + aponta falhas do atendimento</li>
+                    <li><strong>Script de follow-up pronto</strong> gerado pela IA para envio imediato</li>
+                    <li><strong>Relatório completo via WhatsApp</strong> com todos os dados + plano + script</li>
+                    <li>Nó exclusivo no Designer de Fluxos com 2 saídas (com/sem objeção)</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mkt-qty-right">
+                <div class="mkt-unit-price" style="color:#fca5a5;">R$ 127<span>/mês</span></div>
+                <div class="mkt-addon-recurrence" style="background:rgba(220,38,38,.08);color:#fca5a5;">🔄 Recorrente</div>
+                <button id="btn-addon-objecao" class="btn-addon-buy" style="background:#dc2626;" onclick="showAddonModal('objecao')">
+                  🛡️ Ativar Agente de Objeção IA
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 3: AGENTES DE IA -->
+          <div class="mkt-section">
+            <div class="mkt-section-title">🤖 Agentes de IA Extras</div>
+            <div class="mkt-section-sub">Cada agente é independente: prompt, tom e base de conhecimento próprios. Escolha quantos precisa — todos aparecem no Designer de Fluxos. Acrescido à mensalidade.</div>
+            <div class="mkt-qty-card">
+              <div class="mkt-qty-left">
+                <div style="font-size:42px;flex-shrink:0;">🤖</div>
+                <div>
+                  <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente de IA Extra</div>
+                  <ul class="mkt-addon-features" style="margin:0;">
+                    <li>Prompt e personalidade independentes</li>
+                    <li>Base de conhecimento própria</li>
+                    <li>Aparece no Designer de Fluxos</li>
+                    <li>Relatório de atendimento integrado</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mkt-qty-right">
+                <div class="mkt-unit-price">R$ 197<span>/mês cada</span></div>
+                <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+                <div class="mkt-stepper">
+                  <button onclick="changeAddonQty('agente',-1)">−</button>
+                  <span class="mkt-stepper-val" id="qty-agente">1</span>
+                  <button onclick="changeAddonQty('agente',+1)">+</button>
+                </div>
+                <div class="mkt-total-price">Total: <strong id="total-agente">R$ 197/mês</strong></div>
+                <button id="btn-addon-agente" class="btn-addon-buy" onclick="showAddonModal('agente')">
+                  Contratar <span id="qty-label-agente">1 agente</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 4: NÚMEROS WHATSAPP -->
+          <div class="mkt-section">
+            <div class="mkt-section-title">📱 Números WhatsApp Extras</div>
+            <div class="mkt-section-sub">Cada número é um canal separado — pode ter agente próprio, receber leads e atuar em etapas distintas no Designer de Fluxos. Acrescido à mensalidade.</div>
+            <div class="mkt-qty-card">
+              <div class="mkt-qty-left">
+                <div style="font-size:42px;flex-shrink:0;">📱</div>
+                <div>
+                  <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Número WhatsApp Extra</div>
+                  <ul class="mkt-addon-features" style="margin:0;">
+                    <li>Conexão via QR Code (Evolution API)</li>
+                    <li>Integrável ao Designer de Fluxos</li>
+                    <li>Pode ter agente dedicado</li>
+                    <li>Relatório por número</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mkt-qty-right">
+                <div class="mkt-unit-price">R$ 97<span>/mês cada</span></div>
+                <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+                <div class="mkt-stepper">
+                  <button onclick="changeAddonQty('numero',-1)">−</button>
+                  <span class="mkt-stepper-val" id="qty-numero">1</span>
+                  <button onclick="changeAddonQty('numero',+1)">+</button>
+                </div>
+                <div class="mkt-total-price">Total: <strong id="total-numero">R$ 97/mês</strong></div>
+                <button id="btn-addon-numero" class="btn-addon-buy" onclick="showAddonModal('numero')">
+                  Contratar <span id="qty-label-numero">1 número</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 5: USUÁRIOS EXTRAS -->
+          <div class="mkt-section">
+            <div class="mkt-section-title">👥 Usuários Extras da Equipe</div>
+            <div class="mkt-section-sub">O plano base inclui 1 usuário (proprietário). Adicione membros da equipe para atribuir tarefas de leads, números de WhatsApp e responsabilidades de atendimento. Cada usuário extra tem acesso à página Equipe para ver suas atribuições.</div>
+            <div class="mkt-qty-card" style="border-color:#6366f1;">
+              <div class="mkt-qty-left">
+                <div style="font-size:42px;flex-shrink:0;">👤</div>
+                <div>
+                  <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Usuário Extra</div>
+                  <ul class="mkt-addon-features" style="margin:0;">
+                    <li>Membro da equipe adicional com perfil próprio</li>
+                    <li>Atribuição de tarefas de leads específicos</li>
+                    <li>Número de WhatsApp atribuído ao usuário</li>
+                    <li>Cargo/função personalizável (SDR, Gerente, Suporte…)</li>
+                    <li>Identificação visual por cor no CRM e tarefas</li>
+                    <li>Visível em toda plataforma para atribuições</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="mkt-qty-right">
+                <div class="mkt-unit-price" style="color:#818cf8;">R$ 57<span>/mês cada</span></div>
+                <div class="mkt-addon-recurrence" style="background:rgba(99,102,241,.08);color:#818cf8;">🔄 Recorrente</div>
+                <div class="mkt-stepper">
+                  <button onclick="changeAddonQty('usuario',-1)">−</button>
+                  <span class="mkt-stepper-val" id="qty-usuario">1</span>
+                  <button onclick="changeAddonQty('usuario',+1)">+</button>
+                </div>
+                <div class="mkt-total-price">Total: <strong id="total-usuario">R$ 57/mês</strong></div>
+                <button id="btn-addon-usuario" class="btn-addon-buy" style="background:#6366f1;" onclick="showAddonModal('usuario')">
+                  Contratar <span id="qty-label-usuario">1 usuário</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /billing-pane-marketplace -->
+
       </div>
 
       <div id="conta-aba-integracoes" class="conta-tab-pane" style="display:none;">
@@ -4358,7 +4599,7 @@
       }
     }
 
-    loadConfigs(); loadStats(); loadOverviewLeads(); loadPDFList();
+    loadConfigs(); loadAddonNavigation(); loadStats(); loadOverviewLeads(); loadPDFList();
     loadCredits(); // verifica saldo e dispara alerta se necessário
     setTimeout(checkTaskReminder, 3000); // popup de tarefas após token alert
     checkWAStatus();
@@ -6307,11 +6548,21 @@
     });
   }
 
-  async function saveConfigs(keys) {
-    const statusId = keys.includes('prompt_sistema') ? 'save-agente'
-      : keys.includes('tonalidade') ? 'save-comunicacao' : 'save-qualificacao';
+  async function saveConfigs(keys, statusPage) {
+    // Determina o statusId baseado nas chaves ou página
+    let statusId;
+    if (statusPage === 'agente-objecao') {
+      statusId = 'save-agente-objecao';
+    } else if (statusPage?.startsWith('agente-extra-')) {
+      statusId = `save-${statusPage}`;
+    } else {
+      statusId = keys.includes('prompt_sistema') ? 'save-agente'
+        : keys.includes('tonalidade') ? 'save-comunicacao' : 'save-qualificacao';
+    }
+    
     const statusEl = document.getElementById(statusId);
-    statusEl.textContent = 'Salvando...'; statusEl.style.color = '#888';
+    if (statusEl) { statusEl.textContent = 'Salvando...'; statusEl.style.color = '#888'; }
+    
     const { data: { user } } = await db.auth.getUser();
     for (const key of keys) {
       const el = document.getElementById('cfg-' + key);
@@ -6322,8 +6573,78 @@
         { onConflict: 'user_id,chave' }
       );
     }
-    statusEl.textContent = '✅ Salvo!'; statusEl.style.color = '#16a34a';
-    setTimeout(() => statusEl.textContent = '', 3000);
+    if (statusEl) { statusEl.textContent = '✅ Salvo!'; statusEl.style.color = '#16a34a'; setTimeout(() => statusEl.textContent = '', 3000); }
+  }
+
+  async function loadAddonNavigation() {
+    // Carrega status dos addons da assinatura
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    
+    const { data: assinatura } = await db.from('assinaturas').select('addon_objecao,agentes_extras').eq('user_id', user.id).single();
+    if (!assinatura) return;
+    
+    // Mostra/esconde nav item de agente de objeção
+    const navObjecao = document.getElementById('nav-agente-objecao');
+    if (navObjecao) {
+      navObjecao.style.display = assinatura.addon_objecao ? 'block' : 'none';
+    }
+    
+    // Renderiza nav items e páginas para agentes extras
+    const agentesExtrasNum = assinatura.agentes_extras || 0;
+    const containerNav = document.getElementById('nav-agentes-extras-container');
+    const containerPages = document.getElementById('agentes-extras-pages-container');
+    
+    if (containerNav) containerNav.innerHTML = '';
+    if (containerPages) containerPages.innerHTML = '';
+    
+    for (let i = 1; i <= agentesExtrasNum; i++) {
+      // Nav item
+      const navItem = document.createElement('div');
+      navItem.className = 'nav-item membro-hidden';
+      navItem.onclick = function() { showPage(`agente-extra-${i}`, this); };
+      navItem.innerHTML = `<span class="icon">🤖</span> Agente Extra ${i}`;
+      if (containerNav) containerNav.appendChild(navItem);
+      
+      // Page
+      const page = document.createElement('div');
+      page.className = 'page agente-extra-page';
+      page.id = `page-agente-extra-${i}`;
+      page.innerHTML = `
+        <div class="page-header"><h1>🤖 Agente Extra ${i}</h1><p>Configure o prompt específico para este agente extra</p></div>
+        
+        <div class="card">
+          <div class="card-title">Prompt do Agente Extra ${i}</div>
+          <textarea id="cfg-prompt_agente_extra_${i}" style="width:100%;min-height:300px;font-family:monospace;padding:12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#c9d1d9;font-size:13px;resize:vertical;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:20px;">
+          <button class="btn-save" onclick="saveConfigs(['prompt_agente_extra_${i}'],'agente-extra-${i}')">Salvar Prompt</button>
+          <button class="btn-secondary" onclick="resetAddonConfig('prompt_agente_extra_${i}','agente-extra-${i}')">Restaurar Padrão</button>
+        </div>
+        <span class="save-status" id="save-agente-extra-${i}"></span>
+      `;
+      if (containerPages) containerPages.appendChild(page);
+    }
+    
+    // Carrega as configurações dos addons
+    const { data: configs } = await db.from('agente_config').select('chave,valor').eq('user_id', user.id);
+    if (configs) {
+      configs.forEach(row => {
+        const el = document.getElementById('cfg-' + row.chave);
+        if (el && row.valor) {
+          el.value = row.valor;
+        }
+      });
+    }
+  }
+
+  function resetAddonConfig(fieldKey, pageId) {
+    if (!confirm(`Restaurar prompt padrão para ${pageId}? (somente na tela — salve para confirmar)`)) return;
+    const el = document.getElementById('cfg-' + fieldKey);
+    if (el) {
+      el.value = 'Configure o prompt específico para este agente aqui...';
+    }
   }
 
   // =====================
