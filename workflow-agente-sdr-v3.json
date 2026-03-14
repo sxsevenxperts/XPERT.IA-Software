@@ -1089,7 +1089,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $('Normaliza e filtra mensagem').first().json.mensagem || '';\nconst ctx = $('Busca todas configs (agente_config)').first().json;\nconst msgLower = msg.toLowerCase();\nconst KEYWORDS_TRANSFER = [\n  'quero falar com', 'falar com humano', 'falar com pessoa', 'quero atendente',\n  'preciso de um atendente', 'atendente humano', 'falar com alguem', 'falar com alguém',\n  'quero uma pessoa', 'me passa para', 'me conecta com', 'suporte humano',\n  'nao quero falar com robo', 'não quero falar com robô', 'me transfere', 'transferir'\n];\nconst querTransferir = KEYWORDS_TRANSFER.some(kw => msgLower.includes(kw));\nreturn [{ json: { querTransferir, mensagem: msg } }];"
+        "jsCode": "const msg = $('Normaliza e filtra mensagem').first().json.mensagem || '';\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\n// ⚡ SÓ VERIFICA TRANSFERÊNCIA SE ESTIVER HABILITADO NO SOFTWARE (drawflow)\n// O campo numero_atendente deve ser preenchido na config do agente no painel\nconst numeroAtendente = configMap.numero_atendente || '';\nif (\\!numeroAtendente) {\n  // Transferência não configurada — encerra aqui sem transferir\n  return [{ json: { querTransferir: false, motivo: 'sem_config', mensagem: msg } }];\n}\n\nconst msgLower = msg.toLowerCase();\nconst KEYWORDS_TRANSFER = [\n  'quero falar com', 'falar com humano', 'falar com pessoa', 'quero atendente',\n  'preciso de um atendente', 'atendente humano', 'falar com alguem', 'falar com alguém',\n  'quero uma pessoa', 'me passa para', 'me conecta com', 'suporte humano',\n  'nao quero falar com robo', 'não quero falar com robô', 'me transfere', 'transferir'\n];\n\nconst querTransferir = KEYWORDS_TRANSFER.some(kw => msgLower.includes(kw));\nreturn [{ json: { querTransferir, numeroAtendente, mensagem: msg } }];"
       },
       "id": "node-detecta-transferencia",
       "name": "Detecta pedido de transferencia",
@@ -1461,7 +1461,18 @@
       "main": [
         [
           {
-            "node": "Detecta pedido de transferencia",
+            "node": "Busca base de conhecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca base de conhecimento": {
+      "main": [
+        [
+          {
+            "node": "Monta system prompt",
             "type": "main",
             "index": 0
           }
@@ -1553,68 +1564,6 @@
       ]
     },
     "Salva resposta da IA": {
-      "main": [
-        [
-          {
-            "node": "Detecta objecao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Detecta objecao": {
-      "main": [
-        [
-          {
-            "node": "Tem objecao?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tem objecao?": {
-      "main": [
-        [
-          {
-            "node": "Gera plano de acao",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Responder em audio?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Gera plano de acao": {
-      "main": [
-        [
-          {
-            "node": "Salva objecao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Salva objecao": {
-      "main": [
-        [
-          {
-            "node": "Envia plano ao agente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Envia plano ao agente": {
       "main": [
         [
           {
@@ -1720,7 +1669,7 @@
         ],
         [
           {
-            "node": "Responde 200 OK",
+            "node": "Detecta objecao",
             "type": "main",
             "index": 0
           }
@@ -1767,6 +1716,90 @@
         ]
       ]
     },
+    "Envia relatorio ao numero": {
+      "main": [
+        [
+          {
+            "node": "Detecta objecao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia relatorio ao grupo": {
+      "main": [
+        [
+          {
+            "node": "Detecta objecao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detecta objecao": {
+      "main": [
+        [
+          {
+            "node": "Tem objecao?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem objecao?": {
+      "main": [
+        [
+          {
+            "node": "Gera plano de acao",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Detecta pedido de transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera plano de acao": {
+      "main": [
+        [
+          {
+            "node": "Salva objecao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva objecao": {
+      "main": [
+        [
+          {
+            "node": "Envia plano ao agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia plano ao agente": {
+      "main": [
+        [
+          {
+            "node": "Detecta pedido de transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Detecta pedido de transferencia": {
       "main": [
         [
@@ -1789,7 +1822,7 @@
         ],
         [
           {
-            "node": "Busca base de conhecimento",
+            "node": "Responde 200 OK",
             "type": "main",
             "index": 0
           }
@@ -1812,28 +1845,6 @@
         [
           {
             "node": "Notifica atendente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Notifica atendente": {
-      "main": [
-        [
-          {
-            "node": "Responde 200 OK",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Busca base de conhecimento": {
-      "main": [
-        [
-          {
-            "node": "Monta system prompt",
             "type": "main",
             "index": 0
           }
