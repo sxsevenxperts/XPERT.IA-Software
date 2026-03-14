@@ -9,6 +9,7 @@ import { reverseGeocode } from '../utils/safety'
 import { parseRideText, PLATFORM_LIST } from '../utils/rideParser'
 import { fetchRoutes, rankRoutes, getTrafficInfo, fmtDist } from '../utils/routing'
 import { fetchWeather } from '../utils/weather'
+import { findGasStations } from '../utils/poi'
 import {
   Navigation, MapPin, Flag, Play, Pause, Square,
   Fuel, Clock, Search, Loader, CheckCircle, Clipboard,
@@ -76,6 +77,11 @@ export default function ActiveTrip({ sharedRide }) {
   // Compartilhar Viagem ao Vivo
   const [showShareModal, setShowShareModal] = useState(false)
   const [shareContact, setShareContact] = useState('')
+
+  // Postos de Gasolina Próximos
+  const [showGasStations, setShowGasStations] = useState(false)
+  const [gasStations, setGasStations] = useState([])
+  const [gasLoading, setGasLoading] = useState(false)
 
   // ── Clipboard / Share monitoring ──────────────────────────────────────
   const tryReadClipboard = useCallback(async () => {
@@ -234,6 +240,15 @@ export default function ActiveTrip({ sharedRide }) {
     setEarningsInput(''); setShowFinish(false); setDestQuery(''); setDestResults([])
     setRouteInfo(null)
   }
+
+  // ── Postos de Gasolina Próximos ────────────────────────────────────────
+  const handleSearchGasStations = useCallback(async () => {
+    if (!currentLocation?.lat) return
+    setGasLoading(true)
+    const stations = await findGasStations(currentLocation.lat, currentLocation.lon, 50, 10)
+    setGasStations(stations)
+    setGasLoading(false)
+  }, [currentLocation])
 
   // ── Compartilhar Viagem ao Vivo ────────────────────────────────────────
   const generateShareLink = useCallback(() => {
@@ -691,6 +706,141 @@ export default function ActiveTrip({ sharedRide }) {
                 ✓ Compartilhar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Postos de Gasolina Próximos */}
+      {tripStatus === 'trip' && currentLocation?.lat && (
+        <div style={{ marginBottom: 12 }}>
+          <button
+            onClick={() => {
+              setShowGasStations(true)
+              handleSearchGasStations()
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              background: '#f5931615',
+              border: '1px solid #f5931640',
+              borderRadius: 12,
+              color: '#f59316',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              fontSize: 14,
+            }}
+          >
+            🛢️ Postos Próximos
+          </button>
+        </div>
+      )}
+
+      {/* Modal Postos de Gasolina */}
+      {showGasStations && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex',
+          alignItems: 'flex-end',
+          zIndex: 9998,
+        }} onClick={() => setShowGasStations(false)}>
+          <div style={{
+            width: '100%',
+            maxHeight: '85vh',
+            background: 'var(--bg)',
+            borderRadius: '20px 20px 0 0',
+            padding: '20px 16px 32px',
+            overflow: 'auto',
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 4, color: 'var(--text)' }}>
+              🛢️ Postos Próximos
+            </h2>
+            <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 16 }}>
+              Até 50 km de distância
+            </p>
+
+            {gasLoading && (
+              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text3)' }}>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>⏳ Buscando postos...</p>
+              </div>
+            )}
+
+            {!gasLoading && gasStations.length === 0 && (
+              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text3)' }}>
+                <p style={{ fontSize: 14 }}>😔 Nenhum posto encontrado próximo</p>
+              </div>
+            )}
+
+            {!gasLoading && gasStations.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {gasStations.map((station, idx) => (
+                  <a
+                    key={idx}
+                    href={`https://maps.google.com/?q=${station.lat},${station.lon}&navigate=yes`}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    style={{
+                      padding: 12,
+                      background: 'var(--bg3)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 10,
+                      color: 'var(--text)',
+                      textDecoration: 'none',
+                      display: 'block',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 4 }}>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, margin: '0 0 2px', color: 'var(--text)' }}>
+                          {station.name}
+                        </p>
+                        <p style={{ fontSize: 11, color: 'var(--text3)', margin: '0 0 4px' }}>
+                          📍 {station.address}
+                        </p>
+                        {station.phone && (
+                          <p style={{ fontSize: 11, color: '#3b82f6', margin: 0 }}>
+                            📞 {station.phone}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: '#f59316', margin: 0 }}>
+                          {station.distance.toFixed(1)} km
+                        </p>
+                        <p style={{ fontSize: 10, color: 'var(--text3)', margin: '2px 0 0' }}>
+                          🗺️ Navegar
+                        </p>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowGasStations(false)}
+              style={{
+                width: '100%',
+                padding: 13,
+                marginTop: 16,
+                background: 'var(--bg3)',
+                border: 'none',
+                borderRadius: 12,
+                color: 'var(--text2)',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              Fechar
+            </button>
           </div>
         </div>
       )}
