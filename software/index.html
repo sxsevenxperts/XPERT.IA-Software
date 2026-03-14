@@ -1466,6 +1466,9 @@
         <span class="icon">🛡️</span> Agente de Objeção
       </div>
       <div id="nav-agentes-extras-container"></div>
+      <div class="nav-item membro-hidden" id="nav-numeros-extras" onclick="showPage('numeros-extras', this)" style="display:none;">
+        <span class="icon">🔢</span> Números Extras
+      </div>
       <div class="nav-item membro-hidden" onclick="showPage('comunicacao', this)">
         <span class="icon"></span> Comunicação
       </div>
@@ -2513,6 +2516,19 @@
 
     <!-- AGENTES EXTRAS -->
     <div id="agentes-extras-pages-container"></div>
+
+    <!-- NÚMEROS EXTRAS -->
+    <div class="page" id="page-numeros-extras" style="display:none;">
+      <div class="page-header">
+        <h1>🔢 Números Extras de WhatsApp</h1>
+        <p>Gerencie os números de WhatsApp adicionais que você asinou como addon</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Seus Números Extras</div>
+        <div id="numeros-extras-list" style="display:grid;gap:12px;"></div>
+      </div>
+    </div>
 
     <!-- PDFs -->
     <div class="page" id="page-pdfs">
@@ -4885,6 +4901,80 @@
     } catch(e) { alert('Erro ao desconectar: ' + e.message); }
   }
 
+  function conectarNumeroExtra(index) {
+    // Abre modal para conectar número extra
+    const modal = document.createElement('div');
+    modal.id = `modal-numero-${index}`;
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+    modal.innerHTML = `
+      <div style="background:#0d1117;border-radius:12px;padding:32px;width:90%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <h2 style="margin:0;color:#e6edf3;">Conectar Número Extra ${index}</h2>
+          <button onclick="document.getElementById('modal-numero-${index}').remove()" style="background:none;border:none;color:#8b949e;font-size:24px;cursor:pointer;">✕</button>
+        </div>
+        
+        <div style="margin-bottom:24px;">
+          <p style="color:#8b949e;margin-bottom:16px;">Escaneie o QR Code com seu WhatsApp para conectar o número extra</p>
+          <div id="qr-container-${index}" style="text-align:center;padding:20px;background:#161b22;border-radius:8px;">
+            <div id="qr-placeholder-${index}" style="color:#8b949e;padding:40px;">Clique em "Gerar QR Code" para começar</div>
+            <img id="qr-image-${index}" style="display:none;width:240px;height:240px;border-radius:8px;" />
+          </div>
+          <div id="qr-timer-${index}" style="display:none;color:#a3e635;text-align:center;margin-top:12px;">QR expira em <span id="qr-countdown-${index}">60</span>s</div>
+        </div>
+        
+        <button class="btn-wa-connect" onclick="gerarQRNumeroExtra(${index})" style="width:100%;">
+          Gerar QR Code
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  }
+
+  async function gerarQRNumeroExtra(index) {
+    const btn = event.target;
+    const placeholder = document.getElementById(`qr-placeholder-${index}`);
+    const img = document.getElementById(`qr-image-${index}`);
+    const timer = document.getElementById(`qr-timer-${index}`);
+    btn.disabled = true; btn.innerHTML = '<span>⏳</span> Gerando...';
+    try {
+      // TODO: Usar instância específica do número extra: numero-{index}
+      const data = await evoProxy('connect', `numero-${index}`);
+      const base64 = data?.base64 || data?.qrcode?.base64 || data?.code;
+      if (base64) {
+        placeholder.style.display = 'none';
+        img.src = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+        img.style.display = 'block';
+        timer.style.display = 'block';
+        startQRCountdownNumero(index);
+      } else {
+        alert('Não foi possível gerar o QR Code para o número extra.');
+      }
+    } catch (e) {
+      alert('Erro ao gerar QR Code: ' + e.message);
+    }
+    btn.disabled = false; btn.innerHTML = '<span>📷</span> Gerar QR Code';
+  }
+
+  function startQRCountdownNumero(index) {
+    let secs = 60;
+    document.getElementById(`qr-countdown-${index}`).textContent = secs;
+    const interval = setInterval(() => {
+      secs--;
+      const el = document.getElementById(`qr-countdown-${index}`);
+      if (el) el.textContent = secs;
+      if (secs <= 0) {
+        clearInterval(interval);
+        const timer = document.getElementById(`qr-timer-${index}`);
+        if (timer) timer.style.display = 'none';
+        const img = document.getElementById(`qr-image-${index}`);
+        if (img) img.style.display = 'none';
+        const placeholder = document.getElementById(`qr-placeholder-${index}`);
+        if (placeholder) placeholder.style.display = 'block';
+      }
+    }, 1000);
+  }
+
   // =====================
   // BATE-PAPO AO VIVO
   // =====================
@@ -6581,13 +6671,42 @@
     const { data: { user } } = await db.auth.getUser();
     if (!user) return;
     
-    const { data: assinatura } = await db.from('assinaturas').select('addon_objecao,agentes_extras').eq('user_id', user.id).single();
+    const { data: assinatura } = await db.from('assinaturas').select('addon_objecao,agentes_extras,numeros_extras').eq('user_id', user.id).single();
     if (!assinatura) return;
     
     // Mostra/esconde nav item de agente de objeção
     const navObjecao = document.getElementById('nav-agente-objecao');
     if (navObjecao) {
       navObjecao.style.display = assinatura.addon_objecao ? 'block' : 'none';
+    }
+    
+    // Mostra/esconde nav item de números extras
+    const navNumeros = document.getElementById('nav-numeros-extras');
+    const numerosExtrasNum = assinatura.numeros_extras || 0;
+    if (navNumeros) {
+      navNumeros.style.display = numerosExtrasNum > 0 ? 'block' : 'none';
+    }
+    
+    // Renderiza lista de números extras
+    if (numerosExtrasNum > 0) {
+      const listContainer = document.getElementById('numeros-extras-list');
+      if (listContainer) {
+        listContainer.innerHTML = '';
+        // Cria um item por número extra
+        // TODO: carregar números reais da tabela de instâncias Evolution API
+        for (let i = 1; i <= numerosExtrasNum; i++) {
+          const item = document.createElement('div');
+          item.style.cssText = 'border:1px solid #30363d;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;';
+          item.innerHTML = `
+            <div>
+              <div style="font-weight:600;color:#e6edf3;">Número Extra ${i}</div>
+              <div style="font-size:12px;color:#8b949e;margin-top:4px;">Instância Evolution: numero-${i}</div>
+            </div>
+            <button class="btn-secondary" onclick="conectarNumeroExtra(${i})">Conectar QR</button>
+          `;
+          listContainer.appendChild(item);
+        }
+      }
     }
     
     // Renderiza nav items e páginas para agentes extras
