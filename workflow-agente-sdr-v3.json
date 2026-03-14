@@ -1161,7 +1161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const clienteRaw = $('Resolve cliente pelo instanceName').first().json;\nconst cliente = Array.isArray(clienteRaw) ? clienteRaw[0] : clienteRaw;\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\nconst numeroAtendente = configMap.numero_atendente || configMap.numero_destino || '';\nconst dadosMsg = $('Normaliza e filtra mensagem').first().json;\nreturn [{ json: { evoInstance: cliente.evo_instance, numeroAtendente, dadosMsg, configMap } }];"
+        "jsCode": "const cliente = $('Resolve cliente pelo instanceName').first().json;\nconst dadosVerif = $('Verifica se precisa transferir').first().json;\nconst contato = $('Normaliza e filtra mensagem').first().json;\n\nconst nomeCompleto = dadosVerif.nome_completo || contato.nomeContato || 'Contato desconhecido';\nconst numero = contato.numero || 'N/A';\nconst motivo = dadosVerif.motivo_contato || 'Não informado';\nconst motTransf = dadosVerif.motivo === 'nao_qualificado' \n  ? 'Não qualificado: ' + (dadosVerif.nao_qualificado_motivo || 'motivo não informado')\n  : 'Fim de atendimento';\n\nconst relatorio = `\n📋 RELATÓRIO DE ATENDIMENTO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 Nome: ${nomeCompleto}\n📱 Celular: ${numero}\n🎯 Motivo do Contato: ${motivo}\n❌ Motivo da Transferência: ${motTransf}\n\n💬 Aguardando atendimento do agente...\n`.trim();\n\nreturn [{\n  json: {\n    evoInstance: cliente.evo_instance,\n    numeroAtendente: dadosVerif.numeroAtendente,\n    relatorio,\n    nomeCompleto,\n    numero,\n    motivo,\n    motTransf\n  }\n}];"
       },
       "id": "node-monta-notif-transfer",
       "name": "Monta notificacao de transferencia",
@@ -1191,7 +1191,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { action: 'send-text', instance: $json.evoInstance, number: $json.numeroAtendente, text: '🔄 TRANSFERÊNCIA SOLICITADA\\n\\n👤 Lead: ' + $json.dadosMsg.nomeContato + '\\n📱 Número: ' + $json.dadosMsg.numero + '\\n\\n💬 Última mensagem: ' + $json.dadosMsg.mensagem + '\\n\\n⏰ ' + new Date().toLocaleString('pt-BR') } }}",
+        "jsonBody": "={{ { action: 'send-text', instance: $json.evoInstance, number: $json.numeroAtendente, text: $json.relatorio } }}",
         "options": {}
       },
       "id": "node-notifica-atendente",
@@ -1239,6 +1239,32 @@
         400
       ],
       "notes": "Busca full-text na base de conhecimento do cliente (documentos, PDFs e URLs indexados). Injeta no system prompt."
+    },
+    {
+      "id": "extrai_dados_estruturados",
+      "name": "Extrai dados estruturados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        2200
+      ],
+      "parameters": {
+        "jsCode": "const respLLM = $('Chama LLM via llm-proxy').first().json;\nconst content = respLLM.content || '';\n\n// Tenta extrair JSON da resposta (LLM pode retornar JSON estruturado)\nlet metadata = {\n  qualificado: null,\n  fim_atendimento: false,\n  nome_completo: null,\n  motivo_contato: null,\n  nao_qualificado_motivo: null\n};\n\ntry {\n  const jsonMatch = content.match(/\\{[^{}]*\"qualificado\"[^{}]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    metadata = { ...metadata, ...parsed };\n  }\n} catch (e) {\n  // Sem JSON estruturado — LLM retornou só texto\n}\n\nreturn [{\n  json: {\n    content,\n    qualificado: metadata.qualificado,\n    fim_atendimento: metadata.fim_atendimento,\n    nome_completo: metadata.nome_completo,\n    motivo_contato: metadata.motivo_contato,\n    nao_qualificado_motivo: metadata.nao_qualificado_motivo\n  }\n}];"
+      }
+    },
+    {
+      "id": "verifica_se_precisa_transferir",
+      "name": "Verifica se precisa transferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        2800
+      ],
+      "parameters": {
+        "jsCode": "const dados = $('Extrai dados estruturados').first().json;\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\nconst numeroAtendente = configMap.numero_atendente || '';\n\n// Transfere se: (não qualificado OU fim atendimento) E tem numero_atendente\nconst deveTransferir = (\n  (dados.qualificado === false || dados.fim_atendimento === true) &&\n  !!numeroAtendente\n);\n\nreturn [{\n  json: {\n    deveTransferir,\n    motivo: dados.qualificado === false ? 'nao_qualificado' : (dados.fim_atendimento ? 'fim_atendimento' : 'continua'),\n    nome_completo: dados.nome_completo,\n    motivo_contato: dados.motivo_contato,\n    nao_qualificado_motivo: dados.nao_qualificado_motivo,\n    numeroAtendente\n  }\n}];"
+      }
     }
   ],
   "connections": {
@@ -1534,7 +1560,7 @@
       "main": [
         [
           {
-            "node": "Extrai tokens usados",
+            "node": "Extrai dados estruturados",
             "type": "main",
             "index": 0
           }
@@ -1618,7 +1644,7 @@
       "main": [
         [
           {
-            "node": "Analisa qualificacao do lead",
+            "node": "Verifica se precisa transferir",
             "type": "main",
             "index": 0
           }
@@ -1629,182 +1655,7 @@
       "main": [
         [
           {
-            "node": "Analisa qualificacao do lead",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Analisa qualificacao do lead": {
-      "main": [
-        [
-          {
-            "node": "Atualiza lead (Supabase)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Atualiza lead (Supabase)": {
-      "main": [
-        [
-          {
-            "node": "Lead qualificado?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Lead qualificado?": {
-      "main": [
-        [
-          {
-            "node": "Busca config: destino relatorio",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Detecta objecao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Busca config: destino relatorio": {
-      "main": [
-        [
-          {
-            "node": "Formata relatorio de qualificacao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Formata relatorio de qualificacao": {
-      "main": [
-        [
-          {
-            "node": "Enviar para numero ou grupo?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Enviar para numero ou grupo?": {
-      "main": [
-        [
-          {
-            "node": "Envia relatorio ao numero",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Envia relatorio ao grupo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Envia relatorio ao numero": {
-      "main": [
-        [
-          {
-            "node": "Detecta objecao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Envia relatorio ao grupo": {
-      "main": [
-        [
-          {
-            "node": "Detecta objecao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Detecta objecao": {
-      "main": [
-        [
-          {
-            "node": "Tem objecao?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tem objecao?": {
-      "main": [
-        [
-          {
-            "node": "Gera plano de acao",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Detecta pedido de transferencia",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Gera plano de acao": {
-      "main": [
-        [
-          {
-            "node": "Salva objecao",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Salva objecao": {
-      "main": [
-        [
-          {
-            "node": "Envia plano ao agente",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Envia plano ao agente": {
-      "main": [
-        [
-          {
-            "node": "Detecta pedido de transferencia",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Detecta pedido de transferencia": {
-      "main": [
-        [
-          {
-            "node": "Quer atendente humano?",
+            "node": "Verifica se precisa transferir",
             "type": "main",
             "index": 0
           }
@@ -1845,6 +1696,35 @@
         [
           {
             "node": "Notifica atendente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai dados estruturados": {
+      "main": [
+        [
+          {
+            "node": "Extrai tokens usados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica se precisa transferir": {
+      "main": [
+        [
+          {
+            "node": "Avisa lead: transferindo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 200 OK",
             "type": "main",
             "index": 0
           }
