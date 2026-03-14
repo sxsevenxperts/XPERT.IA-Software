@@ -2550,6 +2550,51 @@
       </div>
     </div>
 
+    <!-- WORKFLOW EDIT PAGE -->
+    <div class="page" id="page-workflow-edit" style="display:none;">
+      <div class="page-header">
+        <h1>⚙️ Configurar Workflow</h1>
+        <p id="workflow-edit-subtitle">Defina os parâmetros de execução e follow-up automático</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Configurações de Follow-up Automático</div>
+        
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px;background:#f5f5f5;border-radius:8px;">
+          <input type="checkbox" id="wf-followup-enabled" style="width:18px;height:18px;cursor:pointer;" onchange="atualizarVisibilidadeFollowupSettings()">
+          <label for="wf-followup-enabled" style="cursor:pointer;flex:1;">Ativar Follow-up Automático</label>
+        </div>
+
+        <div id="wf-followup-settings" style="display:none;border:1px solid #30363d;border-radius:8px;padding:16px;background:#0d1117;">
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:8px;color:#c9d1d9;font-weight:600;">Intervalo de Follow-up</label>
+            <div style="display:flex;gap:12px;align-items:center;">
+              <input type="number" id="wf-followup-amount" min="1" max="999" value="24" style="width:80px;padding:8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;">
+              <select id="wf-followup-unit" style="flex:1;padding:8px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;">
+                <option value="segundos">Segundos</option>
+                <option value="minutos">Minutos</option>
+                <option value="horas">Horas</option>
+                <option value="dias" selected>Dias</option>
+              </select>
+            </div>
+            <p style="font-size:12px;color:#8b949e;margin-top:6px;">Exemplo: 24 Dias = follow-up em 24 dias após última resposta</p>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="display:block;margin-bottom:8px;color:#c9d1d9;font-weight:600;">Mensagem de Follow-up</label>
+            <textarea id="wf-followup-message" style="width:100%;min-height:120px;padding:12px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:13px;resize:vertical;font-family:monospace;" placeholder="Digite a mensagem que será enviada no follow-up automático..."></textarea>
+            <p style="font-size:12px;color:#8b949e;margin-top:6px;">Deixe em branco para usar a mensagem padrão do fluxo</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <button class="btn-save" onclick="saveWorkflowConfig()">💾 Salvar Configurações</button>
+        <button class="btn-secondary" onclick="voltarParaWorkflows()">← Voltar</button>
+      </div>
+      <span class="save-status" id="save-workflow-config"></span>
+    </div>
+
     <!-- PDFs -->
     <div class="page" id="page-pdfs">
       <div class="page-header"><h1>Base de Conhecimento</h1><p>PDFs e links que o Agente IA consulta automaticamente durante as conversas com leads</p></div>
@@ -6820,6 +6865,7 @@
           <div style="font-size:11px;color:#6e7681;margin-top:4px;">Criado em ${new Date(wf.criado_em).toLocaleDateString('pt-BR')}</div>
         </div>
         <div style="display:flex;gap:8px;">
+          <button class="btn-save" style="padding:6px 12px;font-size:12px;background:#4f46e5;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="editarWorkflow('${wf.id}','${wf.nome}')">⚙️ Configurar</button>
           <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="duplicarWorkflow('${wf.id}')">📋 Duplicar</button>
           <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="renomearWorkflow('${wf.id}','${wf.nome}')">✏️ Renomear</button>
           <button style="padding:6px 12px;font-size:12px;background:#dc2626;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="deletarWorkflow('${wf.id}','${wf.nome}')">🗑️ Deletar</button>
@@ -6839,19 +6885,22 @@
       const { data: { user } } = await db.auth.getUser();
       if (!user) return;
       
-      const { error } = await db.from('workflow_designs').insert({
+      const { data: inserted, error } = await db.from('workflow_designs').insert({
         user_id: user.id,
         nome: nome.trim(),
         descricao: descricao?.trim() || null
-      });
+      }).select();
       
       if (error) {
         alert('Erro ao criar workflow: ' + error.message);
         return;
       }
       
-      alert('✅ Workflow criado! Configure seus settings na página de Agente & Prompt');
-      loadWorkflows();
+      if (inserted && inserted.length > 0) {
+        const workflowId = inserted[0].id;
+        // Abre a página de edição para configurar follow-up
+        editarWorkflow(workflowId, nome.trim());
+      }
     })();
   }
 
@@ -6911,6 +6960,122 @@
       alert('✅ Workflow deletado!');
       loadWorkflows();
     })();
+  }
+
+  // Armazena ID do workflow sendo editado
+  let currentWorkflowId = null;
+
+  async function editarWorkflow(workflowId, nome) {
+    currentWorkflowId = workflowId;
+    
+    // Mostra página de edição
+    document.getElementById('page-workflows').style.display = 'none';
+    document.getElementById('page-workflow-edit').style.display = 'block';
+    document.getElementById('workflow-edit-subtitle').textContent = `Editando: "${nome}"`;
+    
+    // Carrega configurações de follow-up para este workflow
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    
+    // Busca configurações salvas
+    const followupKey = `workflow_${workflowId}_followup_enabled`;
+    const followupAmountKey = `workflow_${workflowId}_followup_amount`;
+    const followupUnitKey = `workflow_${workflowId}_followup_unit`;
+    const followupMessageKey = `workflow_${workflowId}_followup_message`;
+    
+    const { data: configs } = await db.from('agente_config')
+      .select('chave,valor')
+      .eq('user_id', user.id)
+      .in('chave', [followupKey, followupAmountKey, followupUnitKey, followupMessageKey]);
+    
+    // Reseta formulário
+    document.getElementById('wf-followup-enabled').checked = false;
+    document.getElementById('wf-followup-amount').value = '24';
+    document.getElementById('wf-followup-unit').value = 'dias';
+    document.getElementById('wf-followup-message').value = '';
+    document.getElementById('wf-followup-settings').style.display = 'none';
+    
+    // Carrega valores salvos
+    if (configs) {
+      configs.forEach(row => {
+        if (row.chave === followupKey) {
+          document.getElementById('wf-followup-enabled').checked = row.valor === 'true';
+        } else if (row.chave === followupAmountKey) {
+          document.getElementById('wf-followup-amount').value = row.valor;
+        } else if (row.chave === followupUnitKey) {
+          document.getElementById('wf-followup-unit').value = row.valor;
+        } else if (row.chave === followupMessageKey) {
+          document.getElementById('wf-followup-message').value = row.valor;
+        }
+      });
+    }
+    
+    // Atualiza visibilidade das settings baseado no toggle
+    atualizarVisibilidadeFollowupSettings();
+  }
+
+  function atualizarVisibilidadeFollowupSettings() {
+    const enabled = document.getElementById('wf-followup-enabled').checked;
+    document.getElementById('wf-followup-settings').style.display = enabled ? 'block' : 'none';
+  }
+
+  async function saveWorkflowConfig() {
+    if (!currentWorkflowId) {
+      alert('Erro: nenhum workflow selecionado');
+      return;
+    }
+    
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    
+    const enabled = document.getElementById('wf-followup-enabled').checked;
+    const amount = document.getElementById('wf-followup-amount').value;
+    const unit = document.getElementById('wf-followup-unit').value;
+    const message = document.getElementById('wf-followup-message').value;
+    
+    const followupKey = `workflow_${currentWorkflowId}_followup_enabled`;
+    const followupAmountKey = `workflow_${currentWorkflowId}_followup_amount`;
+    const followupUnitKey = `workflow_${currentWorkflowId}_followup_unit`;
+    const followupMessageKey = `workflow_${currentWorkflowId}_followup_message`;
+    
+    // Primeiro, deleta configurações antigas
+    await db.from('agente_config')
+      .delete()
+      .eq('user_id', user.id)
+      .in('chave', [followupKey, followupAmountKey, followupUnitKey, followupMessageKey]);
+    
+    // Depois insere novas
+    const configsToInsert = [
+      { user_id: user.id, chave: followupKey, valor: String(enabled) }
+    ];
+    
+    if (enabled) {
+      configsToInsert.push(
+        { user_id: user.id, chave: followupAmountKey, valor: String(amount) },
+        { user_id: user.id, chave: followupUnitKey, valor: unit },
+        { user_id: user.id, chave: followupMessageKey, valor: message }
+      );
+    }
+    
+    const { error } = await db.from('agente_config').insert(configsToInsert);
+    
+    if (error) {
+      alert('Erro ao salvar: ' + error.message);
+      return;
+    }
+    
+    const statusEl = document.getElementById('save-workflow-config');
+    statusEl.textContent = '✅ Configurações salvas!';
+    statusEl.style.color = '#16a34a';
+    setTimeout(() => {
+      statusEl.textContent = '';
+    }, 3000);
+  }
+
+  function voltarParaWorkflows() {
+    currentWorkflowId = null;
+    document.getElementById('page-workflow-edit').style.display = 'none';
+    document.getElementById('page-workflows').style.display = 'block';
   }
 
   // =====================
