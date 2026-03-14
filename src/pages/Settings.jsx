@@ -46,6 +46,9 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
   const [pwdOk, setPwdOk] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
 
+  // Reset data confirmation
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
   useEffect(() => {
     setNotifStatus(getPermissionStatus())
   }, [])
@@ -474,6 +477,17 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         </button>
       )}
 
+      {/* Reset Data - para separar trabalho/pessoal */}
+      <button onClick={() => setShowResetConfirm(true)} style={{
+        width: '100%', padding: '14px', background: 'none', border: '1px solid #f59e0b40',
+        borderRadius: 14, color: '#f59e0b', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        marginBottom: 12,
+      }}>
+        <Trash2 size={16} />
+        Limpar todos os dados
+      </button>
+
       {/* Logout */}
       {onLogout && (
         <button onClick={onLogout} style={{
@@ -492,6 +506,44 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         <p style={{ fontSize: 12, color: 'var(--text4)', textAlign: 'center', marginTop: 4 }}>{trips.length} corridas • {expenses.length} gastos registrados</p>
         {user?.email && <p style={{ fontSize: 11, color: 'var(--text4)', textAlign: 'center', marginTop: 4 }}>{user.email}</p>}
       </div>
+
+      {/* Modal de Confirmação - Resetar Dados */}
+      {showResetConfirm && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+        }}>
+          <div style={{
+            background: 'var(--bg)', borderRadius: 16, padding: 24, maxWidth: 340,
+            textAlign: 'center', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          }}>
+            <p style={{ fontSize: 28, marginBottom: 12 }}>⚠️</p>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>Limpar Tudo?</h3>
+            <p style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16, lineHeight: 1.6 }}>
+              Isso vai deletar {trips.length} corridas, {expenses.length} gastos e todas as configurações. Não pode ser desfeito!
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowResetConfirm(false)}
+                style={{
+                  flex: 1, padding: '12px', background: 'var(--bg3)', border: '1px solid var(--border)',
+                  borderRadius: 10, color: 'var(--text2)', fontWeight: 700, cursor: 'pointer',
+                }}
+              >Cancelar</button>
+              <button onClick={() => {
+                // Limpar todos os dados
+                localStorage.removeItem('motoapp-v1')
+                // Recarregar página para resetar state
+                window.location.reload()
+              }}
+                style={{
+                  flex: 1, padding: '12px', background: '#f59e0b', border: 'none',
+                  borderRadius: 10, color: '#fff', fontWeight: 700, cursor: 'pointer',
+                }}
+              >Limpar Tudo</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
