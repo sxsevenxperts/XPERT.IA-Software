@@ -122,6 +122,13 @@ export const NOTIFY = {
       : `A data prevista passou. Providencie o quanto antes!`,
     { tag: `maint-overdue-${title}`, requireInteraction: true, vibrate: [500, 200, 500, 200, 500] }
   ),
+
+  // ⏰ Alerta de fadiga
+  fatigueAlert: (hours) => sendNotification(
+    `⏰ Você já dirigiu por ${hours} horas!`,
+    `Faça uma pausa de pelo menos 15 minutos. Sua segurança é nossa prioridade.`,
+    { tag: 'fatigue-alert', requireInteraction: true, vibrate: [300, 100, 300, 100, 300] }
+  ),
 }
 
 // ── VERIFICAÇÃO AUTOMÁTICA DE METAS ─────────────────────────────

@@ -38,6 +38,10 @@ const defaultSettings = {
   notifSafety: true,
   notifAchievements: true,
   notifStreak: true,
+  notifDailyGoal: true,
+  fatigueAlertHours: 6,
+  notifFatigue: true,
+  emergencyContact: { name: '', phone: '' },
 }
 
 const defaultStats = {
@@ -67,6 +71,7 @@ export const useStore = create((set, get) => ({
       id: Date.now(), platform: 'uber', startTime: Date.now(),
       pickupLocation: null, destination: null,
       route: [], earnings: 0, km: 0,
+      expenses: [],
       statusLog: [{ status: 'waiting', at: Date.now() }],
     },
     tripStatus: 'waiting',
@@ -191,6 +196,19 @@ export const useStore = create((set, get) => ({
     // Sync
     const userId = get().userId
     if (userId) syncDeleteExpense(id, userId)
+  },
+
+  // Despesas rápidas durante a viagem
+  addQuickExpense: (type, value) => {
+    const s = get()
+    if (!s.activeTrip) return
+    const quickExp = { type, value: parseFloat(value), at: Date.now() }
+    set((st) => ({
+      activeTrip: st.activeTrip ? {
+        ...st.activeTrip,
+        expenses: [...(st.activeTrip.expenses || []), quickExp],
+      } : null,
+    }))
   },
 
   setExpensesFromSync: (expenses) => {

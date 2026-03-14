@@ -31,7 +31,7 @@ export default function ActiveTrip({ sharedRide }) {
   const {
     tripStatus, activeTrip, settings, currentLocation, safetyScore,
     startWaiting, startTrip, pauseTrip, resumeTrip,
-    finishTrip, cancelTrip, setPickup, setDestination,
+    finishTrip, cancelTrip, setPickup, setDestination, addQuickExpense,
   } = useStore()
 
   const timer = useTimer()
@@ -468,6 +468,40 @@ export default function ActiveTrip({ sharedRide }) {
           navigating={tripStatus === 'trip'}
         />
       </div>
+
+      {/* Despesas Rápidas (durante viagem) */}
+      {tripStatus === 'trip' && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{
+            background: 'var(--bg3)', borderRadius: 12, padding: 12,
+            border: '1px solid var(--border)', marginBottom: 8,
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', marginBottom: 8 }}>
+              💰 Despesas: R$ {(activeTrip?.expenses || []).reduce((a, e) => a + e.value, 0).toFixed(2)}
+            </p>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6,
+            }}>
+              <QuickExpenseBtn icon='🚧' label='Pedágio' onClick={() => {
+                const v = prompt('Valor (R$):', '10')
+                if (v) addQuickExpense('pedágio', v)
+              }} />
+              <QuickExpenseBtn icon='🅿️' label='Estac.' onClick={() => {
+                const v = prompt('Valor (R$):', '10')
+                if (v) addQuickExpense('estacionamento', v)
+              }} />
+              <QuickExpenseBtn icon='🍔' label='Lanche' onClick={() => {
+                const v = prompt('Valor (R$):', '15')
+                if (v) addQuickExpense('lanche', v)
+              }} />
+              <QuickExpenseBtn icon='⚙️' label='Outro' onClick={() => {
+                const v = prompt('Valor (R$):', '0')
+                if (v) addQuickExpense('outro', v)
+              }} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Carregando rota */}
       {routeLoading && <LoadingRoute />}
@@ -1028,6 +1062,24 @@ function ActionBtn({ color, onClick, icon, label, flex = 1 }) {
       transition: 'all 0.15s',
     }}>
       {icon} {label}
+    </button>
+  )
+}
+
+function QuickExpenseBtn({ icon, label, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      padding: '8px 4px', background: 'var(--bg)',
+      border: '1px solid var(--border)', borderRadius: 10,
+      color: 'var(--text)', cursor: 'pointer', fontSize: 12,
+      fontWeight: 600, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', gap: 3, transition: 'all 0.2s',
+    }}
+    onMouseEnter={(e) => e.target.style.borderColor = '#22c55e'}
+    onMouseLeave={(e) => e.target.style.borderColor = 'var(--border)'}
+    >
+      <span style={{ fontSize: 16 }}>{icon}</span>
+      <span style={{ fontSize: 9 }}>{label}</span>
     </button>
   )
 }
