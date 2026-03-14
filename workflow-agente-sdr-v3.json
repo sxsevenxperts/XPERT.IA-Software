@@ -1,5 +1,5 @@
 {
-  "name": "🤖 XPERT.IA — Agente SDR WhatsApp (v3 — completo)",
+  "name": "\ud83e\udd16 XPERT.IA \u2014 Agente SDR WhatsApp (v3 \u2014 completo)",
   "nodes": [
     {
       "parameters": {
@@ -172,7 +172,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { number: $('Normaliza e filtra mensagem').first().json.numero, text: '🔋 Seus tokens acabaram! Adquira mais no Marketplace da XPERT.IA. Acesse: https://xpert.sevenxperts.com' } }}",
+        "jsonBody": "={{ { number: $('Normaliza e filtra mensagem').first().json.numero, text: '\ud83d\udd0b Seus tokens acabaram! Adquira mais no Marketplace da XPERT.IA. Acesse: https://xpert.sevenxperts.com' } }}",
         "options": {}
       },
       "id": "node-aviso-sem-tokens",
@@ -278,7 +278,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const dados = $input.first().json;\nconst imageContent = dados.imagemBase64\n  ? { type:'image_url', image_url:{ url:`data:${dados.imagemMimetype};base64,${dados.imagemBase64}`, detail:'high' } }\n  : dados.imagemUrl ? { type:'image_url', image_url:{ url:dados.imagemUrl, detail:'high' } } : null;\nif (!imageContent) {\n  const desc = dados.imagemCaption ? `Lead enviou imagem: \"${dados.imagemCaption}\"` : 'Lead enviou uma imagem';\n  return [{ json: { ...dados, mensagem: desc } }];\n}\nconst response = await $helpers.request({\n  method:'POST',\n  url:`https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${dados.instanceName}&model=gpt-4o`,\n  headers:{'Content-Type':'application/json'},\n  body:JSON.stringify({ messages:[{ role:'user', content:[\n    { type:'text', text: dados.imagemCaption ? `Imagem com legenda: \"${dados.imagemCaption}\". Descreva e analise.` : 'Descreva e analise esta imagem.' },\n    imageContent\n  ]}], system:'Voce descreve imagens enviadas por clientes. Seja objetivo e mencione documentos, contratos, comprovantes ou materiais relevantes.' }),\n  responseType:'json'\n});\nconst descricao = response.content || 'Imagem recebida mas nao foi possivel analisar.';\nreturn [{ json: { ...dados, mensagem: `📷 [Imagem]:\n${descricao}`, ehImagem:true } }];"
+        "jsCode": "const dados = $input.first().json;\nconst imageContent = dados.imagemBase64\n  ? { type:'image_url', image_url:{ url:`data:${dados.imagemMimetype};base64,${dados.imagemBase64}`, detail:'high' } }\n  : dados.imagemUrl ? { type:'image_url', image_url:{ url:dados.imagemUrl, detail:'high' } } : null;\nif (!imageContent) {\n  const desc = dados.imagemCaption ? `Lead enviou imagem: \"${dados.imagemCaption}\"` : 'Lead enviou uma imagem';\n  return [{ json: { ...dados, mensagem: desc } }];\n}\nconst response = await $helpers.request({\n  method:'POST',\n  url:`https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${dados.instanceName}&model=gpt-4o`,\n  headers:{'Content-Type':'application/json'},\n  body:JSON.stringify({ messages:[{ role:'user', content:[\n    { type:'text', text: dados.imagemCaption ? `Imagem com legenda: \"${dados.imagemCaption}\". Descreva e analise.` : 'Descreva e analise esta imagem.' },\n    imageContent\n  ]}], system:'Voce descreve imagens enviadas por clientes. Seja objetivo e mencione documentos, contratos, comprovantes ou materiais relevantes.' }),\n  responseType:'json'\n});\nconst descricao = response.content || 'Imagem recebida mas nao foi possivel analisar.';\nreturn [{ json: { ...dados, mensagem: `\ud83d\udcf7 [Imagem]:\n${descricao}`, ehImagem:true } }];"
       },
       "id": "node-descreve-imagem",
       "name": "Descreve imagem (Vision)",
@@ -317,7 +317,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const dados = $input.first().json;\nconst isPdf = dados.docMimetype?.includes('pdf');\nif (!dados.docBase64 && !dados.docUrl) {\n  return [{ json: { ...dados, mensagem: `📄 [Arquivo \"${dados.docFileName}\" recebido — sem conteudo legivel. Peca ao lead que descreva.]`, ehDocumento:true } }];\n}\nif (isPdf && dados.docBase64) {\n  const response = await $helpers.request({\n    method:'POST',\n    url:`https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${dados.instanceName}&model=gpt-4o`,\n    headers:{'Content-Type':'application/json'},\n    body:JSON.stringify({ messages:[{ role:'user', content:[\n      { type:'text', text:`Cliente enviou \"${dados.docFileName}\". Extraia e resuma o conteudo principal.` },\n      { type:'file', file:{ filename:dados.docFileName, file_data:`data:${dados.docMimetype};base64,${dados.docBase64}` } }\n    ]}], system:'Extraia e resuma documentos enviados por clientes. Inclua datas, nomes, valores relevantes.' }),\n    responseType:'json'\n  });\n  const texto = response.content || 'Nao foi possivel extrair.';\n  return [{ json: { ...dados, mensagem: `📄 [Arquivo \"${dados.docFileName}\"]:\n${texto}`, ehDocumento:true } }];\n}\nreturn [{ json: { ...dados, mensagem: `📄 [Arquivo \"${dados.docFileName}\" (${dados.docMimetype})] — Solicite o conteudo em texto.`, ehDocumento:true } }];"
+        "jsCode": "const dados = $input.first().json;\nconst isPdf = dados.docMimetype?.includes('pdf');\nif (!dados.docBase64 && !dados.docUrl) {\n  return [{ json: { ...dados, mensagem: `\ud83d\udcc4 [Arquivo \"${dados.docFileName}\" recebido \u2014 sem conteudo legivel. Peca ao lead que descreva.]`, ehDocumento:true } }];\n}\nif (isPdf && dados.docBase64) {\n  const response = await $helpers.request({\n    method:'POST',\n    url:`https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${dados.instanceName}&model=gpt-4o`,\n    headers:{'Content-Type':'application/json'},\n    body:JSON.stringify({ messages:[{ role:'user', content:[\n      { type:'text', text:`Cliente enviou \"${dados.docFileName}\". Extraia e resuma o conteudo principal.` },\n      { type:'file', file:{ filename:dados.docFileName, file_data:`data:${dados.docMimetype};base64,${dados.docBase64}` } }\n    ]}], system:'Extraia e resuma documentos enviados por clientes. Inclua datas, nomes, valores relevantes.' }),\n    responseType:'json'\n  });\n  const texto = response.content || 'Nao foi possivel extrair.';\n  return [{ json: { ...dados, mensagem: `\ud83d\udcc4 [Arquivo \"${dados.docFileName}\"]:\n${texto}`, ehDocumento:true } }];\n}\nreturn [{ json: { ...dados, mensagem: `\ud83d\udcc4 [Arquivo \"${dados.docFileName}\" (${dados.docMimetype})] \u2014 Solicite o conteudo em texto.`, ehDocumento:true } }];"
       },
       "id": "node-extrai-doc",
       "name": "Extrai texto documento",
@@ -330,7 +330,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Unifica rotas: audio/imagem/documento/texto — mensagem ja pronta\nreturn [$input.first()];"
+        "jsCode": "// Unifica rotas: audio/imagem/documento/texto \u2014 mensagem ja pronta\nreturn [$input.first()];"
       },
       "id": "node-prepara-contexto",
       "name": "Prepara contexto final",
@@ -435,7 +435,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Monta system prompt COMPLETO a partir do agente_config (configurado no software)\n// Prompt NUNCA hardcoded — sempre do software via agente_config\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(row => { if (row && row.chave) configMap[row.chave] = row.valor; });\n\nconst clienteRaw = $('Resolve cliente pelo instanceName').first().json;\nconst cliente = Array.isArray(clienteRaw) ? clienteRaw[0] : clienteRaw;\nconst userId = cliente && cliente.id;\nconst evoInstance = cliente && cliente.evo_instance;\nconst dadosMsg = $('Prepara contexto final').first().json;\nconst numero = dadosMsg.numero;\nconst nomeContato = dadosMsg.nomeContato || 'Lead';\nconst mensagem = dadosMsg.mensagem;\nconst mensagemOriginalAudio = dadosMsg.mensagemOriginalAudio === true;\nconst responderEmAudio = configMap.responder_em_audio === 'true';\nconst aiProvider = configMap.ai_provider || 'openai';\nconst aiModel = configMap.ai_model || 'gpt-4o';\nconst webSearchEnabled = configMap.web_search_enabled !== 'false'; // default true\n\n// Base de conhecimento: chunks encontrados\nlet knowledgeSection = '';\ntry {\n  const kbRaw = $('Busca base de conhecimento').first().json || [];\n  const chunks = Array.isArray(kbRaw) ? kbRaw : [];\n  if (chunks.length > 0) {\n    const textos = chunks.map(c => `[${c.nome || 'Doc'}]\\n${c.conteudo}`).join('\\n---\\n');\n    knowledgeSection = '\\n\\nBASE DE CONHECIMENTO INTERNA (use estas informações para responder com precisão):\\n' + textos;\n  }\n} catch(e) {}\n\n// Web URLs configuradas NO SOFTWARE\nlet webUrlsSection = '';\ntry {\n  const urlsRaw = configMap.web_urls_fixas || '[]';\n  const urls = JSON.parse(urlsRaw);\n  if (Array.isArray(urls) && urls.length > 0) {\n    const lista = urls.map(u => '- ' + u.url + (u.desc ? ' (' + u.desc + ')' : '')).join('\\n');\n    webUrlsSection = '\\n\\nSITES DE REFERÊNCIA PRIORITÁRIOS (consulte estes ANTES de fazer busca web geral):\\n' + lista;\n  }\n} catch(e) {}\n\nconst partes = [\n  configMap.sistema_prompt || 'Você é um assistente de vendas SDR profissional. Qualifique o cliente de forma consultiva e persuasiva.',\n  '',\n  configMap.objetivo ? ('OBJETIVO: ' + configMap.objetivo) : '',\n  configMap.tonalidade ? ('TONALIDADE: ' + configMap.tonalidade) : '',\n  configMap.instrucoes_comunicacao ? ('INSTRUÇÕES DE COMUNICAÇÃO:\\n' + configMap.instrucoes_comunicacao) : '',\n  configMap.criterios_qualificacao ? ('CRITÉRIOS DE QUALIFICAÇÃO (cliente deve atender ao menos 3):\\n' + configMap.criterios_qualificacao) : '',\n  webUrlsSection,\n  knowledgeSection,\n  '',\n  'QUANDO O LEAD FOR QUALIFICADO:',\n  ('- Responda com: ' + (configMap.msg_qualificado || 'Perfeito! Vou encaminhar suas informações para nosso time especializado.')),\n  '- Inclua no FINAL da mensagem EXATAMENTE este bloco JSON:',\n  '```json',\n  '{\"qualificado\":true,\"nome_completo\":\"Nome Sobrenome\",\"numero\":\"11999999999\",\"motivo_contato\":\"Resumo do que o lead quer\",\"tese\":\"Produto/serviço de interesse\"}',\n  '```',\n  '',\n  'QUANDO O LEAD NÃO FOR QUALIFICADO (e conversa encerrada):',\n  ('- Responda com: ' + (configMap.msg_desqualificado || 'Agradecemos o contato! Se mudar de ideia, estaremos aqui.')),\n  '- Inclua no FINAL:',\n  '```json',\n  '{\"qualificado\":false,\"fim_atendimento\":true,\"nome_completo\":\"Nome Sobrenome\",\"numero\":\"11999999999\",\"motivo_contato\":\"Resumo\",\"nao_qualificado_motivo\":\"Motivo da desqualificação\"}',\n  '```',\n  '',\n  'PRIORIDADE DE BUSCA DE INFORMAÇÕES:',\n  '1. Base de Conhecimento Interna (está acima)',\n  '2. Sites de Referência Prioritários (está acima)',\n  webSearchEnabled ? '3. Busca Web Geral (APENAS se a informação não estiver nas fontes acima)' : '3. (Busca web desabilitada nesta conta)',\n  '',\n  'REGRAS:',\n  '- Faça UMA pergunta por vez',\n  '- Nunca prometa resultado ou vitória',\n  '- Seja conciso, claro e persuasivo',\n  '- Deixe o cliente falar (escute mais, fale menos)',\n  '- Se for fim de atendimento, despida-se gentilmente no JSON acima'\n].filter(Boolean);\n\nreturn [{ json: {\n  ...dadosMsg,\n  userId, evoInstance, numero, nomeContato, mensagem,\n  mensagemOriginalAudio, responderEmAudio, aiProvider, aiModel,\n  webSearchEnabled,\n  systemPrompt: partes.join('\\n'),\n  configMap\n} }];"
+        "jsCode": "// Monta system prompt COMPLETO a partir do agente_config (configurado no software)\n// Prompt NUNCA hardcoded \u2014 sempre do software via agente_config\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(row => { if (row && row.chave) configMap[row.chave] = row.valor; });\n\nconst clienteRaw = $('Resolve cliente pelo instanceName').first().json;\nconst cliente = Array.isArray(clienteRaw) ? clienteRaw[0] : clienteRaw;\nconst userId = cliente && cliente.id;\nconst evoInstance = cliente && cliente.evo_instance;\nconst dadosMsg = $('Prepara contexto final').first().json;\nconst numero = dadosMsg.numero;\nconst nomeContato = dadosMsg.nomeContato || 'Lead';\nconst mensagem = dadosMsg.mensagem;\nconst mensagemOriginalAudio = dadosMsg.mensagemOriginalAudio === true;\nconst responderEmAudio = configMap.responder_em_audio === 'true';\nconst aiProvider = configMap.ai_provider || 'openai';\nconst aiModel = configMap.ai_model || 'gpt-4o';\nconst webSearchEnabled = configMap.web_search_enabled !== 'false'; // default true\n\n// Base de conhecimento: chunks encontrados\nlet knowledgeSection = '';\ntry {\n  const kbRaw = $('Busca base de conhecimento').first().json || [];\n  const chunks = Array.isArray(kbRaw) ? kbRaw : [];\n  if (chunks.length > 0) {\n    const textos = chunks.map(c => `[${c.nome || 'Doc'}]\\n${c.conteudo}`).join('\\n---\\n');\n    knowledgeSection = '\\n\\nBASE DE CONHECIMENTO INTERNA (use estas informa\u00e7\u00f5es para responder com precis\u00e3o):\\n' + textos;\n  }\n} catch(e) {}\n\n// Web URLs configuradas NO SOFTWARE\nlet webUrlsSection = '';\ntry {\n  const urlsRaw = configMap.web_urls_fixas || '[]';\n  const urls = JSON.parse(urlsRaw);\n  if (Array.isArray(urls) && urls.length > 0) {\n    const lista = urls.map(u => '- ' + u.url + (u.desc ? ' (' + u.desc + ')' : '')).join('\\n');\n    webUrlsSection = '\\n\\nSITES DE REFER\u00caNCIA PRIORIT\u00c1RIOS (consulte estes ANTES de fazer busca web geral):\\n' + lista;\n  }\n} catch(e) {}\n\nconst partes = [\n  configMap.sistema_prompt || 'Voc\u00ea \u00e9 um assistente de vendas SDR profissional. Qualifique o cliente de forma consultiva e persuasiva.',\n  '',\n  configMap.objetivo ? ('OBJETIVO: ' + configMap.objetivo) : '',\n  configMap.tonalidade ? ('TONALIDADE: ' + configMap.tonalidade) : '',\n  configMap.instrucoes_comunicacao ? ('INSTRU\u00c7\u00d5ES DE COMUNICA\u00c7\u00c3O:\\n' + configMap.instrucoes_comunicacao) : '',\n  configMap.criterios_qualificacao ? ('CRIT\u00c9RIOS DE QUALIFICA\u00c7\u00c3O (cliente deve atender ao menos 3):\\n' + configMap.criterios_qualificacao) : '',\n  webUrlsSection,\n  knowledgeSection,\n  '',\n  'QUANDO O LEAD FOR QUALIFICADO:',\n  ('- Responda com: ' + (configMap.msg_qualificado || 'Perfeito! Vou encaminhar suas informa\u00e7\u00f5es para nosso time especializado.')),\n  '- Inclua no FINAL da mensagem EXATAMENTE este bloco JSON:',\n  '```json',\n  '{\"qualificado\":true,\"nome_completo\":\"Nome Sobrenome\",\"numero\":\"11999999999\",\"motivo_contato\":\"Resumo do que o lead quer\",\"tese\":\"Produto/servi\u00e7o de interesse\"}',\n  '```',\n  '',\n  'QUANDO O LEAD N\u00c3O FOR QUALIFICADO (e conversa encerrada):',\n  ('- Responda com: ' + (configMap.msg_desqualificado || 'Agradecemos o contato! Se mudar de ideia, estaremos aqui.')),\n  '- Inclua no FINAL:',\n  '```json',\n  '{\"qualificado\":false,\"fim_atendimento\":true,\"nome_completo\":\"Nome Sobrenome\",\"numero\":\"11999999999\",\"motivo_contato\":\"Resumo\",\"nao_qualificado_motivo\":\"Motivo da desqualifica\u00e7\u00e3o\"}',\n  '```',\n  '',\n  'PRIORIDADE DE BUSCA DE INFORMA\u00c7\u00d5ES:',\n  '1. Base de Conhecimento Interna (est\u00e1 acima)',\n  '2. Sites de Refer\u00eancia Priorit\u00e1rios (est\u00e1 acima)',\n  webSearchEnabled ? '3. Busca Web Geral (APENAS se a informa\u00e7\u00e3o n\u00e3o estiver nas fontes acima)' : '3. (Busca web desabilitada nesta conta)',\n  '',\n  'REGRAS:',\n  '- Fa\u00e7a UMA pergunta por vez',\n  '- Nunca prometa resultado ou vit\u00f3ria',\n  '- Seja conciso, claro e persuasivo',\n  '- Deixe o cliente falar (escute mais, fale menos)',\n  '- Se for fim de atendimento, despida-se gentilmente no JSON acima'\n].filter(Boolean);\n\nreturn [{ json: {\n  ...dadosMsg,\n  userId, evoInstance, numero, nomeContato, mensagem,\n  mensagemOriginalAudio, responderEmAudio, aiProvider, aiModel,\n  webSearchEnabled,\n  systemPrompt: partes.join('\\n'),\n  configMap\n} }];"
       },
       "id": "node-monta-system-prompt",
       "name": "Monta system prompt",
@@ -733,7 +733,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { action: 'send-text', instance: $('Monta system prompt').first().json.evoInstance, number: $('Monta system prompt').first().json.configMap.numero_destino || '', text: '🚨 OBJECAO DETECTADA\\n\\n👤 Lead: ' + $('Monta system prompt').first().json.nomeContato + ' (' + $('Monta system prompt').first().json.numero + ')\\n🎯 Tipo: ' + $('Detecta objecao').first().json.tipoObjecao.toUpperCase() + '\\n\\n📋 PLANO DE ACAO:\\n' + $('Gera plano de acao').first().json.content } }}",
+        "jsonBody": "={{ { action: 'send-text', instance: $('Monta system prompt').first().json.evoInstance, number: $('Monta system prompt').first().json.configMap.numero_destino || '', text: '\ud83d\udea8 OBJECAO DETECTADA\\n\\n\ud83d\udc64 Lead: ' + $('Monta system prompt').first().json.nomeContato + ' (' + $('Monta system prompt').first().json.numero + ')\\n\ud83c\udfaf Tipo: ' + $('Detecta objecao').first().json.tipoObjecao.toUpperCase() + '\\n\\n\ud83d\udccb PLANO DE ACAO:\\n' + $('Gera plano de acao').first().json.content } }}",
         "options": {}
       },
       "id": "node-envia-plano-agente",
@@ -973,7 +973,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const configRel = $('Busca config: destino relatorio').first().json || [];\nconst cmap = {}; (Array.isArray(configRel)?configRel:[]).forEach(c=>{ cmap[c.chave]=c.valor; });\nconst dadosQ = $('Analisa qualificacao do lead').first().json;\nconst ctx = $('Monta system prompt').first().json;\nconst llmContent = $('Chama LLM via llm-proxy').first().json.content || '';\nconst nome = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.nome) || ctx.nomeContato || 'Lead';\nconst celular = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.celular) || ctx.numero;\nconst tese = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.tese) || 'Nao especificado';\nconst resumo = (dadosQ.dadosQualificacao && (dadosQ.dadosQualificacao.resumo || dadosQ.dadosQualificacao.motivo)) || llmContent.substring(0,300);\nconst relatorio = `📊 RELATORIO DE QUALIFICACAO\\n\\n👤 Nome: ${nome}\\n📱 Numero: ${celular}\\n🎯 Interesse: ${tese}\\n\\n📋 Resumo:\\n${resumo}\\n\\n⏰ ${new Date().toLocaleString('pt-BR')}`;\nconst numeroDestino = cmap.numero_destino || '';\nconst grupoDestino = cmap.grupo_destino || '';\nreturn [{ json: { relatorio, numeroDestino, grupoDestino, enviarParaNumero: !!numeroDestino, enviarParaGrupo: !!grupoDestino, evoInstance: ctx.evoInstance } }];"
+        "jsCode": "const configRel = $('Busca config: destino relatorio').first().json || [];\nconst cmap = {}; (Array.isArray(configRel)?configRel:[]).forEach(c=>{ cmap[c.chave]=c.valor; });\nconst dadosQ = $('Analisa qualificacao do lead').first().json;\nconst ctx = $('Monta system prompt').first().json;\nconst llmContent = $('Chama LLM via llm-proxy').first().json.content || '';\nconst nome = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.nome) || ctx.nomeContato || 'Lead';\nconst celular = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.celular) || ctx.numero;\nconst tese = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.tese) || 'Nao especificado';\nconst resumo = (dadosQ.dadosQualificacao && (dadosQ.dadosQualificacao.resumo || dadosQ.dadosQualificacao.motivo)) || llmContent.substring(0,300);\nconst relatorio = `\ud83d\udcca RELATORIO DE QUALIFICACAO\\n\\n\ud83d\udc64 Nome: ${nome}\\n\ud83d\udcf1 Numero: ${celular}\\n\ud83c\udfaf Interesse: ${tese}\\n\\n\ud83d\udccb Resumo:\\n${resumo}\\n\\n\u23f0 ${new Date().toLocaleString('pt-BR')}`;\nconst numeroDestino = cmap.numero_destino || '';\nconst grupoDestino = cmap.grupo_destino || '';\nreturn [{ json: { relatorio, numeroDestino, grupoDestino, enviarParaNumero: !!numeroDestino, enviarParaGrupo: !!grupoDestino, evoInstance: ctx.evoInstance } }];"
       },
       "id": "node-formata-relatorio",
       "name": "Formata relatorio de qualificacao",
@@ -1089,7 +1089,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const msg = $('Normaliza e filtra mensagem').first().json.mensagem || '';\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\n// ⚡ SÓ VERIFICA TRANSFERÊNCIA SE ESTIVER HABILITADO NO SOFTWARE (drawflow)\n// O campo numero_atendente deve ser preenchido na config do agente no painel\nconst numeroAtendente = configMap.numero_atendente || '';\nif (\\!numeroAtendente) {\n  // Transferência não configurada — encerra aqui sem transferir\n  return [{ json: { querTransferir: false, motivo: 'sem_config', mensagem: msg } }];\n}\n\nconst msgLower = msg.toLowerCase();\nconst KEYWORDS_TRANSFER = [\n  'quero falar com', 'falar com humano', 'falar com pessoa', 'quero atendente',\n  'preciso de um atendente', 'atendente humano', 'falar com alguem', 'falar com alguém',\n  'quero uma pessoa', 'me passa para', 'me conecta com', 'suporte humano',\n  'nao quero falar com robo', 'não quero falar com robô', 'me transfere', 'transferir'\n];\n\nconst querTransferir = KEYWORDS_TRANSFER.some(kw => msgLower.includes(kw));\nreturn [{ json: { querTransferir, numeroAtendente, mensagem: msg } }];"
+        "jsCode": "const msg = $('Normaliza e filtra mensagem').first().json.mensagem || '';\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\n// \u26a1 S\u00d3 VERIFICA TRANSFER\u00caNCIA SE ESTIVER HABILITADO NO SOFTWARE (drawflow)\n// O campo numero_atendente deve ser preenchido na config do agente no painel\nconst numeroAtendente = configMap.numero_atendente || '';\nif (\\!numeroAtendente) {\n  // Transfer\u00eancia n\u00e3o configurada \u2014 encerra aqui sem transferir\n  return [{ json: { querTransferir: false, motivo: 'sem_config', mensagem: msg } }];\n}\n\nconst msgLower = msg.toLowerCase();\nconst KEYWORDS_TRANSFER = [\n  'quero falar com', 'falar com humano', 'falar com pessoa', 'quero atendente',\n  'preciso de um atendente', 'atendente humano', 'falar com alguem', 'falar com algu\u00e9m',\n  'quero uma pessoa', 'me passa para', 'me conecta com', 'suporte humano',\n  'nao quero falar com robo', 'n\u00e3o quero falar com rob\u00f4', 'me transfere', 'transferir'\n];\n\nconst querTransferir = KEYWORDS_TRANSFER.some(kw => msgLower.includes(kw));\nreturn [{ json: { querTransferir, numeroAtendente, mensagem: msg } }];"
       },
       "id": "node-detecta-transferencia",
       "name": "Detecta pedido de transferencia",
@@ -1146,7 +1146,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { action: 'send-text', instance: $('Resolve cliente pelo instanceName').first().json[0]?.evo_instance, number: $('Normaliza e filtra mensagem').first().json.numero, text: '👤 Entendido! Aguarde um momento, vou conectar você com um de nossos atendentes. Em breve alguém estará em contato!' } }}",
+        "jsonBody": "={{ { action: 'send-text', instance: $('Resolve cliente pelo instanceName').first().json[0]?.evo_instance, number: $('Normaliza e filtra mensagem').first().json.numero, text: '\ud83d\udc64 Entendido! Aguarde um momento, vou conectar voc\u00ea com um de nossos atendentes. Em breve algu\u00e9m estar\u00e1 em contato!' } }}",
         "options": {}
       },
       "id": "node-avisa-lead-transfer",
@@ -1161,7 +1161,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const cliente = $('Resolve cliente pelo instanceName').first().json;\nconst dadosVerif = $('Verifica se precisa transferir').first().json;\nconst contato = $('Normaliza e filtra mensagem').first().json;\n\nconst nomeCompleto = dadosVerif.nome_completo || contato.nomeContato || 'Contato desconhecido';\nconst numero = contato.numero || 'N/A';\nconst motivo = dadosVerif.motivo_contato || 'Não informado';\nconst motTransf = dadosVerif.motivo === 'nao_qualificado' \n  ? 'Não qualificado: ' + (dadosVerif.nao_qualificado_motivo || 'motivo não informado')\n  : 'Fim de atendimento';\n\nconst relatorio = `\n📋 RELATÓRIO DE ATENDIMENTO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n👤 Nome: ${nomeCompleto}\n📱 Celular: ${numero}\n🎯 Motivo do Contato: ${motivo}\n❌ Motivo da Transferência: ${motTransf}\n\n💬 Aguardando atendimento do agente...\n`.trim();\n\nreturn [{\n  json: {\n    evoInstance: cliente.evo_instance,\n    numeroAtendente: dadosVerif.numeroAtendente,\n    relatorio,\n    nomeCompleto,\n    numero,\n    motivo,\n    motTransf\n  }\n}];"
+        "jsCode": "const cliente = $('Resolve cliente pelo instanceName').first().json;\nconst dadosVerif = $('Verifica se precisa transferir').first().json;\nconst contato = $('Normaliza e filtra mensagem').first().json;\n\nconst nomeCompleto = dadosVerif.nome_completo || contato.nomeContato || 'Contato desconhecido';\nconst numero = contato.numero || 'N/A';\nconst motivo = dadosVerif.motivo_contato || 'N\u00e3o informado';\nconst motTransf = dadosVerif.motivo === 'nao_qualificado' \n  ? 'N\u00e3o qualificado: ' + (dadosVerif.nao_qualificado_motivo || 'motivo n\u00e3o informado')\n  : 'Fim de atendimento';\n\nconst relatorio = `\n\ud83d\udccb RELAT\u00d3RIO DE ATENDIMENTO\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\ud83d\udc64 Nome: ${nomeCompleto}\n\ud83d\udcf1 Celular: ${numero}\n\ud83c\udfaf Motivo do Contato: ${motivo}\n\u274c Motivo da Transfer\u00eancia: ${motTransf}\n\n\ud83d\udcac Aguardando atendimento do agente...\n`.trim();\n\nreturn [{\n  json: {\n    evoInstance: cliente.evo_instance,\n    numeroAtendente: dadosVerif.numeroAtendente,\n    relatorio,\n    nomeCompleto,\n    numero,\n    motivo,\n    motTransf\n  }\n}];"
       },
       "id": "node-monta-notif-transfer",
       "name": "Monta notificacao de transferencia",
@@ -1250,7 +1250,7 @@
         2200
       ],
       "parameters": {
-        "jsCode": "const respLLM = $('Chama LLM via llm-proxy').first().json;\nconst content = respLLM.content || '';\n\n// Tenta extrair JSON da resposta (LLM pode retornar JSON estruturado)\nlet metadata = {\n  qualificado: null,\n  fim_atendimento: false,\n  nome_completo: null,\n  motivo_contato: null,\n  nao_qualificado_motivo: null\n};\n\ntry {\n  const jsonMatch = content.match(/\\{[^{}]*\"qualificado\"[^{}]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    metadata = { ...metadata, ...parsed };\n  }\n} catch (e) {\n  // Sem JSON estruturado — LLM retornou só texto\n}\n\nreturn [{\n  json: {\n    content,\n    qualificado: metadata.qualificado,\n    fim_atendimento: metadata.fim_atendimento,\n    nome_completo: metadata.nome_completo,\n    motivo_contato: metadata.motivo_contato,\n    nao_qualificado_motivo: metadata.nao_qualificado_motivo\n  }\n}];"
+        "jsCode": "const respLLM = $('Chama LLM via llm-proxy').first().json;\nconst content = respLLM.content || '';\n\n// Tenta extrair JSON da resposta (LLM pode retornar JSON estruturado)\nlet metadata = {\n  qualificado: null,\n  fim_atendimento: false,\n  nome_completo: null,\n  motivo_contato: null,\n  nao_qualificado_motivo: null\n};\n\ntry {\n  const jsonMatch = content.match(/\\{[^{}]*\"qualificado\"[^{}]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    metadata = { ...metadata, ...parsed };\n  }\n} catch (e) {\n  // Sem JSON estruturado \u2014 LLM retornou s\u00f3 texto\n}\n\nreturn [{\n  json: {\n    content,\n    qualificado: metadata.qualificado,\n    fim_atendimento: metadata.fim_atendimento,\n    nome_completo: metadata.nome_completo,\n    motivo_contato: metadata.motivo_contato,\n    nao_qualificado_motivo: metadata.nao_qualificado_motivo\n  }\n}];"
       }
     },
     {
@@ -1263,8 +1263,326 @@
         2800
       ],
       "parameters": {
-        "jsCode": "const dados = $('Extrai dados estruturados').first().json;\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\nconst numeroAtendente = configMap.numero_atendente || '';\n\n// Transfere se: (não qualificado OU fim atendimento) E tem numero_atendente\nconst deveTransferir = (\n  (dados.qualificado === false || dados.fim_atendimento === true) &&\n  !!numeroAtendente\n);\n\nreturn [{\n  json: {\n    deveTransferir,\n    motivo: dados.qualificado === false ? 'nao_qualificado' : (dados.fim_atendimento ? 'fim_atendimento' : 'continua'),\n    nome_completo: dados.nome_completo,\n    motivo_contato: dados.motivo_contato,\n    nao_qualificado_motivo: dados.nao_qualificado_motivo,\n    numeroAtendente\n  }\n}];"
+        "jsCode": "const dados = $('Extrai dados estruturados').first().json;\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\nconst numeroAtendente = configMap.numero_atendente || '';\n\n// Transfere se: (n\u00e3o qualificado OU fim atendimento) E tem numero_atendente\nconst deveTransferir = (\n  (dados.qualificado === false || dados.fim_atendimento === true) &&\n  !!numeroAtendente\n);\n\nreturn [{\n  json: {\n    deveTransferir,\n    motivo: dados.qualificado === false ? 'nao_qualificado' : (dados.fim_atendimento ? 'fim_atendimento' : 'continua'),\n    nome_completo: dados.nome_completo,\n    motivo_contato: dados.motivo_contato,\n    nao_qualificado_motivo: dados.nao_qualificado_motivo,\n    numeroAtendente\n  }\n}];"
       }
+    },
+    {
+      "name": "Busca a\u00e7\u00f5es customiz\u00e1veis",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3000
+      ],
+      "typeVersion": 1,
+      "id": "43774709-64a2-42e7-b1c2-df3711427c42",
+      "parameters": {
+        "mode": "raw",
+        "query": "SELECT * FROM public.buscar_acoes_workflow($1)",
+        "params": [
+          "{{ $json.user_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "IF qualificado?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3100
+      ],
+      "typeVersion": 1,
+      "id": "6acd95a6-42c4-417b-9673-fc388520c1dc",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "string",
+              "value": "{{ $json.qualificado }}",
+              "operation": "equals",
+              "truthy": "true"
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa criar tarefa CRM?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3200
+      ],
+      "typeVersion": 1,
+      "id": "9213608b-ae13-4aba-b2c2-c9a50d8e5e41",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.criar_tarefa_crm }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Cria tarefa CRM",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3300
+      ],
+      "typeVersion": 1,
+      "id": "fb8f25f7-a6d7-4475-a8c1-898ca335481a",
+      "parameters": {
+        "mode": "raw",
+        "query": "INSERT INTO public.lead_tarefas (lead_id, descricao, data_vencimento, concluida)\nVALUES ($1, 'Follow-up autom\u00e1tico da conversa', NOW() + INTERVAL '{{ $json.dias_follow_up }} days', false)",
+        "params": [
+          "{{ $json.lead_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa agendar follow-up?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3400
+      ],
+      "typeVersion": 1,
+      "id": "ca20604b-e95c-46cd-9191-64513ed77bad",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.agendar_follow_up }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Agenda follow-up",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3500
+      ],
+      "typeVersion": 1,
+      "id": "9f25d555-5bc8-4e7e-a66f-b2ee3f48a26e",
+      "parameters": {
+        "mode": "raw",
+        "query": "INSERT INTO public.lead_tarefas (lead_id, descricao, data_vencimento, concluida)\nVALUES ($1, 'Follow-up autom\u00e1tico - Lead qualificado', NOW() + INTERVAL '{{ $json.dias_follow_up }} days', false)",
+        "params": [
+          "{{ $json.lead_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa adicionar tag qualificado?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3600
+      ],
+      "typeVersion": 1,
+      "id": "23f7a8e5-8df5-4862-a6d6-e25b84458ca5",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.adicionar_tag_qualificado && $json.tag_qualificado }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Adiciona tag qualificado",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3700
+      ],
+      "typeVersion": 1,
+      "id": "fcd2935e-a0f3-4d22-961e-e9315f7c993b",
+      "parameters": {
+        "mode": "raw",
+        "query": "SELECT public.adicionar_tag_lead($1, $2)",
+        "params": [
+          "{{ $json.lead_id }}",
+          "{{ $json.tag_qualificado }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "IF encerramento?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3900
+      ],
+      "typeVersion": 1,
+      "id": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.fim_atendimento === true || $json.qualificado === false }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa remover de lista ativa?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        4000
+      ],
+      "typeVersion": 1,
+      "id": "854e7fdf-6e94-46e6-b02d-eaca51b47230",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.remover_lista_ativa }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Remove de lista ativa",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        4100
+      ],
+      "typeVersion": 1,
+      "id": "7bd9d09e-c438-4130-9d9c-c8790116692a",
+      "parameters": {
+        "mode": "raw",
+        "query": "UPDATE public.leads SET ativo = false WHERE id = $1",
+        "params": [
+          "{{ $json.lead_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa enviar pesquisa?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        4200
+      ],
+      "typeVersion": 1,
+      "id": "1bdb04b0-086f-4965-b735-4fd0d11db42d",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.enviar_pesquisa_satisfacao }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Envia pesquisa satisfa\u00e7\u00e3o",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1200,
+        4300
+      ],
+      "typeVersion": 4.1,
+      "id": "07a1c8dd-2de7-4b47-a803-06917beb5899",
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/functions/v1/send-satisfaction-survey",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{ $env.SUPABASE_SERVICE_ROLE }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "user_id": "{{ $json.user_id }}",
+          "lead_id": "{{ $json.lead_id }}",
+          "numero_whatsapp": "{{ $json.numero_whatsapp }}"
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa adicionar tag encerramento?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        4400
+      ],
+      "typeVersion": 1,
+      "id": "2ff389b9-3259-4a75-91cb-e65dde1152ac",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.adicionar_tag_encerramento && $json.tag_encerramento }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Adiciona tag encerramento",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        4500
+      ],
+      "typeVersion": 1,
+      "id": "a7485476-6829-4c8d-b41b-9fda851972c0",
+      "parameters": {
+        "mode": "raw",
+        "query": "SELECT public.adicionar_tag_lead($1, $2)",
+        "params": [
+          "{{ $json.lead_id }}",
+          "{{ $json.tag_encerramento }}"
+        ]
+      },
+      "disabled": false
     }
   ],
   "connections": {
@@ -1727,6 +2045,227 @@
             "node": "Responde 200 OK",
             "type": "main",
             "index": 0
+          }
+        ]
+      ]
+    },
+    "43774709-64a2-42e7-b1c2-df3711427c42": {
+      "main": [
+        [
+          {
+            "node": "6acd95a6-42c4-417b-9673-fc388520c1dc",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "6acd95a6-42c4-417b-9673-fc388520c1dc": {
+      "main": [
+        [
+          {
+            "node": "9213608b-ae13-4aba-b2c2-c9a50d8e5e41",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "9213608b-ae13-4aba-b2c2-c9a50d8e5e41": {
+      "main": [
+        [
+          {
+            "node": "fb8f25f7-a6d7-4475-a8c1-898ca335481a",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "ca20604b-e95c-46cd-9191-64513ed77bad",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "fb8f25f7-a6d7-4475-a8c1-898ca335481a": {
+      "main": [
+        [
+          {
+            "node": "ca20604b-e95c-46cd-9191-64513ed77bad",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "ca20604b-e95c-46cd-9191-64513ed77bad": {
+      "main": [
+        [
+          {
+            "node": "9f25d555-5bc8-4e7e-a66f-b2ee3f48a26e",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "23f7a8e5-8df5-4862-a6d6-e25b84458ca5",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "9f25d555-5bc8-4e7e-a66f-b2ee3f48a26e": {
+      "main": [
+        [
+          {
+            "node": "23f7a8e5-8df5-4862-a6d6-e25b84458ca5",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "23f7a8e5-8df5-4862-a6d6-e25b84458ca5": {
+      "main": [
+        [
+          {
+            "node": "fcd2935e-a0f3-4d22-961e-e9315f7c993b",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "fcd2935e-a0f3-4d22-961e-e9315f7c993b": {
+      "main": [
+        [
+          {
+            "node": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "76cde21c-ab1f-4b87-bb26-e5a8eee73cca": {
+      "main": [
+        [
+          {
+            "node": "854e7fdf-6e94-46e6-b02d-eaca51b47230",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "verifica_se_precisa_transferir",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "854e7fdf-6e94-46e6-b02d-eaca51b47230": {
+      "main": [
+        [
+          {
+            "node": "7bd9d09e-c438-4130-9d9c-c8790116692a",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "1bdb04b0-086f-4965-b735-4fd0d11db42d",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "7bd9d09e-c438-4130-9d9c-c8790116692a": {
+      "main": [
+        [
+          {
+            "node": "1bdb04b0-086f-4965-b735-4fd0d11db42d",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "1bdb04b0-086f-4965-b735-4fd0d11db42d": {
+      "main": [
+        [
+          {
+            "node": "07a1c8dd-2de7-4b47-a803-06917beb5899",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "2ff389b9-3259-4a75-91cb-e65dde1152ac",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "07a1c8dd-2de7-4b47-a803-06917beb5899": {
+      "main": [
+        [
+          {
+            "node": "2ff389b9-3259-4a75-91cb-e65dde1152ac",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "2ff389b9-3259-4a75-91cb-e65dde1152ac": {
+      "main": [
+        [
+          {
+            "node": "a7485476-6829-4c8d-b41b-9fda851972c0",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "verifica_se_precisa_transferir",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "a7485476-6829-4c8d-b41b-9fda851972c0": {
+      "main": [
+        [
+          {
+            "node": "verifica_se_precisa_transferir",
+            "branch": 0,
+            "slot": 0
           }
         ]
       ]
