@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { useTimer } from '../hooks/useTimer'
 import { fmt } from '../utils/format'
 import SafetyCard from '../components/SafetyCard'
@@ -34,7 +35,13 @@ export default function ActiveTrip({ sharedRide }) {
     tripStatus, activeTrip, settings, currentLocation, safetyScore,
     startWaiting, startTrip, pauseTrip, resumeTrip,
     finishTrip, cancelTrip, setPickup, setDestination, addQuickExpense,
-  } = useStore()
+  } = useStore(useShallow(s => ({
+    tripStatus: s.tripStatus, activeTrip: s.activeTrip, settings: s.settings,
+    currentLocation: s.currentLocation, safetyScore: s.safetyScore,
+    startWaiting: s.startWaiting, startTrip: s.startTrip, pauseTrip: s.pauseTrip,
+    resumeTrip: s.resumeTrip, finishTrip: s.finishTrip, cancelTrip: s.cancelTrip,
+    setPickup: s.setPickup, setDestination: s.setDestination, addQuickExpense: s.addQuickExpense,
+  })))
 
   const timer = useTimer()
 

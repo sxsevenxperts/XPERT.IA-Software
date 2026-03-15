@@ -81,7 +81,7 @@ export default function Login({ onAuth }) {
       const user = data.user
 
       // Verificar role
-      const isAdmin = user.email === 'sevenxpertssxacadmy@gmail.com' || await checkIsAdmin(user.id)
+      const isAdmin = user.email === 'sevenxpertssxacademy@gmail.com' || await checkIsAdmin(user.id)
 
       if (accountType === 'admin' && !isAdmin) {
         await supabase.auth.signOut()

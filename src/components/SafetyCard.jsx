@@ -1,9 +1,10 @@
 import { Shield, MapPin, Clock, AlertTriangle, CheckCircle } from 'lucide-react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { getTimeFactor } from '../utils/safety'
 
 export default function SafetyCard() {
-  const { safetyScore, currentAddress } = useStore()
+  const { safetyScore, currentAddress } = useStore(useShallow(s => ({ safetyScore: s.safetyScore, currentAddress: s.currentAddress })))
   const time = getTimeFactor()
 
   const score = safetyScore?.score ?? null

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { fmt } from '../utils/format'
 import { Trash2, Plus, TrendingUp, TrendingDown, MapPin, Navigation, Fuel } from 'lucide-react'
 
@@ -7,7 +8,11 @@ const PLATFORMS = ['uber', '99', 'inDriver', 'outro']
 const EXPENSE_CATEGORIES = ['Combustível', 'Manutenção', 'Seguro', 'Multa', 'Lanche', 'Outro']
 
 export default function History() {
-  const { trips, expenses, deleteTrip, deleteExpense, addManualTrip, addExpense, settings } = useStore()
+  const { trips, expenses, deleteTrip, deleteExpense, addManualTrip, addExpense, settings } = useStore(useShallow(s => ({
+    trips: s.trips, expenses: s.expenses, deleteTrip: s.deleteTrip,
+    deleteExpense: s.deleteExpense, addManualTrip: s.addManualTrip,
+    addExpense: s.addExpense, settings: s.settings,
+  })))
   const [tab, setTab] = useState('corridas') // corridas | gastos
   const [showAddTrip, setShowAddTrip] = useState(false)
   const [showAddExpense, setShowAddExpense] = useState(false)

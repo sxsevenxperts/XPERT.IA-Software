@@ -1,5 +1,6 @@
 import { LayoutDashboard, Navigation, History, Trophy, Settings, MessageCircle } from 'lucide-react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 
 const tabs = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Início' },
@@ -11,7 +12,7 @@ const tabs = [
 ]
 
 export default function NavBar({ active, onTab }) {
-  const { alerts, activeTrip, tripStatus, maintenances } = useStore()
+  const { alerts, activeTrip, tripStatus, maintenances } = useStore(useShallow(s => ({ alerts: s.alerts, activeTrip: s.activeTrip, tripStatus: s.tripStatus, maintenances: s.maintenances })))
   const hasAlert = alerts.length > 0 && alerts[0]?.type === 'danger'
   const now = Date.now()
   const hasMaintAlert = (maintenances || []).some((m) =>

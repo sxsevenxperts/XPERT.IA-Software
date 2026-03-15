@@ -1,5 +1,6 @@
 import { useMemo, useEffect, useCallback, useState } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { fmt } from '../utils/format'
 import { calcStreak } from '../utils/gamification'
 import { usePiP } from '../hooks/usePiP'
@@ -12,7 +13,12 @@ import {
 } from 'lucide-react'
 
 export default function Dashboard({ onTab }) {
-  const { stats, settings, alerts, clearAlerts, activeTrip, tripStatus, trips, expenses, currentLocation, maintenances, appEnabled, toggleAppPower } = useStore()
+  const { stats, settings, alerts, clearAlerts, activeTrip, tripStatus, trips, expenses, currentLocation, maintenances, appEnabled, toggleAppPower } = useStore(useShallow(s => ({
+    stats: s.stats, settings: s.settings, alerts: s.alerts, clearAlerts: s.clearAlerts,
+    activeTrip: s.activeTrip, tripStatus: s.tripStatus, trips: s.trips, expenses: s.expenses,
+    currentLocation: s.currentLocation, maintenances: s.maintenances,
+    appEnabled: s.appEnabled, toggleAppPower: s.toggleAppPower,
+  })))
   const { startPiP, stopPiP, updateData, isOpen, isSupported } = usePiP()
   const [weather, setWeather] = useState(null)
 

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 
 // Rastreia tempo: rodando, parado (< 5km/h), ocioso (sem viagem), pausado
 export function useTimer() {
-  const { tripStatus, activeTrip } = useStore()
+  const { tripStatus, activeTrip } = useStore(useShallow(s => ({ tripStatus: s.tripStatus, activeTrip: s.activeTrip })))
   const [elapsed, setElapsed] = useState({ total: 0, moving: 0, stopped: 0, idle: 0, paused: 0 })
   const intervalRef = useRef(null)
   const startRef = useRef(Date.now())

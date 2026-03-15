@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { fmt } from '../utils/format'
 import { calcDailyRecords, calcStreak, calcAchievements } from '../utils/gamification'
 import PDFReport from '../components/PDFReport'
@@ -111,7 +112,10 @@ const customTooltip = ({ active, payload, label }) => {
 }
 
 export default function Stats() {
-  const { trips, settings, expenses, fuelLogs, addFuelLog, deleteFuelLog } = useStore()
+  const { trips, settings, expenses, fuelLogs, addFuelLog, deleteFuelLog } = useStore(useShallow(s => ({
+    trips: s.trips, settings: s.settings, expenses: s.expenses,
+    fuelLogs: s.fuelLogs, addFuelLog: s.addFuelLog, deleteFuelLog: s.deleteFuelLog,
+  })))
   const [tab, setTab]       = useState('profits')
   const [period, setPeriod] = useState('7d')
   const [customFrom, setCustomFrom] = useState('')

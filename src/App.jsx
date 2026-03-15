@@ -66,7 +66,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         checkSubscription(session.user.id).then(sub => {
-          const isAdminUser = session.user.email === 'sevenxpertssxacadmy@gmail.com'
+          const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
           setAuth({ user: session.user, subscription: sub })
           setIsAdmin(isAdminUser)
         })
@@ -78,7 +78,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const sub = await checkSubscription(session.user.id)
-        const isAdminUser = session.user.email === 'sevenxpertssxacadmy@gmail.com'
+        const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
         setAuth({ user: session.user, subscription: sub })
         setIsAdmin(isAdminUser)
       } else if (event === 'SIGNED_OUT') {
@@ -93,7 +93,7 @@ export default function App() {
   const handleAuth = async (result) => {
     setAuth(result)
     if (result?.user?.id) {
-      const isAdminUser = result.user.email === 'sevenxpertssxacadmy@gmail.com'
+      const isAdminUser = result.user.email === 'sevenxpertssxacademy@gmail.com'
       setIsAdmin(isAdminUser)
     }
   }

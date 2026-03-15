@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store'
+import { useShallow } from 'zustand/react/shallow'
 import { useTheme } from '../hooks/useTheme'
 import { fmt } from '../utils/format'
 import { Save, Fuel, User, Car, DollarSign, Download, Target, Bell, BellOff, Sun, Moon, Monitor, CreditCard, LogOut, Lock, Eye, EyeOff, CheckCircle, Wrench, Plus, Trash2, Calendar } from 'lucide-react'
@@ -34,7 +35,12 @@ const MAINT_TYPES = [
 ]
 
 export default function Settings({ user, subscription, onTab, onLogout }) {
-  const { settings, updateSettings, trips, expenses, maintenances, addMaintenance, updateMaintenance, deleteMaintenance, appEnabled, toggleAppPower } = useStore()
+  const { settings, updateSettings, trips, expenses, maintenances, addMaintenance, updateMaintenance, deleteMaintenance, appEnabled, toggleAppPower } = useStore(useShallow(s => ({
+    settings: s.settings, updateSettings: s.updateSettings, trips: s.trips,
+    expenses: s.expenses, maintenances: s.maintenances, addMaintenance: s.addMaintenance,
+    updateMaintenance: s.updateMaintenance, deleteMaintenance: s.deleteMaintenance,
+    appEnabled: s.appEnabled, toggleAppPower: s.toggleAppPower,
+  })))
   const { theme, setTheme } = useTheme()
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ ...settings })

@@ -3,7 +3,7 @@ import { useStore } from '../store'
 import { X } from 'lucide-react'
 
 export default function AlertToast() {
-  const { alerts, settings } = useStore((s) => ({ alerts: s.alerts, settings: s.settings }))
+  const alerts = useStore((s) => s.alerts)
 
   // Auto-remove alertas após 5 segundos
   useEffect(() => {
