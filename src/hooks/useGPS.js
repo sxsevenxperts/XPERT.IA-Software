@@ -33,8 +33,11 @@ function onPosition(pos) {
   const loc = { lat, lon, accuracy, ts }
   const store = useStore.getState()
 
+  // Se já temos localização precisa (GPS), ignora fallback IP (accuracy > 1000m)
+  const current = store.currentLocation
+  if (current && current.accuracy < 500 && accuracy > 1000) return
+
   // ⚡ SEMPRE atualiza location — nenhum throttle/debounce aqui!
-  // Importante: cada chamada cria novo objeto para forçar React re-render
   store.setLocation({ ...loc })
 
   // Reseta alerta de fadiga quando vira o dia
@@ -160,33 +163,61 @@ function onGPSError(err) {
   console.warn('GPS error:', err.code, err.message)
   const store = useStore.getState()
 
-  // Se ainda não temos localização, tenta fallback por IP
-  if (!store.currentLocation) {
+  if (err.code === 1) {
+    // PERMISSION_DENIED — mostrar alerta persistente
+    store.addAlert({
+      type: 'error',
+      title: '🚫 GPS bloqueado',
+      message: 'Ative a localização: Configurações do navegador → Permissões → Localização → Permitir',
+      duration: 10000,
+    })
+  } else if (!store.currentLocation) {
     store.addAlert({
       type: 'warning',
-      title: '📍 Obtendo localização...',
-      message: err.code === 1
-        ? 'Permita o acesso à localização nas configurações do navegador'
-        : 'GPS lento — usando localização aproximada',
-      duration: 5000,
-    })
-
-    // Fallback por IP
-    fallbackIPLocation().then((pos) => {
-      if (pos) onPosition(pos)
+      title: '📍 Buscando GPS...',
+      message: 'Aguarde — obtendo sinal de GPS preciso',
+      duration: 4000,
     })
   }
 
-  // Retry com configurações mais flexíveis
-  if (gpsRetries < 3) {
+  // Fallback por IP somente se não temos NENHUMA localização
+  if (!store.currentLocation) {
+    fallbackIPLocation().then((pos) => {
+      if (pos) {
+        onPosition(pos)
+        store.addAlert({
+          type: 'info',
+          title: '📍 Localização aproximada',
+          message: 'Usando localização por IP (~5km). GPS preciso será ativado em breve.',
+          duration: 6000,
+        })
+      }
+    })
+  }
+
+  // Retry com configurações mais flexíveis (até 5 tentativas)
+  if (gpsRetries < 5) {
     gpsRetries++
     setTimeout(() => {
       navigator.geolocation.getCurrentPosition(
-        (pos) => { gpsRetries = 0; onPosition(pos) },
+        (pos) => {
+          gpsRetries = 0
+          onPosition(pos)
+          // Notifica que GPS real foi encontrado
+          const s = useStore.getState()
+          if (pos.coords.accuracy < 500) {
+            s.addAlert({
+              type: 'success',
+              title: '✅ GPS preciso ativado',
+              message: `Precisão: ${Math.round(pos.coords.accuracy)}m`,
+              duration: 3000,
+            })
+          }
+        },
         () => {},
-        { enableHighAccuracy: false, timeout: 15_000, maximumAge: 30_000 }
+        { enableHighAccuracy: gpsRetries <= 2, timeout: 20_000, maximumAge: 30_000 }
       )
-    }, 2000 * gpsRetries)
+    }, 3000 * gpsRetries)
   }
 }
 
