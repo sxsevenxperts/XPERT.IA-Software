@@ -1,50 +1,68 @@
-import { useEffect, useRef } from 'react'
-import L from 'leaflet'
+import { useEffect, useRef, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 
 // ─── Leaflet + Waze: Mapa visual real + navegação profissional ─────────────
+// Lazy-load Leaflet para evitar side effects no module level
 
-// Fix Leaflet default icons (Vite bundler)
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
+let leafletInitialized = false
+let L = null
+let ICON_YOU, ICON_DEST, ICON_PICKUP
 
-// Ícones customizados
-const ICON_YOU = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:18px;height:18px;border-radius:50%;
-    background:#3b82f6;border:3px solid #fff;
-    box-shadow:0 0 0 4px rgba(59,130,246,0.35);
-  "></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-})
+async function initLeaflet() {
+  if (leafletInitialized) return { L, ICON_YOU, ICON_DEST, ICON_PICKUP }
 
-const ICON_DEST = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:14px;height:14px;border-radius:50%;
-    background:#f97316;border:3px solid #fff;
-    box-shadow:0 0 0 4px rgba(249,115,22,0.35);
-  "></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-})
+  try {
+    L = (await import('leaflet')).default
 
-const ICON_PICKUP = L.divIcon({
-  className: '',
-  html: `<div style="
-    width:14px;height:14px;border-radius:50%;
-    background:#10b981;border:3px solid #fff;
-    box-shadow:0 0 0 4px rgba(16,185,129,0.35);
-  "></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
-})
+    // Fix Leaflet default icons (Vite bundler)
+    delete L.Icon.Default.prototype._getIconUrl
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    })
+
+    // Ícones customizados
+    ICON_YOU = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:18px;height:18px;border-radius:50%;
+        background:#3b82f6;border:3px solid #fff;
+        box-shadow:0 0 0 4px rgba(59,130,246,0.35);
+      "></div>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    })
+
+    ICON_DEST = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:14px;height:14px;border-radius:50%;
+        background:#f97316;border:3px solid #fff;
+        box-shadow:0 0 0 4px rgba(249,115,22,0.35);
+      "></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    })
+
+    ICON_PICKUP = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:14px;height:14px;border-radius:50%;
+        background:#10b981;border:3px solid #fff;
+        box-shadow:0 0 0 4px rgba(16,185,129,0.35);
+      "></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+    })
+
+    leafletInitialized = true
+    return { L, ICON_YOU, ICON_DEST, ICON_PICKUP }
+  } catch (err) {
+    console.error('Erro ao carregar Leaflet:', err)
+    throw err
+  }
+}
 
 export default function RouteMap({
   route          = [],
@@ -62,148 +80,175 @@ export default function RouteMap({
   const pickupMarkerRef = useRef(null)
   const routeLineRef = useRef(null)
   const fittedRef    = useRef(false)
+  const [mapReady, setMapReady] = useState(false)
 
-  // ── Inicializar mapa Leaflet ─────────────────────────────────────────────
+  // ── Inicializar mapa Leaflet (lazy-load) ──────────────────────────────
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return
 
-    const map = L.map(containerRef.current, {
-      zoomControl: false,
-      attributionControl: false,
-      touchZoom: true,
-      dragging: true,
-      scrollWheelZoom: false,
-    }).setView([-15.8, -47.9], 5) // Centro do Brasil
+    initLeaflet().then(({ L }) => {
+      if (!containerRef.current) return
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    }).addTo(map)
+      const map = L.map(containerRef.current, {
+        zoomControl: false,
+        attributionControl: false,
+        touchZoom: true,
+        dragging: true,
+        scrollWheelZoom: false,
+      }).setView([-15.8, -47.9], 5) // Centro do Brasil
 
-    mapRef.current = map
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(map)
 
-    // Invalidate size após render (fix para containers dinâmicos)
-    setTimeout(() => map.invalidateSize(), 200)
+      mapRef.current = map
+      setMapReady(true)
+
+      // Invalidate size após render (fix para containers dinâmicos)
+      setTimeout(() => map.invalidateSize(), 200)
+    }).catch(err => {
+      console.error('Erro ao inicializar mapa:', err)
+      // Fallback: não mostrar mapa se falhar a inicialização
+    })
 
     return () => {
-      map.remove()
-      mapRef.current = null
+      if (mapRef.current) {
+        mapRef.current.remove()
+        mapRef.current = null
+      }
     }
   }, [])
 
   // ── Atualizar marcador "Você" (GPS em tempo real) ────────────────────────
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !currentLocation?.lat) return
+    if (!mapReady || !currentLocation?.lat) return
 
-    const latlng = [currentLocation.lat, currentLocation.lon]
-
-    if (youMarkerRef.current) {
-      youMarkerRef.current.setLatLng(latlng)
-    } else {
-      youMarkerRef.current = L.marker(latlng, { icon: ICON_YOU, zIndexOffset: 1000 })
-        .bindTooltip('Você', { permanent: true, direction: 'top', offset: [0, -12], className: 'leaflet-tooltip-you' })
-        .addTo(map)
-    }
-
-    // Primeiro GPS: centralizar no motorista
-    if (!fittedRef.current && !destination?.lat) {
-      map.setView(latlng, 15)
-      fittedRef.current = true
-    }
-  }, [currentLocation?.lat, currentLocation?.lon])
-
-  // ── Atualizar marcador Destino ───────────────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !destination?.lat) return
-
-    const latlng = [destination.lat, destination.lon]
-
-    if (destMarkerRef.current) {
-      destMarkerRef.current.setLatLng(latlng)
-    } else {
-      destMarkerRef.current = L.marker(latlng, { icon: ICON_DEST })
-        .bindTooltip('Destino', { permanent: true, direction: 'top', offset: [0, -10], className: 'leaflet-tooltip-dest' })
-        .addTo(map)
-    }
-
-    // Fit bounds para mostrar Você + Destino
-    if (currentLocation?.lat) {
-      const bounds = L.latLngBounds([
-        [currentLocation.lat, currentLocation.lon],
-        latlng,
-      ])
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
-      fittedRef.current = true
-    } else {
-      map.setView(latlng, 14)
-    }
-  }, [destination?.lat, destination?.lon])
-
-  // ── Atualizar marcador Origem ────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !pickupLocation?.lat) return
-
-    const latlng = [pickupLocation.lat, pickupLocation.lon]
-
-    if (pickupMarkerRef.current) {
-      pickupMarkerRef.current.setLatLng(latlng)
-    } else {
-      pickupMarkerRef.current = L.marker(latlng, { icon: ICON_PICKUP })
-        .bindTooltip('Origem', { permanent: false, direction: 'top', offset: [0, -10] })
-        .addTo(map)
-    }
-  }, [pickupLocation?.lat, pickupLocation?.lon])
-
-  // ── Desenhar rota no mapa ────────────────────────────────────────────────
-  useEffect(() => {
     const map = mapRef.current
     if (!map) return
 
-    // Limpar rota anterior
-    if (routeLineRef.current) {
-      map.removeLayer(routeLineRef.current)
-      routeLineRef.current = null
-    }
+    initLeaflet().then(({ L, ICON_YOU: icon }) => {
+      const latlng = [currentLocation.lat, currentLocation.lon]
 
-    // Usar rota planejada (OSRM) se disponível
-    if (plannedRoutes?.[0]?.geometry) {
-      const coords = plannedRoutes[0].geometry.map(([lon, lat]) => [lat, lon])
-      routeLineRef.current = L.polyline(coords, {
-        color: '#3b82f6',
-        weight: 4,
-        opacity: 0.8,
-      }).addTo(map)
+      if (youMarkerRef.current) {
+        youMarkerRef.current.setLatLng(latlng)
+      } else {
+        youMarkerRef.current = L.marker(latlng, { icon, zIndexOffset: 1000 })
+          .bindTooltip('Você', { permanent: true, direction: 'top', offset: [0, -12], className: 'leaflet-tooltip-you' })
+          .addTo(map)
+      }
 
-      map.fitBounds(routeLineRef.current.getBounds(), { padding: [30, 30], maxZoom: 16 })
-      return
-    }
+      // Primeiro GPS: centralizar no motorista
+      if (!fittedRef.current && !destination?.lat) {
+        map.setView(latlng, 15)
+        fittedRef.current = true
+      }
+    })
+  }, [currentLocation?.lat, currentLocation?.lon, mapReady])
 
-    // Fallback: rota do histórico GPS
-    if (route.length > 1) {
-      const coords = route.map(p => [p.lat, p.lon])
-      routeLineRef.current = L.polyline(coords, {
-        color: '#10b981',
-        weight: 3,
-        opacity: 0.7,
-        dashArray: '8 4',
-      }).addTo(map)
-    }
+  // ── Atualizar marcador Destino ───────────────────────────────────────────
+  useEffect(() => {
+    if (!mapReady || !destination?.lat) return
 
-    // Fallback: linha reta Origem → Destino
-    if (!routeLineRef.current && currentLocation?.lat && destination?.lat) {
-      routeLineRef.current = L.polyline([
-        [currentLocation.lat, currentLocation.lon],
-        [destination.lat, destination.lon],
-      ], {
-        color: '#3b82f6',
-        weight: 3,
-        opacity: 0.5,
-        dashArray: '10 6',
-      }).addTo(map)
-    }
-  }, [route.length, plannedRoutes?.[0]?.geometry, currentLocation?.lat, destination?.lat])
+    const map = mapRef.current
+    if (!map) return
+
+    initLeaflet().then(({ L, ICON_DEST: icon }) => {
+      const latlng = [destination.lat, destination.lon]
+
+      if (destMarkerRef.current) {
+        destMarkerRef.current.setLatLng(latlng)
+      } else {
+        destMarkerRef.current = L.marker(latlng, { icon })
+          .bindTooltip('Destino', { permanent: true, direction: 'top', offset: [0, -10], className: 'leaflet-tooltip-dest' })
+          .addTo(map)
+      }
+
+      // Fit bounds para mostrar Você + Destino
+      if (currentLocation?.lat) {
+        const bounds = L.latLngBounds([
+          [currentLocation.lat, currentLocation.lon],
+          latlng,
+        ])
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
+        fittedRef.current = true
+      } else {
+        map.setView(latlng, 14)
+      }
+    })
+  }, [destination?.lat, destination?.lon, mapReady])
+
+  // ── Atualizar marcador Origem ────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapReady || !pickupLocation?.lat) return
+
+    const map = mapRef.current
+    if (!map) return
+
+    initLeaflet().then(({ L, ICON_PICKUP: icon }) => {
+      const latlng = [pickupLocation.lat, pickupLocation.lon]
+
+      if (pickupMarkerRef.current) {
+        pickupMarkerRef.current.setLatLng(latlng)
+      } else {
+        pickupMarkerRef.current = L.marker(latlng, { icon })
+          .bindTooltip('Origem', { permanent: false, direction: 'top', offset: [0, -10] })
+          .addTo(map)
+      }
+    })
+  }, [pickupLocation?.lat, pickupLocation?.lon, mapReady])
+
+  // ── Desenhar rota no mapa ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapReady) return
+
+    const map = mapRef.current
+    if (!map) return
+
+    initLeaflet().then(({ L }) => {
+      // Limpar rota anterior
+      if (routeLineRef.current) {
+        map.removeLayer(routeLineRef.current)
+        routeLineRef.current = null
+      }
+
+      // Usar rota planejada (OSRM) se disponível
+      if (plannedRoutes?.[0]?.geometry) {
+        const coords = plannedRoutes[0].geometry.map(([lon, lat]) => [lat, lon])
+        routeLineRef.current = L.polyline(coords, {
+          color: '#3b82f6',
+          weight: 4,
+          opacity: 0.8,
+        }).addTo(map)
+
+        map.fitBounds(routeLineRef.current.getBounds(), { padding: [30, 30], maxZoom: 16 })
+        return
+      }
+
+      // Fallback: rota do histórico GPS
+      if (route.length > 1) {
+        const coords = route.map(p => [p.lat, p.lon])
+        routeLineRef.current = L.polyline(coords, {
+          color: '#10b981',
+          weight: 3,
+          opacity: 0.7,
+          dashArray: '8 4',
+        }).addTo(map)
+      }
+
+      // Fallback: linha reta Origem → Destino
+      if (!routeLineRef.current && currentLocation?.lat && destination?.lat) {
+        routeLineRef.current = L.polyline([
+          [currentLocation.lat, currentLocation.lon],
+          [destination.lat, destination.lon],
+        ], {
+          color: '#3b82f6',
+          weight: 3,
+          opacity: 0.5,
+          dashArray: '10 6',
+        }).addTo(map)
+      }
+    })
+  }, [route.length, plannedRoutes?.[0]?.geometry, currentLocation?.lat, destination?.lat, mapReady])
 
   // ── Invalidar tamanho ao resize ──────────────────────────────────────────
   useEffect(() => {
