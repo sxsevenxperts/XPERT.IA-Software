@@ -20,12 +20,21 @@ import {
 
 const PLATFORMS = PLATFORM_LIST
 
-async function searchAddress(query) {
-  if (!query || query.length < 5) return []
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=4&countrycodes=br`,
-    { headers: { 'Accept-Language': 'pt-BR' } }
-  )
+async function searchAddress(query, currentLocation) {
+  if (!query || query.length < 3) return []
+
+  // Monta URL com prioridade para localização atual
+  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&countrycodes=br`
+
+  // Se temos localização, prioriza resultados próximos (raio ~50km)
+  if (currentLocation?.lat) {
+    const lat = currentLocation.lat
+    const lon = currentLocation.lon
+    const delta = 0.5 // ~50km
+    url += `&viewbox=${lon - delta},${lat - delta},${lon + delta},${lat + delta}&bounded=0`
+  }
+
+  const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } })
   if (!res.ok) return []
   return res.json()
 }
@@ -299,13 +308,13 @@ export default function ActiveTrip({ sharedRide }) {
   const handleDestInput = useCallback((text) => {
     setDestQuery(text); setDestResults([])
     clearTimeout(searchTimeout.current)
-    if (text.length < 4) return
+    if (text.length < 3) return
     setDestSearching(true)
     searchTimeout.current = setTimeout(async () => {
-      const results = await searchAddress(text)
+      const results = await searchAddress(text, currentLocation)
       setDestResults(results); setDestSearching(false)
     }, 600)
-  }, [])
+  }, [currentLocation])
 
   const handleSelectDest = (result) => {
     const dest = {
