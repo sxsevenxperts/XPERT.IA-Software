@@ -217,10 +217,27 @@ export default function ActiveTrip({ sharedRide }) {
     }
     if (detectedRide.dest) {
       setDestQuery(detectedRide.dest)
-      fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(detectedRide.dest)}&limit=4&countrycodes=br`,
-        { headers: { 'Accept-Language': 'pt-BR' } }
-      ).then((r) => r.json()).then(setDestResults).catch(() => {})
+      const loc = useStore.getState().currentLocation
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(detectedRide.dest)}&limit=4&countrycodes=br`
+      if (loc?.lat) {
+        const delta = 0.5
+        url += `&viewbox=${loc.lon - delta},${loc.lat - delta},${loc.lon + delta},${loc.lat + delta}&bounded=0`
+      }
+      fetch(url, { headers: { 'Accept-Language': 'pt-BR' } })
+        .then((r) => r.json())
+        .then((results) => {
+          setDestResults(results)
+          // Auto-seleciona o primeiro resultado como destino
+          if (results[0]) {
+            const dest = {
+              lat: parseFloat(results[0].lat),
+              lon: parseFloat(results[0].lon),
+              address: results[0].display_name.split(',').slice(0, 3).join(',').trim(),
+            }
+            setPendingDest(dest)
+            setDestQuery(results[0].display_name.split(',').slice(0, 2).join(',').trim())
+          }
+        }).catch(() => {})
     }
     setDetectedRide(null)
   }, [detectedRide, setPickup])
