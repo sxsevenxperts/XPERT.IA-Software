@@ -254,6 +254,325 @@
     if (e.detail?.page === 'monitoramento') loadMonitoringData();
   });
 
+  // ═══════════════════════════════════════════════════════════════
+  // ANALYTICS — Phase 2 & 3 (Win Rate, AI Insights, Alertas)
+  // ═══════════════════════════════════════════════════════════════
+
+  let analyticsCharts = {};
+
+  function switchAnalyticsTab(tabName, button) {
+    // Hide all tabs
+    document.querySelectorAll('.analytics-tab-content').forEach(tab => tab.style.display = 'none');
+    document.querySelectorAll('.analytics-tab-btn').forEach(btn => {
+      btn.style.color = '#6e7681';
+      btn.style.borderBottom = '2px solid transparent';
+    });
+
+    // Show selected tab
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+    button.style.color = '#e6edf3';
+    button.style.borderBottom = '2px solid #1f6feb';
+
+    // Load data if needed
+    if (tabName === 'ai-insights') loadAIInsights();
+    if (tabName === 'alerts') loadAlerts();
+  }
+
+  async function refreshAnalyticsData() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      // Buscar feedback stats
+      const { data: feedbackStats } = await db
+        .from('vw_feedback_por_agente')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!feedbackStats || feedbackStats.length === 0) {
+        console.log('Nenhum dado de feedback ainda');
+        return;
+      }
+
+      // Atualizar KPIs
+      let totalConversao = 0, totalReceita = 0, totalNota = 0, totalPromptUtil = 0, totalLeads = 0;
+      feedbackStats.forEach(stat => {
+        totalLeads += stat.total_leads || 0;
+        totalConversao += (stat.taxa_conversao_percent || 0) * (stat.total_leads || 1);
+        totalReceita += stat.receita_total || 0;
+        totalNota += (stat.nota_media_sdr || 0) * (stat.total_leads || 1);
+        totalPromptUtil += (stat.prompts_uteis_count || 0);
+      });
+
+      const avgConversao = totalLeads > 0 ? (totalConversao / totalLeads) : 0;
+      const avgNota = totalLeads > 0 ? (totalNota / totalLeads) : 0;
+      const promptUtilPercent = totalLeads > 0 ? ((totalPromptUtil / totalLeads) * 100) : 0;
+
+      document.getElementById('kpi-taxa-conversao').textContent = avgConversao.toFixed(1) + '%';
+      document.getElementById('kpi-receita').textContent = 'R$ ' + totalReceita.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      document.getElementById('kpi-nota-sdr').textContent = avgNota.toFixed(1) + '/5.0';
+      document.getElementById('kpi-prompts-util').textContent = promptUtilPercent.toFixed(0) + '%';
+
+      // Renderizar tabela
+      renderAnalyticsTable(feedbackStats);
+
+      // Renderizar gráficos
+      renderWinRateChart(feedbackStats);
+      renderReceitaChart(feedbackStats);
+
+    } catch (err) {
+      console.error('Erro ao carregar analytics:', err);
+    }
+  }
+
+  function renderAnalyticsTable(data) {
+    const rows = data.map(row => `
+      <tr style="border-bottom: 1px solid #30363d;">
+        <td style="padding: 12px; font-weight: 500;">${row.agent_type || 'principal'}</td>
+        <td style="padding: 12px; text-align: right;">${row.total_leads || 0}</td>
+        <td style="padding: 12px; text-align: right; color: #31c48d; font-weight: 600;">${row.leads_vendidos || 0}</td>
+        <td style="padding: 12px; text-align: right; color: #31c48d; font-weight: 600;">${(row.taxa_conversao_percent || 0).toFixed(1)}%</td>
+        <td style="padding: 12px; text-align: right;">R$ ${(row.receita_total || 0).toLocaleString('pt-BR')}</td>
+        <td style="padding: 12px; text-align: right;">${(row.nota_media_sdr || 0).toFixed(1)}</td>
+        <td style="padding: 12px; text-align: right;">${row.total_leads > 0 ? ((row.prompts_uteis_count / row.total_leads) * 100).toFixed(0) : 0}%</td>
+      </tr>
+    `).join('');
+
+    document.getElementById('analytics-table-agents').innerHTML = rows || '<tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Sem dados</td></tr>';
+  }
+
+  function renderWinRateChart(data) {
+    if (analyticsCharts.winRate) analyticsCharts.winRate.destroy();
+
+    const ctx = document.getElementById('chart-win-rate-agent')?.getContext('2d');
+    if (!ctx) return;
+
+    analyticsCharts.winRate = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.agent_type || 'principal'),
+        datasets: [{
+          label: 'Taxa Conversão %',
+          data: data.map(d => d.taxa_conversao_percent || 0),
+          backgroundColor: 'rgba(49, 196, 141, 0.8)',
+          borderColor: '#31c48d',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { max: 100, ticks: { color: '#6e7681' }, grid: { color: '#30363d' } },
+          x: { ticks: { color: '#6e7681' }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderReceitaChart(data) {
+    if (analyticsCharts.receita) analyticsCharts.receita.destroy();
+
+    const ctx = document.getElementById('chart-receita-agent')?.getContext('2d');
+    if (!ctx) return;
+
+    analyticsCharts.receita = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: data.map(d => d.agent_type || 'principal'),
+        datasets: [{
+          data: data.map(d => d.receita_total || 0),
+          backgroundColor: ['#31c48d', '#60a5fa', '#f59e0b', '#ec4899'],
+          borderColor: '#161b22',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { color: '#6e7681' } } }
+      }
+    });
+  }
+
+  async function loadAIInsights() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const container = document.getElementById('ai-insights-container');
+    container.innerHTML = '<p style="color:#6e7681;text-align:center;padding:40px;">Buscando insights da IA...</p>';
+
+    try {
+      // Chamar edge function de otimização
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/optimize-prompt-auto`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            agent_type: 'principal',
+            periodo: '7d'
+          })
+        }
+      );
+
+      const insights = await response.json();
+
+      if (!insights.sugestoes || insights.sugestoes.length === 0) {
+        container.innerHTML = '<p style="color:#6e7681;text-align:center;padding:40px;">Nenhuma sugestão de otimização no momento.</p>';
+        return;
+      }
+
+      const html = insights.sugestoes.map((sug, idx) => `
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+            <div>
+              <h4 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">${sug.descricao}</h4>
+              <p style="margin:4px 0 0;font-size:12px;color:#6e7681;">ID: ${sug.id}</p>
+            </div>
+            <span style="background:#31c48d;color:#0d1117;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">+${sug.impacto_esperado}</span>
+          </div>
+          <p style="margin:0 0 12px;font-size:12px;color:#8b949e;background:var(--bg);padding:10px;border-radius:4px;border-left:3px solid #31c48d;">
+            <strong>Novo Prompt:</strong> ${sug.prompt_novo.slice(0, 100)}...
+          </p>
+          <div style="display:flex;gap:8px;justify-content:space-between;">
+            <div>
+              <span style="font-size:11px;color:#6e7681;">Confiança: ${(sug.confianca * 100).toFixed(0)}%</span>
+            </div>
+            <button onclick="aplicarSugestaoPrompt('${sug.id}', '${sug.prompt_novo.replace(/'/g, "\\'")}'" style="padding:6px 12px;background:#31c48d;border:none;color:#0d1117;border-radius:4px;cursor:pointer;font-weight:600;font-size:12px;">Aplicar</button>
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = html;
+    } catch (err) {
+      console.error('Erro ao carregar insights:', err);
+      container.innerHTML = `<p style="color:#ef4444;padding:20px;">Erro ao carregar insights: ${err.message}</p>`;
+    }
+  }
+
+  async function loadAlerts() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = '<p style="color:#6e7681;text-align:center;padding:40px;">Verificando alertas...</p>';
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/check-performance-alerts`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id: user.id })
+        }
+      );
+
+      const data = await response.json();
+      const alerts = data.alerts || [];
+
+      if (alerts.length === 0) {
+        container.innerHTML = '<p style="color:#31c48d;text-align:center;padding:40px;">✅ Tudo funcionando perfeitamente! Nenhum alerta.</p>';
+        return;
+      }
+
+      const html = alerts.map(alert => {
+        const bgColor = alert.severidade === 'critical' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+        const borderColor = alert.severidade === 'critical' ? '#ef4444' : '#f59e0b';
+        const badge = alert.severidade === 'critical' ? '🔴 CRÍTICO' : '⚠️ AVISO';
+
+        return `
+          <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+              <div>
+                <h4 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">${alert.mensagem}</h4>
+                <p style="margin:4px 0 0;font-size:11px;color:#6e7681;">Tipo: ${alert.tipo}</p>
+              </div>
+              <span style="background:${borderColor};color:#fff;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:600;">${badge}</span>
+            </div>
+            <p style="margin:0 0 12px;font-size:12px;color:#8b949e;">🔧 Ação: ${alert.acao}</p>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    } catch (err) {
+      console.error('Erro ao carregar alertas:', err);
+      container.innerHTML = `<p style="color:#ef4444;padding:20px;">Erro: ${err.message}</p>`;
+    }
+  }
+
+  function resetAnalyticsFilters() {
+    document.getElementById('analytics-date-from').value = '';
+    document.getElementById('analytics-date-to').value = '';
+    document.getElementById('analytics-filter-agent').value = '';
+    refreshAnalyticsData();
+  }
+
+  async function exportAnalyticsCSV() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data: feedback } = await db
+        .from('lead_feedback')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('criado_em', { ascending: false });
+
+      if (!feedback || feedback.length === 0) {
+        alert('Nenhum dado para exportar');
+        return;
+      }
+
+      // Converter para CSV
+      const headers = ['ID', 'Lead ID', 'Data', 'Vendido', 'Valor', 'Nota SDR', 'Motivo', 'Prompt Útil', 'Sugestões'];
+      const rows = feedback.map(f => [
+        f.id.slice(0, 8),
+        f.lead_id ? f.lead_id.slice(0, 8) : '',
+        new Date(f.criado_em).toLocaleDateString('pt-BR'),
+        f.vendido ? 'Sim' : 'Não',
+        f.valor_venda || '',
+        f.nota_sdr || '',
+        f.motivo_desistencia || '',
+        f.prompt_foi_util ? 'Sim' : 'Não',
+        (f.sugestoes || '').slice(0, 50)
+      ]);
+
+      const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    } catch (err) {
+      console.error('Erro ao exportar:', err);
+      alert('Erro ao exportar CSV');
+    }
+  }
+
+  function aplicarSugestaoPrompt(id, novoPrompt) {
+    console.log('Aplicando sugestão:', id);
+    // Implementar salvamento de prompt
+    alert('Sugestão ' + id + ' será aplicada (em desenvolvimento)');
+  }
+
+  document.addEventListener('page-shown', (e) => {
+    if (e.detail?.page === 'analytics') refreshAnalyticsData();
+  });
+
 </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4">
 
@@ -5389,6 +5708,148 @@
               <tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Carregando...</td></tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS — Phase 2 & 3 -->
+    <div class="page" id="page-analytics">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>📈 Analytics — Phase 2 & 3</h1>
+          <p>Dashboard de performance, win rate, e AI insights</p>
+        </div>
+        <button onclick="refreshAnalyticsData()" style="padding:8px 16px;background:#1f6feb;border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:500;font-size:14px;">↻ Atualizar</button>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid #30363d;padding-bottom:16px;">
+        <button class="analytics-tab-btn active" onclick="switchAnalyticsTab('win-rate', this)" data-tab="win-rate" style="padding:10px 16px;background:none;border:none;color:#e6edf3;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">📈 Win Rate</button>
+        <button class="analytics-tab-btn" onclick="switchAnalyticsTab('performance', this)" data-tab="performance" style="padding:10px 16px;background:none;border:none;color:#6e7681;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">⚡ Performance</button>
+        <button class="analytics-tab-btn" onclick="switchAnalyticsTab('ai-insights', this)" data-tab="ai-insights" style="padding:10px 16px;background:none;border:none;color:#6e7681;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">🤖 AI Insights</button>
+        <button class="analytics-tab-btn" onclick="switchAnalyticsTab('alerts', this)" data-tab="alerts" style="padding:10px 16px;background:none;border:none;color:#6e7681;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">🚨 Alertas</button>
+      </div>
+
+      <!-- TAB 1: Win Rate -->
+      <div id="tab-win-rate" class="analytics-tab-content" style="display:block;">
+        <!-- KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Taxa Conversão</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-taxa-conversao">0%</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Leads vendidos / total</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Receita Total</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-receita">R$ 0,00</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Valor de vendas</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Nota SDR</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-nota-sdr">0/5.0</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Média de avaliação</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Prompts Úteis</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-prompts-util">0%</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Efetividade IA</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;margin-bottom:24px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">DATA INICIAL</label>
+              <input type="date" id="analytics-date-from" onchange="refreshAnalyticsData()" style="width:100%;padding:8px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">DATA FINAL</label>
+              <input type="date" id="analytics-date-to" onchange="refreshAnalyticsData()" style="width:100%;padding:8px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">AGENTE</label>
+              <select id="analytics-filter-agent" onchange="refreshAnalyticsData()" style="width:100%;padding:8px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                <option value="">Todos</option>
+                <option value="principal">Principal</option>
+                <option value="objecao">Objeção</option>
+                <option value="extra">Extra</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:8px;">
+              <button class="btn-primary" onclick="exportAnalyticsCSV()" style="flex:1;padding:8px;font-size:12px;">📥 Exportar CSV</button>
+              <button class="btn-secondary" onclick="resetAnalyticsFilters()" style="padding:8px 12px;font-size:12px;">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Win Rate por Agente</h3>
+            <canvas id="chart-win-rate-agent" height="250"></canvas>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Receita por Agente</h3>
+            <canvas id="chart-receita-agent" height="250"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabela Performance por Agente -->
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;overflow:hidden;">
+          <div style="padding:16px;border-bottom:1px solid #30363d;">
+            <h3 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">Performance por Agente</h3>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:var(--bg);border-bottom:1px solid #30363d;">
+                  <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Agente</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Total Leads</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Vendidos</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Taxa %</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Receita</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Nota SDR</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Prompt Útil %</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-table-agents">
+                <tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Carregando dados...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Performance -->
+      <div id="tab-performance" class="analytics-tab-content" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Motivos de Desistência</h3>
+            <canvas id="chart-motivos" height="250"></canvas>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Distribuição de Notas SDR</h3>
+            <canvas id="chart-notas-sdr" height="250"></canvas>
+          </div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Timeline de Conversão (7 dias)</h3>
+          <canvas id="chart-conversao-timeline" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- TAB 3: AI Insights -->
+      <div id="tab-ai-insights" class="analytics-tab-content" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:16px;" id="ai-insights-container">
+          <p style="color:#6e7681;text-align:center;padding:40px;">Carregando insights da IA...</p>
+        </div>
+      </div>
+
+      <!-- TAB 4: Alertas -->
+      <div id="tab-alerts" class="analytics-tab-content" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:12px;" id="alerts-container">
+          <p style="color:#6e7681;text-align:center;padding:40px;">Verificando alertas...</p>
         </div>
       </div>
     </div>
