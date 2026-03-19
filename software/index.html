@@ -276,8 +276,8 @@
     .main-content { margin-left: 240px; padding: 32px 32px 52px; }
     .global-footer { position:fixed; bottom:0; left:240px; right:0; height:32px; background:#0a0a0a; border-top:1px solid rgba(163,230,53,0.18); display:flex; align-items:center; justify-content:center; font-size:11px; color:#a3e635; font-weight:700; letter-spacing:.5px; z-index:200; gap:8px; }
     .global-footer span { color:rgba(255,255,255,0.35); font-weight:400; }
-    .page { display: none; }
-    .page.active { display: block; }
+    .page { display: none !important; }
+    .page.active { display: block !important; }
     .page-header { margin-bottom: 28px; }
     .page-header h1 { font-size: 22px; font-weight: 700; }
     .page-header p { color: #8b949e; font-size: 14px; margin-top: 4px; }
@@ -527,7 +527,8 @@
     .page.admin-only { display:none !important; }
     .page.admin-only.active { display:block !important; }
     .membro-hidden { display:none !important; }
-    .membro-hidden.visible { display:flex !important; }
+    .page.membro-hidden { display:none !important; }
+    .page.membro-hidden.active { display:block !important; }
     .nav-section.membro-hidden.visible { display:block !important; }
     .client-tag { font-size:10px; background:#f0fdf4; color:#16a34a; padding:2px 7px; border-radius:10px; font-weight:700; }
     .client-tag.inactive { background:#fee2e2; color:#dc2626; }
@@ -2505,7 +2506,7 @@
     </div>
 
     <!-- AGENTE DE OBJEÇÃO -->
-    <div class="page addon-objecao-page" id="page-agente-objecao" style="display:none;">
+    <div class="page addon-objecao-page" id="page-agente-objecao">
       <div class="page-header"><h1>🛡️ Agente de Objeção</h1><p>Configure o prompt específico para o agente que trata objeções</p></div>
       
       <div class="card">
@@ -2524,7 +2525,7 @@
     <div id="agentes-extras-pages-container"></div>
 
     <!-- NÚMEROS EXTRAS -->
-    <div class="page" id="page-numeros-extras" style="display:none;">
+    <div class="page" id="page-numeros-extras">
       <div class="page-header">
         <h1>🔢 Números Extras de WhatsApp</h1>
         <p>Gerencie os números de WhatsApp adicionais que você asinou como addon</p>
@@ -2554,7 +2555,7 @@
     </div>
 
     <!-- WORKFLOW EDIT PAGE -->
-    <div class="page" id="page-workflow-edit" style="display:none;">
+    <div class="page" id="page-workflow-edit">
       <div class="page-header">
         <h1>Configurar Workflow</h1>
         <p id="workflow-edit-subtitle">Defina os parâmetros de execução e follow-up automático</p>
@@ -3360,7 +3361,7 @@
     </div>
 
     <!-- PÁGINA ANTIGA DE FATURAMENTO (OCULTA) -->
-    <div class="page" id="page-faturamento" style="display:none;">
+    <div class="page" id="page-faturamento">
       <div class="page-header"><h1>Faturamento</h1><p>Gerencie sua assinatura e adicione recursos ao plano</p></div>
 
       <!-- Tabs de navegação -->
@@ -4744,11 +4745,11 @@
 
       // Se membro: oculta itens restritos, mostra página inicial correta
       if (isMembro) {
-        document.querySelectorAll('.membro-hidden').forEach(el => el.classList.remove('visible'));
+        document.querySelectorAll('.membro-hidden:not(.page)').forEach(el => el.classList.remove('visible'));
         // membro-hidden já começa oculto via CSS; garante que não ficou visível por engano
       } else {
-        // não-membro: torna visíveis os itens que eram membro-hidden
-        document.querySelectorAll('.membro-hidden').forEach(el => el.classList.add('visible'));
+        // não-membro: torna visíveis os itens que eram membro-hidden (exceto páginas, controladas por showPage)
+        document.querySelectorAll('.membro-hidden:not(.page)').forEach(el => el.classList.add('visible'));
       }
 
       // Atualiza nome/instância na sidebar
@@ -7059,9 +7060,9 @@
   async function editarWorkflow(workflowId, nome) {
     currentWorkflowId = workflowId;
     
-    // Mostra página de edição
-    document.getElementById('page-workflows').style.display = 'none';
-    document.getElementById('page-workflow-edit').style.display = 'block';
+    // Mostra página de edição usando classes
+    document.getElementById('page-workflows').classList.remove('active');
+    document.getElementById('page-workflow-edit').classList.add('active');
     document.getElementById('workflow-edit-subtitle').textContent = `Editando: "${nome}"`;
     
     // Carrega configurações de follow-up para este workflow
@@ -7165,8 +7166,8 @@
 
   function voltarParaWorkflows() {
     currentWorkflowId = null;
-    document.getElementById('page-workflow-edit').style.display = 'none';
-    document.getElementById('page-workflows').style.display = 'block';
+    document.getElementById('page-workflow-edit').classList.remove('active');
+    document.getElementById('page-workflows').classList.add('active');
   }
 
   // =====================
