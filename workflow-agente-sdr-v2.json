@@ -1,9 +1,12 @@
 {
-  "name": "Agente SDR v2.2",
-  "version": "2.2",
-  "description": "Workflow N8N completo — configs dinâmicas, roteamento por agente_config e gateways de pagamento",
+  "name": "Agente SDR v2.3",
+  "version": "2.3",
+  "description": "Workflow N8N completo — multi-agente (principal, prospecção, objeção, extras), modelo de IA dinâmico por agente, configs 100% do software",
   "features": [
     "multi_agent_support",
+    "agente_prospecao",
+    "dynamic_ai_model_per_agent",
+    "dynamic_provider_openai_claude_google",
     "customizable_prompts",
     "lead_qualification",
     "objection_handling",
@@ -12,7 +15,8 @@
     "token_cost_tracking",
     "dynamic_routing",
     "tts_audio_response",
-    "payment_gateway_integration"
+    "payment_gateway_integration",
+    "agent_name_override"
   ],
   "nodes": [
     {
@@ -75,12 +79,14 @@
     {
       "name": "node-detect-agent-type",
       "type": "code",
-      "description": "Detecta qual agente deve responder (principal, objeção, extra)",
+      "description": "Detecta qual agente deve responder: principal, prospecção, objeção ou extra",
       "logic": {
-        "check_lead_stage": "if lead.stage = 'objecoes' → agent = objecao",
+        "check_lead_stage_prospecao": "if lead.stage = 'prospecao' OR fluxo_id includes 'prospec' → agent = prospec",
+        "check_lead_stage_objecao": "if lead.stage = 'objecoes' → agent = objecao",
         "check_objection_count": "if objecoes_count > 2 → agent = objecao",
-        "check_user_addons": "if addon_agente_extra active → agent = extra",
-        "agent_index": "ae0, ae1, ae2… para extras"
+        "check_user_addons_extra": "if addon_agente_extra active AND fluxo_id matches ae{n} → agent = extra",
+        "default": "agent = principal",
+        "agent_index": "ae0, ae1, ae2… para extras; 0 para principal/prospec/objecao"
       },
       "inputs": ["node-validate-user"],
       "outputs": ["agent_type", "agent_index"]
@@ -89,60 +95,109 @@
     {
       "name": "node-busca-configs-sdr",
       "type": "supabase_rest",
-      "description": "Busca TODAS as configurações customizadas do cliente no software (agente_config)",
+      "description": "Busca TODAS as configurações do software (agente_config) — prompts, modelos, tonalidade, critérios, roteamento e gateways",
       "method": "GET",
-      "endpoint": "agente_config?user_id=eq.{user_id}&chave=in.(sistema_prompt,ob_sistema_prompt,ae0_sistema_prompt,ae1_sistema_prompt,ae2_sistema_prompt,tonalidade,criterios_qualificacao,msg_qualificado,msg_desqualificado,responder_em_audio,numero_destino,grupo_destino,notif_destino,gateway_padrao,fallback-mercado_pago,fallback-asaas,fallback-infinitepay)",
+      "endpoint": "agente_config?user_id=eq.{user_id}&chave=in.(sistema_prompt,ob_sistema_prompt,prospec_sistema_prompt,ae0_sistema_prompt,ae1_sistema_prompt,ae2_sistema_prompt,tonalidade,ob_tonalidade,prospec_tonalidade,criterios_qualificacao,ob_criterios_qualificacao,prospec_criterios_qualificacao,msg_qualificado,ob_msg_qualificado,prospec_msg_qualificado,msg_desqualificado,ob_msg_desqualificado,prospec_msg_desqualificado,responder_em_audio,ob_responder_em_audio,prospec_responder_em_audio,numero_destino,ob_numero_destino,prospec_numero_destino,grupo_destino,ob_grupo_destino,prospec_grupo_destino,notif_destino,ai_provider,ob_ai_provider,prospec_ai_provider,ae0_ai_provider,ae1_ai_provider,ae2_ai_provider,openai_model,openai_temperature,openai_max_tokens,ob_openai_model,ob_openai_temperature,ob_openai_max_tokens,prospec_openai_model,prospec_openai_temperature,prospec_openai_max_tokens,ae0_openai_model,ae1_openai_model,claude_model,claude_temperature,claude_max_tokens,ob_claude_model,ob_claude_temperature,ob_claude_max_tokens,prospec_claude_model,prospec_claude_temperature,prospec_claude_max_tokens,google_model,google_temperature,google_max_tokens,ob_google_model,ob_google_temperature,ob_google_max_tokens,prospec_google_model,prospec_google_temperature,prospec_google_max_tokens,nome_agente,ob_nome_agente,prospec_nome_agente,gateway_padrao,fallback-mercado_pago,fallback-asaas,fallback-infinitepay)",
       "headers": {
         "Authorization": "Bearer {jwt_token}",
         "apikey": "{supabase_api_key}"
       },
       "inputs": ["node-detect-agent-type"],
       "post_processing": {
-        "description": "Converte array [{chave, valor}] em objeto configMap para uso nos nós seguintes",
+        "description": "Converte array [{chave, valor}] em objeto configMap",
         "code": "const configMap = {}; items.forEach(i => { configMap[i.chave] = i.valor; }); return configMap;"
       },
       "returns": {
-        "sistema_prompt": "Prompt do agente principal (ou fallback padrão)",
-        "ob_sistema_prompt": "Prompt do agente de objeção",
-        "ae0_sistema_prompt": "Prompt do agente extra 0",
-        "ae1_sistema_prompt": "Prompt do agente extra 1",
-        "ae2_sistema_prompt": "Prompt do agente extra 2",
-        "tonalidade": "Tom de voz configurado pelo cliente",
-        "criterios_qualificacao": "Critérios de triagem (um por linha)",
-        "msg_qualificado": "Mensagem enviada ao lead qualificado",
-        "msg_desqualificado": "Mensagem enviada ao lead desqualificado",
-        "responder_em_audio": "'true' | 'false' — se deve usar TTS",
-        "numero_destino": "Número do supervisor para notificações",
-        "grupo_destino": "JID do grupo WhatsApp para notificações",
-        "notif_destino": "'numero' | 'grupo' | 'ambos'",
-        "gateway_padrao": "'stripe' | 'mercado_pago' | 'asaas' | 'infinitepay'",
-        "fallback-mercado_pago": "'true' | 'false'",
-        "fallback-asaas": "'true' | 'false'",
-        "fallback-infinitepay": "'true' | 'false'"
+        "sistema_prompt": "Prompt do Agente Principal",
+        "ob_sistema_prompt": "Prompt do Agente de Objeção",
+        "prospec_sistema_prompt": "Prompt do Agente de Prospecção",
+        "ae{n}_sistema_prompt": "Prompt dos Agentes Extras",
+        "tonalidade / ob_tonalidade / prospec_tonalidade": "Tom de voz por agente",
+        "criterios_qualificacao / ob_ / prospec_": "Critérios de triagem por agente",
+        "msg_qualificado / ob_ / prospec_": "Mensagem ao lead qualificado por agente",
+        "msg_desqualificado / ob_ / prospec_": "Mensagem ao lead desqualificado por agente",
+        "responder_em_audio / ob_ / prospec_": "'true'|'false' — TTS por agente",
+        "numero_destino / ob_ / prospec_": "Supervisor de notificações por agente",
+        "grupo_destino / ob_ / prospec_": "Grupo WhatsApp de notificações por agente",
+        "notif_destino": "'numero'|'grupo'|'ambos'",
+        "ai_provider / ob_ / prospec_ / ae{n}_": "'openai'|'claude'|'google' por agente",
+        "openai_model / ob_ / prospec_ / ae{n}_": "Modelo OpenAI por agente (ex: gpt-4o-mini)",
+        "openai_temperature / ob_ / prospec_": "Temperature OpenAI por agente (0–2)",
+        "openai_max_tokens / ob_ / prospec_": "Max tokens OpenAI por agente",
+        "claude_model / ob_ / prospec_": "Modelo Claude por agente (ex: claude-haiku-4-5)",
+        "claude_temperature / ob_ / prospec_": "Temperature Claude por agente (0–1)",
+        "claude_max_tokens / ob_ / prospec_": "Max tokens Claude por agente",
+        "google_model / ob_ / prospec_": "Modelo Gemini por agente (ex: gemini-2.0-flash)",
+        "google_temperature / ob_ / prospec_": "Temperature Google por agente (0–2)",
+        "google_max_tokens / ob_ / prospec_": "Max tokens Google por agente",
+        "nome_agente / ob_ / prospec_": "Nome personalizado do agente (informativo)",
+        "gateway_padrao": "'stripe'|'mercado_pago'|'asaas'|'infinitepay'",
+        "fallback-*": "'true'|'false' — gateways de fallback"
       }
     },
 
     {
       "name": "node-build-system-prompt",
       "type": "code",
-      "description": "Monta o system prompt final com base no agente ativo e configs do cliente",
+      "description": "Monta system prompt + seleciona provider e modelo dinâmico baseado no agente ativo e configs do software",
       "inputs": ["node-busca-configs-sdr"],
       "logic": {
-        "select_base_prompt": {
+        "step_1_select_base_prompt": {
           "if_agent_principal": "configMap.sistema_prompt || PROMPT_PADRAO_PRINCIPAL",
+          "if_agent_prospecao": "configMap.prospec_sistema_prompt || PROMPT_PADRAO_PROSPECAO",
           "if_agent_objecao": "configMap.ob_sistema_prompt || PROMPT_PADRAO_OBJECAO",
-          "if_agent_extra": "configMap['ae{agent_index}_sistema_prompt'] || PROMPT_PADRAO_EXTRA"
+          "if_agent_extra": "configMap[`ae${agent_index}_sistema_prompt`] || PROMPT_PADRAO_EXTRA"
         },
-        "append_tonalidade": {
-          "condition": "configMap.tonalidade is set",
-          "action": "Adicionar ao prompt: '\\n\\nTONALIDADE: {configMap.tonalidade}'"
+        "step_2_select_prefix": {
+          "principal": "prefix = ''",
+          "prospec": "prefix = 'prospec_'",
+          "objecao": "prefix = 'ob_'",
+          "extra": "prefix = `ae${agent_index}_`"
         },
-        "append_criterios": {
-          "condition": "configMap.criterios_qualificacao is set",
-          "action": "Adicionar ao prompt: '\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n{configMap.criterios_qualificacao}'"
+        "step_3_select_provider": {
+          "logic": "provider = configMap[`${prefix}ai_provider`] || configMap.ai_provider || 'openai'",
+          "options": ["openai", "claude", "google"]
+        },
+        "step_4_select_model_params": {
+          "if_openai": {
+            "model": "configMap[`${prefix}openai_model`] || configMap.openai_model || 'gpt-4o-mini'",
+            "temperature": "parseFloat(configMap[`${prefix}openai_temperature`] || configMap.openai_temperature || '0.7')",
+            "max_tokens": "parseInt(configMap[`${prefix}openai_max_tokens`] || configMap.openai_max_tokens || '1024')"
+          },
+          "if_claude": {
+            "model": "configMap[`${prefix}claude_model`] || configMap.claude_model || 'claude-haiku-4-5'",
+            "temperature": "parseFloat(configMap[`${prefix}claude_temperature`] || configMap.claude_temperature || '0.7')",
+            "max_tokens": "parseInt(configMap[`${prefix}claude_max_tokens`] || configMap.claude_max_tokens || '1024')"
+          },
+          "if_google": {
+            "model": "configMap[`${prefix}google_model`] || configMap.google_model || 'gemini-2.0-flash'",
+            "temperature": "parseFloat(configMap[`${prefix}google_temperature`] || configMap.google_temperature || '0.7')",
+            "max_tokens": "parseInt(configMap[`${prefix}google_max_tokens`] || configMap.google_max_tokens || '1024')"
+          }
+        },
+        "step_5_append_tonalidade": {
+          "key": "${prefix}tonalidade",
+          "action": "if set → append '\\n\\nTONALIDADE: {value}' to prompt"
+        },
+        "step_6_append_criterios": {
+          "key": "${prefix}criterios_qualificacao",
+          "action": "if set → append '\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n{value}' to prompt"
         }
       },
-      "outputs": ["final_system_prompt", "msg_qualificado", "msg_desqualificado", "responder_em_audio", "numero_destino", "grupo_destino", "notif_destino", "gateway_padrao"]
+      "outputs": [
+        "final_system_prompt",
+        "ai_provider_ativo",
+        "ai_model_ativo",
+        "ai_temperature_ativo",
+        "ai_max_tokens_ativo",
+        "msg_qualificado",
+        "msg_desqualificado",
+        "responder_em_audio",
+        "numero_destino",
+        "grupo_destino",
+        "notif_destino",
+        "gateway_padrao"
+      ]
     },
 
     {
@@ -157,7 +212,7 @@
     {
       "name": "node-llm-openai",
       "type": "http_request",
-      "description": "Chama llm-proxy (edge function) com prompt e histórico montados",
+      "description": "Chama llm-proxy com provider, modelo e parâmetros dinâmicos do software — suporta OpenAI, Claude (Anthropic) e Google (Gemini)",
       "method": "POST",
       "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy",
       "headers": {
@@ -165,9 +220,10 @@
         "Content-Type": "application/json"
       },
       "payload": {
-        "model": "gpt-4",
-        "temperature": 0.7,
-        "max_tokens": 500,
+        "provider": "{ai_provider_ativo}",
+        "model": "{ai_model_ativo}",
+        "temperature": "{ai_temperature_ativo}",
+        "max_tokens": "{ai_max_tokens_ativo}",
         "messages": [
           { "role": "system", "content": "{final_system_prompt}" },
           { "role": "user", "content": "{conversation_context}\n\nNova mensagem do lead: {message_text}" }
@@ -180,7 +236,8 @@
         "tokens_input": "usage.prompt_tokens",
         "tokens_output": "usage.completion_tokens",
         "model_used": "model"
-      }
+      },
+      "notes": "llm-proxy suporta provider='openai'|'claude'|'google' e roteia para a API correta. As chaves de API são configuradas por agente no software (Modelo de IA → salvas em agente_config) e lidas pelo llm-proxy via SUPABASE_SERVICE_ROLE_KEY."
     },
 
     {
@@ -212,11 +269,11 @@
     {
       "name": "node-decide-response-format",
       "type": "code",
-      "description": "Decide se resposta será texto ou áudio (TTS) com base em responder_em_audio",
+      "description": "Decide se resposta será texto ou áudio (TTS) com base em responder_em_audio do agente ativo",
       "inputs": ["node-detect-qualification", "node-detect-objections"],
       "logic": {
         "check_audio_flag": "if responder_em_audio === 'true' → format = 'audio' else format = 'text'",
-        "if_audio": "POST para evo-proxy com endpoint send-audio e texto para sintetizar",
+        "if_audio": "POST para evo-proxy com endpoint send-audio",
         "if_text": "POST para evo-proxy com endpoint send-text"
       },
       "outputs": ["response_format"]
@@ -250,7 +307,7 @@
     {
       "name": "node-send-qualified-message",
       "type": "http_request",
-      "description": "Envia msg_qualificado ou msg_desqualificado ao lead quando detectado",
+      "description": "Envia msg_qualificado ou msg_desqualificado configurado no software para o agente ativo",
       "condition": "if qualified === true OR disqualified === true",
       "method": "POST",
       "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
@@ -262,7 +319,7 @@
         "action": "send-text",
         "instance": "{evo_instance}",
         "chatId": "{phone_number}",
-        "text": "if qualified → msg_qualificado || 'Parabéns! Você foi qualificado.' \n       if disqualified → msg_desqualificado || 'Obrigado pelo contato.'"
+        "text": "if qualified → msg_qualificado || 'Parabéns! Você foi qualificado.'\n       if disqualified → msg_desqualificado || 'Obrigado pelo contato.'"
       },
       "inputs": ["node-detect-qualification"]
     },
@@ -270,7 +327,7 @@
     {
       "name": "node-route-to-supervisor",
       "type": "conditional",
-      "description": "Notifica supervisor quando lead é qualificado — usa numero_destino, grupo_destino e notif_destino do agente_config",
+      "description": "Notifica supervisor quando lead é qualificado — usa numero_destino/grupo_destino/notif_destino do agente ativo",
       "condition": "qualified === true",
       "inputs": ["node-detect-qualification"],
       "routing": {
@@ -281,18 +338,17 @@
             "action": "send-text",
             "instance": "{evo_instance}",
             "chatId": "{numero_destino}@s.whatsapp.net",
-            "text": "🎯 *Novo lead qualificado!*\n\n*Nome:* {lead_nome}\n*Telefone:* {phone_number}\n*Score:* {qualification_score}/100\n*Critérios atendidos:* {criteria_matched}\n*Última mensagem:* {message_text}"
+            "text": "🎯 *Novo lead qualificado!*\n\n*Nome:* {lead_nome}\n*Telefone:* {phone_number}\n*Agente:* {agent_type}\n*Score:* {qualification_score}/100\n*Última mensagem:* {message_text}"
           }
         },
         "notif_destino_grupo": {
           "condition": "notif_destino === 'grupo' OR notif_destino === 'ambos'",
-          "condition_extra": "grupo_destino is set AND lead is member of group",
           "action": "POST evo-proxy send-text → grupo_destino",
           "payload": {
             "action": "send-text",
             "instance": "{evo_instance}",
             "chatId": "{grupo_destino}",
-            "text": "🎯 *Novo lead qualificado!*\n\n*Nome:* {lead_nome}\n*Telefone:* {phone_number}\n*Score:* {qualification_score}/100\n*Critérios atendidos:* {criteria_matched}"
+            "text": "🎯 *Novo lead qualificado!*\n\n*Nome:* {lead_nome}\n*Telefone:* {phone_number}\n*Agente:* {agent_type}\n*Score:* {qualification_score}/100"
           }
         }
       },
@@ -344,7 +400,7 @@
     {
       "name": "node-log-execution",
       "type": "http_request",
-      "description": "Registra execução no dashboard de monitoramento (edge function)",
+      "description": "Registra execução no dashboard de monitoramento (edge function log-workflow-execution)",
       "method": "POST",
       "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/log-workflow-execution",
       "headers": {
@@ -360,7 +416,7 @@
         "status": "sucesso",
         "tokens_input": "{tokens_input}",
         "tokens_output": "{tokens_output}",
-        "modelo_usado": "{model_used}",
+        "modelo_usado": "{ai_model_ativo}",
         "resposta_gerada": "{response_text}",
         "numero_whatsapp": "{phone_number}",
         "erro_mensagem": null
@@ -377,8 +433,7 @@
       "logic": {
         "keywords": ["quero pagar", "como pago", "vou fechar", "quero comprar", "valor", "boleto", "pix", "cartão", "parcelas"],
         "llm_marker": "Verifica se resposta do LLM contém [INICIAR_PAGAMENTO]",
-        "decision": "payment_intent = true | false",
-        "note": "Para usar o marcador, instrua o sistema_prompt do agente a incluir [INICIAR_PAGAMENTO] quando detectar interesse em pagamento"
+        "decision": "payment_intent = true | false"
       },
       "outputs": ["payment_intent"]
     },
@@ -395,16 +450,7 @@
         "apikey": "{supabase_api_key}"
       },
       "inputs": ["node-detect-payment-intent"],
-      "post_processing": "Converte array em gatewayMap",
-      "returns": {
-        "gateway_padrao": "Gateway configurado como padrão",
-        "stripe_publishable": "pk_live_...",
-        "stripe_secret": "sk_live_... (nunca exposta ao lead)",
-        "mercado_pago_access": "APP_USR_...",
-        "asaas_api_key": "$aact_...",
-        "infinitepay_api_key": "sk_...",
-        "fallback_order": "Lista de gateways de fallback ativos"
-      }
+      "post_processing": "Converte array em gatewayMap"
     },
 
     {
@@ -463,30 +509,59 @@
   ],
 
   "flow_diagram": {
-    "description": "Fluxo completo do workflow v2.2",
+    "description": "Fluxo completo do workflow v2.3",
     "sequence": [
       "webhook → parse → lookup-session → get-or-create-lead → validate-user",
-      "→ detect-agent-type → busca-configs-sdr → build-system-prompt",
-      "→ load-conversation-history → llm-openai",
+      "→ detect-agent-type (principal | prospec | objecao | extra)",
+      "→ busca-configs-sdr (prompts + modelos + tonalidade + roteamento)",
+      "→ build-system-prompt (seleciona provider/modelo/temperatura dinâmico)",
+      "→ load-conversation-history → llm-openai (OpenAI | Claude | Google)",
       "→ [parallel] detect-qualification + detect-objections + detect-payment-intent",
-      "→ decide-response-format → send-whatsapp",
+      "→ decide-response-format → send-whatsapp (texto ou áudio TTS)",
       "→ [if qualified] send-qualified-message + route-to-supervisor",
       "→ [if payment_intent] busca-gateway-config → create-payment → send-payment-link",
       "→ save-response-log → update-lead → update-tokens → log-execution"
     ]
   },
 
+  "agent_type_matrix": {
+    "principal": {
+      "prompt_key": "sistema_prompt",
+      "prefix": "",
+      "provider_key": "ai_provider",
+      "model_keys": { "openai": "openai_model", "claude": "claude_model", "google": "google_model" }
+    },
+    "prospec": {
+      "prompt_key": "prospec_sistema_prompt",
+      "prefix": "prospec_",
+      "provider_key": "prospec_ai_provider",
+      "model_keys": { "openai": "prospec_openai_model", "claude": "prospec_claude_model", "google": "prospec_google_model" }
+    },
+    "objecao": {
+      "prompt_key": "ob_sistema_prompt",
+      "prefix": "ob_",
+      "provider_key": "ob_ai_provider",
+      "model_keys": { "openai": "ob_openai_model", "claude": "ob_claude_model", "google": "ob_google_model" }
+    },
+    "extra (ae{n})": {
+      "prompt_key": "ae{n}_sistema_prompt",
+      "prefix": "ae{n}_",
+      "provider_key": "ae{n}_ai_provider",
+      "model_keys": { "openai": "ae{n}_openai_model", "claude": "ae{n}_claude_model", "google": "ae{n}_google_model" }
+    }
+  },
+
   "configuration": {
     "environment_variables": {
       "SUPABASE_URL": "https://vyvdrbkcrvklcaombjqu.supabase.co",
       "SUPABASE_API_KEY": "{set_in_n8n_credentials}",
-      "OPENAI_API_KEY": "{set_in_n8n_credentials}",
       "EVOLUTION_API_URL": "{set_in_n8n_credentials}",
       "EVOLUTION_API_TOKEN": "{set_in_n8n_credentials}",
       "JWT_SECRET": "{set_in_n8n_credentials}"
     },
+    "notes": "Chaves de API de IA (OpenAI, Anthropic, Google) são armazenadas em agente_config pelo software e lidas pelo llm-proxy via SUPABASE_SERVICE_ROLE_KEY. Não precisam ser configuradas como variáveis de ambiente no N8N.",
     "timeouts": {
-      "openai_call": 30000,
+      "llm_call": 30000,
       "supabase_query": 10000,
       "evolution_send": 15000,
       "payment_create": 20000,
@@ -502,41 +577,48 @@
   },
 
   "changelog": {
+    "v2.3": {
+      "date": "2026-03-19",
+      "changes": [
+        "✅ Agente de Prospecção (prospec) adicionado — prompt, tonalidade, critérios, msg, TTS, roteamento independentes",
+        "✅ node-busca-configs-sdr agora busca modelos, temperaturas e max_tokens por agente e por provider",
+        "✅ node-build-system-prompt seleciona provider (openai|claude|google) e parâmetros dinâmicos por agente",
+        "✅ node-llm-openai passa provider, model, temperature, max_tokens dinâmicos do configMap",
+        "✅ node-detect-agent-type inclui lógica para detectar agente prospecao",
+        "✅ node-log-execution registra ai_model_ativo em modelo_usado",
+        "✅ Matrix completa de chaves por agente documentada em agent_type_matrix"
+      ]
+    },
     "v2.2": {
       "date": "2026-03-19",
       "changes": [
-        "✅ node-busca-configs-sdr agora busca TODAS as configs: prompts, tonalidade, critérios, msg_qualificado, msg_desqualificado, responder_em_audio, numero_destino, grupo_destino, notif_destino, gateway_padrao e fallbacks",
-        "✅ node-build-system-prompt expõe msg_qualificado, msg_desqualificado e demais configs para nós seguintes",
-        "✅ node-send-whatsapp agora usa evo-proxy e suporta texto e áudio TTS via responder_em_audio",
-        "✅ node-send-qualified-message envia msg_qualificado ou msg_desqualificado configurado pelo cliente",
-        "✅ node-route-to-supervisor usa numero_destino, grupo_destino e notif_destino dinâmicos do agente_config",
-        "✅ node-detect-payment-intent detecta intenção de pagamento via palavras-chave e marcador [INICIAR_PAGAMENTO]",
-        "✅ node-busca-gateway-config busca credenciais do gateway ativo do cliente",
-        "✅ node-create-payment roteia para a edge function correta (Stripe, Mercado Pago, ASAAS ou InfinitePay) com fallback automático",
-        "✅ node-send-payment-link envia link de pagamento ao lead via WhatsApp"
+        "Gateways de pagamento dinâmicos (Stripe, Mercado Pago, ASAAS, InfinitePay)",
+        "TTS via responder_em_audio por agente",
+        "Roteamento de supervisor via numero_destino / grupo_destino"
       ]
     },
     "v2.1": {
       "date": "2026-03-19",
       "changes": [
-        "Sincronização com agente_config (sistema_prompt, ob, ae{n})",
+        "Sincronização com agente_config",
         "node-log-execution para monitoramento",
         "Token tracking e multi-agent support"
       ]
     },
     "v2.0": {
       "date": "2026-03-15",
-      "changes": [
-        "Release inicial com multi-agent, qualificação, WhatsApp e OpenAI"
-      ]
+      "changes": ["Release inicial com multi-agent, qualificação, WhatsApp e OpenAI"]
     }
   },
 
   "integration_notes": {
-    "software_sync": "Todas as configs vêm de agente_config via node-busca-configs-sdr — zero hardcode no workflow",
-    "payment_flow": "Credenciais de gateway nunca ficam expostas no frontend — buscadas apenas no nó server-side do N8N",
-    "audio_tts": "responder_em_audio='true' faz node-send-whatsapp usar endpoint send-audio do evo-proxy",
-    "supervisor_routing": "notif_destino controla se notificação vai para numero, grupo ou ambos",
-    "payment_marker": "Para pagamentos, oriente o sistema_prompt do agente a incluir [INICIAR_PAGAMENTO] na resposta quando o lead expressar interesse em comprar"
+    "software_sync": "100% das configs vêm de agente_config — zero hardcode no workflow",
+    "agent_keys": "Cada agente tem seu próprio prefixo: '' (principal), 'prospec_', 'ob_', 'ae{n}_'",
+    "provider_selection": "ai_provider por agente define qual LLM usar. Fallback: openai",
+    "model_selection": "Modelo lido dinamicamente: {prefix}openai_model → gpt-4o-mini padrão",
+    "api_keys": "Chaves de API ficam em agente_config (salvas no software em Modelo de IA → Salvar) e são injetadas pelo llm-proxy no servidor",
+    "audio_tts": "responder_em_audio='true' aciona TTS via evo-proxy send-audio",
+    "payment_marker": "Inclua [INICIAR_PAGAMENTO] no sistema_prompt para ativar fluxo de pagamento",
+    "prospec_agent": "Agente de Prospecção usa prefix 'prospec_' em todos os campos de config"
   }
 }
