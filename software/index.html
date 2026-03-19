@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
 
 
@@ -266,7 +267,8 @@
     .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 24px; color: rgba(255,255,255,0.6); cursor: pointer; transition: all 0.2s; font-size: 14px; border-left: 3px solid transparent; }
     .nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
     .nav-item.active { color: #a3e635; border-left-color: #a3e635; background: rgba(165,180,252,0.1); }
-    .nav-item .icon { font-size: 18px; width: 20px; text-align: center; }
+    .nav-item .icon { font-size: 18px; width: 20px; text-align: center; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .nav-item .icon svg { width: 16px; height: 16px; stroke-width: 1.75; }
     .nav-item .badge-dot { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
     .badge-dot.online { background: #22c55e; }
     .badge-dot.offline { background: #ef4444; }
@@ -1437,84 +1439,84 @@
     <div style="padding: 8px 0; flex: 1;">
       <div class="nav-section">Principal</div>
       <div class="nav-item active" onclick="showPage('overview', this)">
-        <span class="icon"></span> Visão Geral
+        <span class="icon"><i data-lucide="layout-dashboard"></i></span> Visão Geral
       </div>
       <div class="nav-section">Atendimento</div>
       <div class="nav-item membro-hidden" onclick="showPage('whatsapp', this)" id="nav-whatsapp">
-        <span class="icon"></span> Conexão QR Code
+        <span class="icon"><i data-lucide="qr-code"></i></span> Conexão QR Code
         <span class="badge-dot offline" id="nav-wa-dot"></span>
       </div>
       <div class="nav-item" onclick="showPage('batepapo', this)">
-        <span class="icon"></span> Bate-Papo ao Vivo
+        <span class="icon"><i data-lucide="message-circle"></i></span> Bate-Papo ao Vivo
       </div>
       <div class="nav-item" onclick="showPage('crm', this)">
-        <span class="icon"></span> CRM — Pipeline
+        <span class="icon"><i data-lucide="kanban"></i></span> CRM — Pipeline
       </div>
       <div class="nav-item" onclick="showPage('historico-leads', this)">
-        <span class="icon">📊</span> Histórico
+        <span class="icon"><i data-lucide="clock"></i></span> Histórico
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('calendario', this)">
-        <span class="icon">📅</span> Calendário
+        <span class="icon"><i data-lucide="calendar"></i></span> Calendário
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('equipe', this)">
-        <span class="icon">👥</span> Equipe
+        <span class="icon"><i data-lucide="users"></i></span> Equipe
       </div>
       <div class="nav-section membro-hidden">Configuração</div>
       <div class="nav-item membro-hidden" onclick="showPage('agente', this)">
-        <span class="icon"></span> Agente & Prompt
+        <span class="icon"><i data-lucide="bot"></i></span> Agente & Prompt
       </div>
       <div class="nav-item membro-hidden addon-objecao-nav" id="nav-agente-objecao" onclick="showPage('agente-objecao', this)" style="display:none;">
-        <span class="icon">🛡️</span> Agente de Objeção
+        <span class="icon"><i data-lucide="shield"></i></span> Agente de Objeção
       </div>
       <div id="nav-agentes-extras-container"></div>
       <div class="nav-item membro-hidden" id="nav-numeros-extras" onclick="showPage('numeros-extras', this)" style="display:none;">
-        <span class="icon">🔢</span> Números Extras
+        <span class="icon"><i data-lucide="phone"></i></span> Números Extras
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('workflows', this)">
-        <span class="icon">⚙️</span> Workflows
+        <span class="icon"><i data-lucide="git-branch"></i></span> Workflows
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('comunicacao', this)">
-        <span class="icon"></span> Comunicação
+        <span class="icon"><i data-lucide="message-square"></i></span> Comunicação
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('qualificacao', this)">
-        <span class="icon"></span> Qualificação
+        <span class="icon"><i data-lucide="filter"></i></span> Qualificação
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('pdfs', this)">
-        <span class="icon"></span> Base de Conhecimento
+        <span class="icon"><i data-lucide="book-open"></i></span> Base de Conhecimento
       </div>
       <div class="nav-section">Resultados</div>
       <div class="nav-item membro-hidden" onclick="showPage('analytics', this)">
-        <span class="icon"></span> Analytics
+        <span class="icon"><i data-lucide="bar-chart-2"></i></span> Analytics
       </div>
       <div class="nav-item" onclick="showPage('leads', this)">
-        <span class="icon"></span> Leads
+        <span class="icon"><i data-lucide="user-check"></i></span> Leads
       </div>
       <div class="nav-section membro-hidden">Ferramentas</div>
       <div class="nav-item membro-hidden" onclick="showPage('scoring', this)">
-        <span class="icon"></span> Lead Scoring
+        <span class="icon"><i data-lucide="star"></i></span> Lead Scoring
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('fluxos', this)">
-        <span class="icon"></span> Designer de Fluxos
+        <span class="icon"><i data-lucide="share-2"></i></span> Designer de Fluxos
       </div>
       <div class="nav-section">Conta</div>
       <div class="nav-item membro-hidden" onclick="showPage('kpis', this)">
-        <span class="icon"></span> KPIs & OKRs
+        <span class="icon"><i data-lucide="target"></i></span> KPIs & OKRs
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('conta', this)">
-        <span class="icon"></span> Gerenciar Conta
+        <span class="icon"><i data-lucide="credit-card"></i></span> Gerenciar Conta
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('perfil', this)">
-        <span class="icon">👤</span> Perfil
+        <span class="icon"><i data-lucide="user"></i></span> Perfil
       </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
       <div class="nav-item admin-only" onclick="showPage('monitoramento', this)">
-        <span class="icon">📊</span> Monitoramento
+        <span class="icon"><i data-lucide="activity"></i></span> Monitoramento
       </div>
       <div class="nav-item admin-only" id="admin-nav-clientes" onclick="showPage('clientes', this)">
-        <span class="icon"></span> Clientes
+        <span class="icon"><i data-lucide="briefcase"></i></span> Clientes
       </div>
       <div class="nav-item admin-only" onclick="showPage('admin-model-costs', this)">
-        <span class="icon">💰</span> Custo de Tokens
+        <span class="icon"><i data-lucide="coins"></i></span> Custo de Tokens
       </div>
     </div>
     <div class="sidebar-bottom">
@@ -1523,9 +1525,9 @@
         <div id="sidebar-user-role" style="font-size:11px;"></div>
       </div>
       <div class="theme-toggle" id="theme-toggle">
-        <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')"  >🌙 Dark</button>
-        <button class="theme-btn" data-t="light"  onclick="setTheme('light')" >☀️ Light</button>
-        <button class="theme-btn" data-t="system" onclick="setTheme('system')">💻 Auto</button>
+        <button class="theme-btn" data-t="dark"   onclick="setTheme('dark')"  >Dark</button>
+        <button class="theme-btn" data-t="light"  onclick="setTheme('light')" >Light</button>
+        <button class="theme-btn" data-t="system" onclick="setTheme('system')">Auto</button>
       </div>
       <button class="btn-logout" onclick="logout()">Sair</button>
       <div class="sidebar-powered">Powered by <span>SX SevenXperts Business Solutions</span><br><span style="opacity:.5;font-size:9px;letter-spacing:.3px;">CNPJ: 32.794.007/0001-19</span></div>
@@ -4710,6 +4712,7 @@
   async function showDashboard() {
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('dashboard-page').style.display = 'block';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 
     // Verifica se retornou do OAuth do Google Calendar
     const params = new URLSearchParams(window.location.search);
@@ -6879,7 +6882,7 @@
       const navItem = document.createElement('div');
       navItem.className = 'nav-item membro-hidden';
       navItem.onclick = function() { showPage(`agente-extra-${i}`, this); };
-      navItem.innerHTML = `<span class="icon">🤖</span> Agente Extra ${i}`;
+      navItem.innerHTML = `<span class="icon"><i data-lucide="cpu"></i></span> Agente Extra ${i}`;
       if (containerNav) containerNav.appendChild(navItem);
       
       // Page
@@ -6902,7 +6905,10 @@
       `;
       if (containerPages) containerPages.appendChild(page);
     }
-    
+
+    // Re-inicializa ícones Lucide para os novos nav items
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
     // Carrega as configurações dos addons
     const { data: configs } = await db.from('agente_config').select('chave,valor').eq('user_id', user.id);
     if (configs) {
