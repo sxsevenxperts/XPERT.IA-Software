@@ -5763,9 +5763,56 @@
     }
   }
 
+  async function checkSubscriptionForAgent(agentType, agentIndex = 0) {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return { canEdit: false, reason: 'Usuário não autenticado' };
+
+    // Agente principal sempre é editável
+    if (agentType === 'main') return { canEdit: true, reason: null };
+
+    // Verificar subscription para addons
+    const { data: assinatura } = await db.from('assinaturas')
+      .select('addon_objecao,agentes_extras')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (agentType === 'objecao') {
+      const canEdit = assinatura?.addon_objecao === true;
+      return {
+        canEdit,
+        reason: canEdit ? null : '🔒 Edição bloqueada — Addon Agente de Objeção não ativo'
+      };
+    }
+
+    if (agentType === 'extra') {
+      const limit = assinatura?.agentes_extras || 0;
+      const canEdit = limit > agentIndex;
+      return {
+        canEdit,
+        reason: canEdit ? null : `🔒 Edição bloqueada — Limite de Agentes Extras atingido`
+      };
+    }
+
+    return { canEdit: false, reason: 'Tipo de agente desconhecido' };
+  }
+
   async function loadAgenteConfigs(prefix) {
     const { data: { user } } = await db.auth.getUser();
     if (!user) return;
+
+    // Determinar tipo de agente e índice
+    let agentType = 'main';
+    let agentIndex = 0;
+    if (prefix === 'ob') {
+      agentType = 'objecao';
+    } else if (prefix.startsWith('ae')) {
+      agentType = 'extra';
+      agentIndex = parseInt(prefix.slice(2));
+    }
+
+    // Verificar subscription
+    const { canEdit, reason } = await checkSubscriptionForAgent(agentType, agentIndex);
+
     const { data: configs } = await db.from('agente_config')
       .select('chave,valor')
       .eq('user_id', user.id)
@@ -5776,7 +5823,34 @@
       if (!el) return;
       if (el.type === 'checkbox') el.checked = row.valor === 'true';
       else el.value = row.valor;
+
+      // Desabilitar input se sem subscription
+      if (!canEdit) {
+        el.disabled = true;
+        el.style.opacity = '0.6';
+        el.style.cursor = 'not-allowed';
+      }
     });
+
+    // Desabilitar botões Save se sem subscription
+    if (!canEdit) {
+      const saveButtons = document.querySelectorAll(`button[onclick*="saveConfigs"][onclick*="'${prefix}"]`);
+      saveButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.title = reason;
+      });
+
+      // Mostrar aviso de bloqueio
+      const tabContainer = document.querySelector(`#${prefix}-tab-prompt`)?.parentElement;
+      if (tabContainer && !tabContainer.querySelector('.subscription-lock-notice')) {
+        const notice = document.createElement('div');
+        notice.className = 'subscription-lock-notice';
+        notice.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;padding:12px;border-radius:6px;color:#92400e;margin-bottom:16px;display:block;';
+        notice.innerHTML = `<strong>${reason}</strong>`;
+        tabContainer.insertBefore(notice, tabContainer.firstChild);
+      }
+    }
   }
 
   async function addAgenteWebUrl(prefix) {
