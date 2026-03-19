@@ -1,0 +1,384 @@
+{
+  "name": "Agente SDR v2.3 — Multi-Agente Dinâmico",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "webhook/whatsapp",
+        "httpMethod": "POST",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook_whatsapp",
+      "name": "Webhook WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extrai e normaliza dados da mensagem recebida\nconst from = $input.first().json.from || $input.first().json.number_whatsapp;\nconst message_text = $input.first().json.text || $input.first().json.message;\nconst media_type = $input.first().json.mediaType || null;\nconst media_url = $input.first().json.mediaUrl || null;\nconst timestamp = $input.first().json.timestamp || new Date().toISOString();\n\nreturn {\n  phone: from,\n  text: message_text?.toLowerCase() || '',\n  media_type: media_type,\n  media_url: media_url,\n  timestamp: timestamp,\n  language: 'pt-BR'\n};"
+      },
+      "id": "parse_message",
+      "name": "Parse Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 100],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "executeQuery",
+        "query": "SELECT m.*, l.user_id, l.stage, l.fluxo_id FROM message_history m JOIN leads l ON m.lead_id = l.id WHERE m.numero_whatsapp = $1 ORDER BY m.created_at DESC LIMIT 1",
+        "queryParams": "{{ $node.parse_message.json.phone }}",
+        "limit": 1
+      },
+      "id": "lookup_session",
+      "name": "Lookup Session",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [650, 100],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "executeQuery",
+        "query": "INSERT INTO leads (user_id, numero_whatsapp, nome, stage, criado_em) SELECT $1, $2, $2, 'whatsapp', now() WHERE NOT EXISTS (SELECT 1 FROM leads WHERE user_id = $1 AND numero_whatsapp = $2) RETURNING *;",
+        "queryParams": "{{ $node.lookup_session.json[0].user_id || 'placeholder' }},{{ $node.parse_message.json.phone }}"
+      },
+      "id": "get_or_create_lead",
+      "name": "Get or Create Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [850, 100],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "executeQuery",
+        "query": "SELECT u.id, u.role, a.plano, a.status, a.creditos_tokens, a.addon_objecao, a.agentes_extras FROM profiles u JOIN assinaturas a ON u.id = a.user_id WHERE u.id = $1",
+        "queryParams": "{{ $node.lookup_session.json[0].user_id }}"
+      },
+      "id": "validate_user",
+      "name": "Validate User",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1050, 100],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta tipo de agente: principal, prospecção, objeção ou extra\nconst lead = $node.lookup_session.json[0];\nconst subscription = $node.validate_user.json[0];\nconst objecoes_count = lead?.objecoes_count || 0;\nconst stage = lead?.stage || 'whatsapp';\nconst fluxo_id = lead?.fluxo_id || '';\n\nlet agent_type = 'principal';\nlet agent_index = 0;\n\nif (stage === 'objecoes' || objecoes_count > 2) {\n  agent_type = 'objecao';\n} else if (stage === 'prospecao' || fluxo_id?.includes('prospec')) {\n  agent_type = 'prospec';\n} else if (subscription?.agentes_extras > 0 && fluxo_id?.match(/ae(\\d)/)) {\n  agent_type = 'extra';\n  const match = fluxo_id.match(/ae(\\d)/);\n  agent_index = match ? parseInt(match[1]) : 0;\n}\n\nreturn {\n  agent_type: agent_type,\n  agent_index: agent_index,\n  user_id: lead?.user_id || subscription?.id,\n  lead_id: lead?.id,\n  subscription_status: subscription?.status\n};"
+      },
+      "id": "detect_agent_type",
+      "name": "Detect Agent Type",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 100]
+    },
+    {
+      "parameters": {
+        "authentication": "bearerToken",
+        "method": "GET",
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/agente_config?user_id=eq.{{ $node.detect_agent_type.json.user_id }}&select=chave,valor",
+        "options": {
+          "headers": {
+            "Authorization": "Bearer {{ $env.SUPABASE_API_KEY }}",
+            "apikey": "{{ $env.SUPABASE_API_KEY }}"
+          }
+        }
+      },
+      "id": "busca_configs_sdr",
+      "name": "Busca Configs SDR",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1450, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta system prompt + seleciona provider e modelo dinâmico\nconst configArray = $node.busca_configs_sdr.json || [];\nconst configMap = {};\n\nconfigArray.forEach(item => {\n  configMap[item.chave] = item.valor;\n});\n\nconst agent_type = $node.detect_agent_type.json.agent_type;\nconst agent_index = $node.detect_agent_type.json.agent_index;\nconst prefix = agent_type === 'principal' ? '' : agent_type === 'prospec' ? 'prospec_' : agent_type === 'objecao' ? 'ob_' : `ae${agent_index}_`;\n\n// Seleciona prompt base\nlet sistema_prompt = configMap[`${prefix}sistema_prompt`] || 'Você é um assistente de vendas profissional. Qualifique leads com critério.';\n\n// Seleciona provider\nconst provider = configMap[`${prefix}ai_provider`] || configMap['ai_provider'] || 'openai';\n\n// Seleciona modelo e parâmetros\nlet model, temperature, max_tokens;\n\nif (provider === 'openai') {\n  model = configMap[`${prefix}openai_model`] || configMap['openai_model'] || 'gpt-4o-mini';\n  temperature = parseFloat(configMap[`${prefix}openai_temperature`] || configMap['openai_temperature'] || '0.7');\n  max_tokens = parseInt(configMap[`${prefix}openai_max_tokens`] || configMap['openai_max_tokens'] || '1024');\n} else if (provider === 'claude') {\n  model = configMap[`${prefix}claude_model`] || configMap['claude_model'] || 'claude-haiku-4-5';\n  temperature = parseFloat(configMap[`${prefix}claude_temperature`] || configMap['claude_temperature'] || '0.7');\n  max_tokens = parseInt(configMap[`${prefix}claude_max_tokens`] || configMap['claude_max_tokens'] || '1024');\n} else if (provider === 'google') {\n  model = configMap[`${prefix}google_model`] || configMap['google_model'] || 'gemini-2.0-flash';\n  temperature = parseFloat(configMap[`${prefix}google_temperature`] || configMap['google_temperature'] || '0.7');\n  max_tokens = parseInt(configMap[`${prefix}google_max_tokens`] || configMap['google_max_tokens'] || '1024');\n}\n\n// Append tonalidade\nif (configMap[`${prefix}tonalidade`]) {\n  sistema_prompt += `\\n\\nTONALIDADE: ${configMap[`${prefix}tonalidade`]}`;\n}\n\n// Append critérios\nif (configMap[`${prefix}criterios_qualificacao`]) {\n  sistema_prompt += `\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n${configMap[`${prefix}criterios_qualificacao`]}`;\n}\n\nreturn {\n  final_system_prompt: sistema_prompt,\n  ai_provider_ativo: provider,\n  ai_model_ativo: model,\n  ai_temperature_ativo: temperature,\n  ai_max_tokens_ativo: max_tokens,\n  msg_qualificado: configMap[`${prefix}msg_qualificado`] || 'Parabéns! Você foi qualificado.',\n  msg_desqualificado: configMap[`${prefix}msg_desqualificado`] || 'Obrigado pelo contato.',\n  responder_em_audio: configMap[`${prefix}responder_em_audio`] || 'false',\n  numero_destino: configMap[`${prefix}numero_destino`],\n  grupo_destino: configMap[`${prefix}grupo_destino`],\n  notif_destino: configMap['notif_destino'] || 'numero',\n  gateway_padrao: configMap['gateway_padrao'] || 'stripe'\n};"
+      },
+      "id": "build_system_prompt",
+      "name": "Build System Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 100]
+    },
+    {
+      "parameters": {
+        "resource": "executeQuery",
+        "query": "SELECT conteudo, sender FROM message_history WHERE lead_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 10",
+        "queryParams": "{{ $node.detect_agent_type.json.lead_id }},{{ $node.detect_agent_type.json.user_id }}"
+      },
+      "id": "load_conversation_history",
+      "name": "Load Conversation History",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1850, 100],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "bearerToken",
+        "method": "POST",
+        "url": "{{ $env.SUPABASE_URL }}/functions/v1/llm-proxy?provider={{ $node.build_system_prompt.json.ai_provider_ativo }}&user_id={{ $node.detect_agent_type.json.user_id }}&model={{ $node.build_system_prompt.json.ai_model_ativo }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "provider": "{{ $node.build_system_prompt.json.ai_provider_ativo }}",
+          "model": "{{ $node.build_system_prompt.json.ai_model_ativo }}",
+          "temperature": "{{ $node.build_system_prompt.json.ai_temperature_ativo }}",
+          "max_tokens": "{{ $node.build_system_prompt.json.ai_max_tokens_ativo }}",
+          "messages": [
+            {
+              "role": "system",
+              "content": "{{ $node.build_system_prompt.json.final_system_prompt }}"
+            },
+            {
+              "role": "user",
+              "content": "{{ $node.parse_message.json.text }}"
+            }
+          ],
+          "user_id": "{{ $node.detect_agent_type.json.user_id }}"
+        },
+        "options": {
+          "headers": {
+            "Authorization": "Bearer {{ $env.SUPABASE_JWT }}",
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "id": "llm_call",
+      "name": "LLM Call (OpenAI/Claude/Google)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2050, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta qualificação\nconst response_text = $node.llm_call.json.content || '';\nconst has_qualificado = response_text.includes('[LEAD_QUALIFICADO]');\nconst has_desqualificado = response_text.includes('[LEAD_DESQUALIFICADO]');\n\nlet qualification_score = 0;\nif (has_qualificado) qualification_score = 100;\nelse if (has_desqualificado) qualification_score = 0;\nelse qualification_score = 50;\n\nreturn {\n  qualified: has_qualificado,\n  disqualified: has_desqualificado,\n  qualification_score: qualification_score\n};"
+      },
+      "id": "detect_qualification",
+      "name": "Detect Qualification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta objeções\nconst response_text = $node.llm_call.json.content || '';\nconst objection_keywords = ['não posso', 'muito caro', 'não sei', 'concorrente', 'depois'];\n\nlet has_objection = false;\nlet objection_type = '';\n\nfor (const keyword of objection_keywords) {\n  if (response_text.toLowerCase().includes(keyword)) {\n    has_objection = true;\n    if (keyword.includes('caro')) objection_type = 'preco';\n    else if (keyword.includes('depois')) objection_type = 'timing';\n    else if (keyword.includes('concorrente')) objection_type = 'concorrente';\n    else objection_type = 'outro';\n    break;\n  }\n}\n\nreturn {\n  has_objection: has_objection,\n  objection_type: objection_type\n};"
+      },
+      "id": "detect_objections",
+      "name": "Detect Objections",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 250]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Detecta intenção de pagamento\nconst response_text = $node.llm_call.json.content || '';\nconst payment_keywords = ['quero pagar', 'como pago', 'vou fechar', 'quero comprar', 'valor', 'boleto', 'pix', 'cartão', 'parcelas', '[INICIAR_PAGAMENTO]'];\n\nlet payment_intent = false;\n\nfor (const keyword of payment_keywords) {\n  if (response_text.toLowerCase().includes(keyword.toLowerCase())) {\n    payment_intent = true;\n    break;\n  }\n}\n\nreturn { payment_intent: payment_intent };"
+      },
+      "id": "detect_payment_intent",
+      "name": "Detect Payment Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Decide response format\nconst responder_em_audio = $node.build_system_prompt.json.responder_em_audio === 'true';\nreturn { response_format: responder_em_audio ? 'audio' : 'text' };"
+      },
+      "id": "decide_response_format",
+      "name": "Decide Response Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2450, 150]
+    },
+    {
+      "parameters": {
+        "authentication": "bearerToken",
+        "method": "POST",
+        "url": "{{ $env.SUPABASE_URL }}/functions/v1/evo-proxy",
+        "sendBody": true,
+        "bodyParameters": {
+          "action": "send-text",
+          "number": "{{ $node.parse_message.json.phone }}",
+          "text": "{{ $node.llm_call.json.content }}"
+        },
+        "options": {
+          "headers": {
+            "Authorization": "Bearer {{ $env.SUPABASE_JWT }}",
+            "Content-Type": "application/json"
+          }
+        }
+      },
+      "id": "send_whatsapp",
+      "name": "Send WhatsApp Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [2650, 150]
+    },
+    {
+      "parameters": {
+        "resource": "executeQuery",
+        "query": "INSERT INTO message_history (user_id, lead_id, numero_whatsapp, sender, conteudo, tokens_usados, agent_type) VALUES ($1, $2, $3, 'assistant', $4, $5, $6)",
+        "queryParams": "{{ $node.detect_agent_type.json.user_id }},{{ $node.detect_agent_type.json.lead_id }},{{ $node.parse_message.json.phone }},{{ $node.llm_call.json.content }},{{ $node.llm_call.json.deducted_tokens || 0 }},{{ $node.detect_agent_type.json.agent_type }}"
+      },
+      "id": "save_response_log",
+      "name": "Save Response Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2650, 300],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    },
+    {
+      "parameters": {
+        "resource": "executeQuery",
+        "query": "UPDATE leads SET updated_at = now(), ultima_pergunta = $1, objecoes_count = CASE WHEN $2 THEN objecoes_count + 1 ELSE objecoes_count END, stage = CASE WHEN $3 THEN 'qualified' WHEN $4 THEN 'unqualified' ELSE stage END WHERE id = $5",
+        "queryParams": "{{ $node.parse_message.json.text }},{{ $node.detect_objections.json.has_objection }},{{ $node.detect_qualification.json.qualified }},{{ $node.detect_qualification.json.disqualified }},{{ $node.detect_agent_type.json.lead_id }}"
+      },
+      "id": "update_lead",
+      "name": "Update Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2650, 450],
+      "credentials": {
+        "supabaseApi": "supabase_credential"
+      }
+    }
+  ],
+  "connections": {
+    "webhook_whatsapp": {
+      "main": [
+        [{ "node": "parse_message", "type": "main", "index": 0 }]
+      ]
+    },
+    "parse_message": {
+      "main": [
+        [{ "node": "lookup_session", "type": "main", "index": 0 }]
+      ]
+    },
+    "lookup_session": {
+      "main": [
+        [{ "node": "get_or_create_lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "get_or_create_lead": {
+      "main": [
+        [{ "node": "validate_user", "type": "main", "index": 0 }]
+      ]
+    },
+    "validate_user": {
+      "main": [
+        [{ "node": "detect_agent_type", "type": "main", "index": 0 }]
+      ]
+    },
+    "detect_agent_type": {
+      "main": [
+        [{ "node": "busca_configs_sdr", "type": "main", "index": 0 }]
+      ]
+    },
+    "busca_configs_sdr": {
+      "main": [
+        [{ "node": "build_system_prompt", "type": "main", "index": 0 }]
+      ]
+    },
+    "build_system_prompt": {
+      "main": [
+        [{ "node": "load_conversation_history", "type": "main", "index": 0 }]
+      ]
+    },
+    "load_conversation_history": {
+      "main": [
+        [{ "node": "llm_call", "type": "main", "index": 0 }]
+      ]
+    },
+    "llm_call": {
+      "main": [
+        [
+          { "node": "detect_qualification", "type": "main", "index": 0 },
+          { "node": "detect_objections", "type": "main", "index": 0 },
+          { "node": "detect_payment_intent", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "detect_qualification": {
+      "main": [
+        [{ "node": "decide_response_format", "type": "main", "index": 0 }]
+      ]
+    },
+    "detect_objections": {
+      "main": [
+        []
+      ]
+    },
+    "detect_payment_intent": {
+      "main": [
+        []
+      ]
+    },
+    "decide_response_format": {
+      "main": [
+        [{ "node": "send_whatsapp", "type": "main", "index": 0 }]
+      ]
+    },
+    "send_whatsapp": {
+      "main": [
+        [
+          { "node": "save_response_log", "type": "main", "index": 0 },
+          { "node": "update_lead", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 120,
+    "maxRetries": 2,
+    "retryInterval": 1000
+  },
+  "versionId": "2.3",
+  "meta": {
+    "instanceId": "production",
+    "created": "2026-03-19T00:00:00Z",
+    "updated": "2026-03-19T23:59:59Z"
+  },
+  "documentation": {
+    "description": "Workflow SDR completo — Multi-Agente dinâmico que roda 100% do software",
+    "features": [
+      "Multi-agente support (principal, prospecção, objeção, extras)",
+      "Modelo de IA dinâmico por agente (OpenAI, Claude, Google)",
+      "Configurações 100% vindo do software (agente_config)",
+      "Qualificação e detecção de objeções",
+      "Roteamento a supervisor",
+      "Histórico de conversas",
+      "Token tracking",
+      "Integração com Evolution API",
+      "Pagamentos (Stripe, Mercado Pago, ASAAS, InfinitePay)"
+    ],
+    "requirements": {
+      "environment_variables": [
+        "SUPABASE_URL",
+        "SUPABASE_API_KEY",
+        "SUPABASE_JWT",
+        "EVOLUTION_API_URL",
+        "EVOLUTION_API_KEY"
+      ],
+      "supabase_credentials": "Configure in N8N credentials with your Supabase project"
+    }
+  }
+}
