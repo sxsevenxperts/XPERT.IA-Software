@@ -2056,6 +2056,33 @@
       color: #a5b4fc;
     }
 
+  /* ── Abas verticais (sidebar-style) ─────────────────────────── */
+  .tab-v-layout { display:flex; align-items:flex-start; gap:0; }
+  .tab-v-nav { flex:0 0 200px; width:200px; min-height:300px; display:flex; flex-direction:column; gap:1px; border-right:1px solid var(--border); padding:4px 0 20px; }
+  .tab-v-content { flex:1; overflow-x:auto; padding-left:24px; min-width:0; }
+
+  /* agente-cfg-tabs vertical */
+  .tab-v-nav.agente-cfg-tabs { border-bottom:none !important; margin-bottom:0 !important; padding-bottom:20px; }
+  .tab-v-nav .agente-cfg-tab { text-align:left; border-bottom:none !important; border-left:3px solid transparent; border-radius:0 8px 8px 0; padding:10px 14px !important; margin-bottom:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tab-v-nav .agente-cfg-tab:hover { background:rgba(255,255,255,.04); color:var(--text1); }
+  .tab-v-nav .agente-cfg-tab.active { border-left-color:var(--lime) !important; border-bottom-color:transparent !important; background:rgba(163,230,53,.1); color:var(--lime) !important; }
+
+  /* billing-tabs vertical */
+  .tab-v-nav.billing-tabs { background:transparent !important; border-radius:0 !important; padding:4px 0 20px; margin-bottom:0 !important; }
+  .tab-v-nav .billing-tab-btn { text-align:left; border-radius:0 8px 8px 0 !important; width:100%; padding:10px 14px !important; }
+  .tab-v-nav .billing-tab-btn.active { background:rgba(163,230,53,.15) !important; color:#a3e635 !important; }
+  .tab-v-nav .billing-tab-btn:not(.active):hover { background:rgba(255,255,255,.04) !important; }
+
+  /* conta-tabs vertical */
+  .conta-tab-v-outer { flex:0 0 200px; width:200px; display:flex; flex-direction:column; border-right:1px solid var(--border); padding:4px 0 20px; gap:1px; }
+  .conta-tab-v-outer .conta-tab-btn { border-bottom:none !important; border-left:3px solid transparent; border-radius:0 8px 8px 0; display:block; width:100%; text-align:left; padding:10px 14px !important; white-space:nowrap; }
+  .conta-tab-v-outer .conta-tab-btn:hover { border-bottom-color:transparent !important; background:rgba(255,255,255,.04); }
+  .conta-tab-v-outer .conta-tab-btn.active { border-left-color:#a3e635; border-bottom-color:transparent !important; background:rgba(163,230,53,.1); color:var(--text); }
+
+  /* analytics-tabs vertical */
+  .analytics-tab-v { flex:0 0 200px; width:200px; display:flex; flex-direction:column; gap:1px; border-right:1px solid #30363d; padding:4px 0 20px; }
+  .analytics-tab-v .analytics-tab-btn { text-align:left; padding:10px 14px !important; position:static !important; bottom:auto !important; border-bottom:none !important; border-left:3px solid transparent; border-radius:0 8px 8px 0 !important; display:block; width:100%; }
+
   </style>
   <link rel="stylesheet" href="https://unpkg.com/drawflow/dist/drawflow.min.css" />
 </head>
@@ -6822,6 +6849,8 @@
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('dashboard-page').style.display = 'block';
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    // Inicializa layout vertical de abas
+    setTimeout(() => { if (typeof initVerticalTabs === 'function') initVerticalTabs(); }, 300);
 
     // Verifica se retornou do OAuth do Google Calendar
     const params = new URLSearchParams(window.location.search);
@@ -6937,7 +6966,7 @@
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
     if (name === 'leads') loadLeads();
-    if (name === 'agente') { loadAiConfig(); loadWebAgente(); checkGCalStatus(); loadAgentes(); }
+    if (name === 'agente') { loadAiConfig(); loadWebAgente(); checkGCalStatus(); loadAgentes(); loadAgenteConfigs('principal'); }
     if (name === 'crm') { loadCRM(); setTimeout(checkReminders, 500); }
     if (name === 'historico-leads') loadHistorico();
     if (name === 'pdfs') loadPDFList();
@@ -6966,6 +6995,7 @@
     if (name === 'perfil') loadConfiguracoes();
     if (name === 'agenda') loadAgendaPage();
     if (name === 'agente-objecao') loadAgenteConfigs('ob');
+    if (name === 'agente-prospecao') loadAgenteConfigs('prospec');
     if (name?.startsWith('agente-extra-')) {
       const idx = name.replace('agente-extra-','');
       loadAgenteConfigs(`ae${idx}`);
@@ -7757,17 +7787,17 @@
       return;
     }
 
-    // Mapear agente para página
+    // Mapear agente para página (showPage já adiciona o prefixo 'page-')
     let pageName;
     if (agentType === 'principal') {
-      pageName = 'page-agente';
+      pageName = 'agente';
     } else if (agentType === 'ob') {
-      pageName = 'page-agente-objecao';
+      pageName = 'agente-objecao';
     } else if (agentType === 'prospec') {
-      pageName = 'page-agente-prospecao';
+      pageName = 'agente-prospecao';
     } else if (agentType.startsWith('ae')) {
       const idx = parseInt(agentType.substring(2));
-      pageName = `page-agente-extra-${idx}`;
+      pageName = `agente-extra-${idx}`;
     }
 
     // Navegar para página
@@ -9912,6 +9942,8 @@
 
     // Re-inicializa ícones Lucide para os novos nav items
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    // Converte tabs dos agentes extras para layout vertical
+    if (typeof initVerticalTabs === 'function') initVerticalTabs();
 
     // Carrega as configurações dos addons
     const { data: configs } = await db.from('agente_config').select('chave,valor').eq('user_id', user.id);
@@ -15422,6 +15454,111 @@
       loadPagamentoConfigs();
     }
   }, 1000);
+
+  // ── Abas verticais: converte todas as tabs de página para layout vertical ─
+  function initVerticalTabs() {
+    function wrapVertical(navEl, contentMatcher) {
+      if (!navEl || navEl.closest('.tab-v-layout')) return;
+      const parent = navEl.parentElement;
+      if (!parent) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tab-v-layout';
+      const contentArea = document.createElement('div');
+      contentArea.className = 'tab-v-content';
+      parent.insertBefore(wrapper, navEl);
+      wrapper.appendChild(navEl);
+      wrapper.appendChild(contentArea);
+      // Mover painéis de conteúdo para dentro do contentArea
+      let next = wrapper.nextSibling;
+      while (next) {
+        const el = next;
+        next = next.nextSibling;
+        if (!el || el.nodeType !== 1) continue;
+        if (contentMatcher(el)) contentArea.appendChild(el);
+        else break;
+      }
+    }
+
+    // 1. agente-cfg-tabs (Principal, Objeção, Prospecção, Extras)
+    document.querySelectorAll('.agente-cfg-tabs:not(.tab-v-nav)').forEach(nav => {
+      nav.classList.add('tab-v-nav');
+      wrapVertical(nav, el => el.id && /-tab-/.test(el.id));
+    });
+
+    // 2. billing-tabs (Assinatura / Marketplace)
+    document.querySelectorAll('.billing-tabs:not(.tab-v-nav)').forEach(nav => {
+      nav.classList.add('tab-v-nav');
+      wrapVertical(nav, el => el.classList.contains('billing-tab-pane'));
+    });
+
+    // 3. analytics-tabs
+    const analyticsBtn = document.querySelector('.analytics-tab-btn');
+    if (analyticsBtn && !analyticsBtn.closest('.tab-v-layout')) {
+      const navDiv = analyticsBtn.parentElement;
+      navDiv.classList.add('analytics-tab-v');
+      navDiv.style.borderBottom = 'none';
+      navDiv.style.marginBottom = '0';
+      navDiv.style.paddingBottom = '0';
+      navDiv.querySelectorAll('.analytics-tab-btn').forEach(btn => {
+        btn.style.position = 'static';
+        btn.style.bottom = 'auto';
+        btn.style.borderBottom = 'none';
+      });
+      const parent = navDiv.parentElement;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tab-v-layout';
+      const contentArea = document.createElement('div');
+      contentArea.className = 'tab-v-content';
+      parent.insertBefore(wrapper, navDiv);
+      wrapper.appendChild(navDiv);
+      wrapper.appendChild(contentArea);
+      let next = wrapper.nextSibling;
+      while (next) {
+        const el = next; next = next.nextSibling;
+        if (!el || el.nodeType !== 1) continue;
+        if (el.classList.contains('analytics-tab-content')) contentArea.appendChild(el);
+        else break;
+      }
+    }
+
+    // 4. conta-tabs
+    const contaTabBtns = document.querySelectorAll('.conta-tab-btn:not([data-vtab])');
+    if (contaTabBtns.length > 0) {
+      contaTabBtns.forEach(b => b.setAttribute('data-vtab', '1'));
+      const innerFlex = contaTabBtns[0].parentElement;
+      const outerWrapper = innerFlex ? innerFlex.parentElement : null;
+      if (outerWrapper && !outerWrapper.closest('.tab-v-layout')) {
+        outerWrapper.classList.add('conta-tab-v-outer');
+        outerWrapper.style.borderBottom = 'none';
+        outerWrapper.style.marginBottom = '0';
+        innerFlex.style.flexDirection = 'column';
+        innerFlex.style.gap = '1px';
+        innerFlex.style.overflowX = 'visible';
+        innerFlex.style.padding = '0';
+        const parent = outerWrapper.parentElement;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'tab-v-layout';
+        const contentArea = document.createElement('div');
+        contentArea.className = 'tab-v-content';
+        parent.insertBefore(wrapper, outerWrapper);
+        wrapper.appendChild(outerWrapper);
+        wrapper.appendChild(contentArea);
+        let next = wrapper.nextSibling;
+        while (next) {
+          const el = next; next = next.nextSibling;
+          if (!el || el.nodeType !== 1) continue;
+          if (el.classList.contains('conta-tab-pane')) contentArea.appendChild(el);
+          else break;
+        }
+      }
+    }
+  }
+
+  // Chama initVerticalTabs após o dashboard carregar
+  const _origShowDashboard = typeof showDashboard !== 'undefined' ? showDashboard : null;
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initVerticalTabs, 200);
+  });
 
 </script>
 </body>
