@@ -2050,10 +2050,10 @@
         <div class="card">
           <h3>Prompt Principal</h3>
           <div class="field-group"><label>Instruções detalhadas do agente</label>
-            <textarea id="cfg-prompt_sistema" style="min-height:200px" placeholder="Você é um assistente de vendas especializado em qualificar leads para nossa empresa..."></textarea></div>
+            <textarea id="cfg-sistema_prompt" style="min-height:200px" placeholder="Você é um assistente de vendas especializado em qualificar leads para nossa empresa..."></textarea></div>
         </div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;">
-          <button class="btn-save" onclick="saveConfigs(['objetivo','prompt_sistema'],'principal-prompt')">Salvar</button>
+          <button class="btn-save" onclick="saveConfigs(['objetivo','sistema_prompt'],'principal-prompt')">Salvar</button>
           <button class="btn-secondary" onclick="restaurarPadrao()">Restaurar Padrão</button>
           <span class="save-status" id="save-principal-prompt"></span>
         </div>
@@ -2592,12 +2592,12 @@
             <textarea id="cfg-ob_objetivo" placeholder="Ex: Identificar e reverter objeções de compra com empatia e argumentos sólidos."></textarea></div></div>
         <div class="card"><h3>Prompt Principal</h3>
           <div class="field-group"><label>Instruções detalhadas do agente</label>
-            <textarea id="cfg-ob_prompt_sistema" style="min-height:200px;" placeholder="Você é um especialista em reversão de objeções..."></textarea></div></div>
+            <textarea id="cfg-ob_sistema_prompt" style="min-height:200px;" placeholder="Você é um especialista em reversão de objeções..."></textarea></div></div>
         <div class="card"><h3>Instrução de Execução</h3>
           <div class="field-group"><label>Como este agente deve conduzir a execução?</label>
             <textarea id="cfg-ob_instrucoes_execucao" placeholder="Ex: Inicie com empatia. Nunca prometa algo além do produto. Máximo 5 trocas antes de escalar."></textarea></div></div>
         <div style="display:flex;gap:12px;margin-top:16px;">
-          <button class="btn-save" onclick="saveConfigs(['ob_objetivo','ob_prompt_sistema','ob_instrucoes_execucao'],'ob-prompt')">Salvar</button>
+          <button class="btn-save" onclick="saveConfigs(['ob_objetivo','ob_sistema_prompt','ob_instrucoes_execucao'],'ob-prompt')">Salvar</button>
           <span class="save-status" id="save-ob-prompt"></span>
         </div>
       </div>
@@ -4882,7 +4882,7 @@
   // =====================
   const PROMPT_PADRAO = {
     objetivo: 'Qualificar leads interessados nos produtos e serviços da empresa e encaminhar ao responsável comercial para dar continuidade.',
-    prompt_sistema: [
+    sistema_prompt: [
       'Você é um assistente de vendas especializado em qualificação de leads.',
       'Seu papel é conversar de forma humanizada, empática e objetiva com pessoas que entraram em contato, qualificá-las e, quando aplicável, encaminhar para o responsável comercial.',
       '',
@@ -4931,7 +4931,9 @@
     msg_qualificado: 'Ótimo! Com base no que você me contou, acredito que podemos te ajudar. Vou encaminhar as informações para o nosso time agora. Em breve alguém entrará em contato com você. Alguma dúvida ou informação adicional que queira que eu repasse?',
     msg_desqualificado: 'Obrigado por entrar em contato! Com base nas informações que você compartilhou, no momento não identificamos o encaixe ideal com os nossos produtos ou serviços. Caso sua situação mude, fique à vontade para nos contatar novamente. Desejamos tudo de bom para você!',
     numero_destino: '',
-    grupo_destino: ''
+    grupo_destino: '',
+    responder_em_audio: 'false',
+    tipo_sdr: 'principal'
   };
 
   // =====================
@@ -5680,12 +5682,12 @@
             <textarea id="cfg-${p}_objetivo" placeholder="Ex: Qualificar leads para o produto X."></textarea></div></div>
         <div class="card"><h3>Prompt Principal</h3>
           <div class="field-group"><label>Instruções detalhadas do agente</label>
-            <textarea id="cfg-${p}_prompt_sistema" style="min-height:200px;" placeholder="Você é um assistente especializado em..."></textarea></div></div>
+            <textarea id="cfg-${p}_sistema_prompt" style="min-height:200px;" placeholder="Você é um assistente especializado em..."></textarea></div></div>
         <div class="card"><h3>Instrução de Execução</h3>
           <div class="field-group"><label>Como este agente deve conduzir a execução?</label>
             <textarea id="cfg-${p}_instrucoes_execucao" placeholder="Ex: Faça uma pergunta por vez. Máximo 8 trocas. Escale se não qualificar."></textarea></div></div>
         <div style="display:flex;gap:12px;margin-top:16px;">
-          <button class="btn-save" onclick="saveConfigs(['${p}_numero_whatsapp','${p}_objetivo','${p}_prompt_sistema','${p}_instrucoes_execucao'],'${p}-prompt')">Salvar</button>
+          <button class="btn-save" onclick="saveConfigs(['${p}_numero_whatsapp','${p}_objetivo','${p}_sistema_prompt','${p}_instrucoes_execucao'],'${p}-prompt')">Salvar</button>
           <span class="save-status" id="save-${p}-prompt"></span>
         </div>
       </div>
@@ -7825,7 +7827,7 @@
     if (statusPage) {
       statusId = 'save-' + statusPage;
     } else {
-      statusId = keys.includes('prompt_sistema') ? 'save-agente'
+      statusId = keys.includes('sistema_prompt') ? 'save-agente'
         : keys.includes('tonalidade') ? 'save-comunicacao' : 'save-qualificacao';
     }
     
