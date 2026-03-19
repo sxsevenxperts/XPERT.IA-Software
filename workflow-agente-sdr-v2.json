@@ -1,7 +1,7 @@
 {
-  "name": "Agente SDR v2.1",
-  "version": "2.1",
-  "description": "Workflow N8N completo para sincronização com software XPERT.IA",
+  "name": "Agente SDR v2.2",
+  "version": "2.2",
+  "description": "Workflow N8N completo — configs dinâmicas, roteamento por agente_config e gateways de pagamento",
   "features": [
     "multi_agent_support",
     "customizable_prompts",
@@ -9,28 +9,33 @@
     "objection_handling",
     "performance_logging",
     "subscription_validation",
-    "token_cost_tracking"
+    "token_cost_tracking",
+    "dynamic_routing",
+    "tts_audio_response",
+    "payment_gateway_integration"
   ],
   "nodes": [
     {
       "name": "node-webhook-whatsapp",
       "type": "webhook",
-      "description": "Recebe mensagens do Evolution API (webhook)",
+      "description": "Recebe mensagens do Evolution API",
       "method": "POST",
       "path": "webhook/whatsapp",
       "output": {
         "from": "number_whatsapp_sender",
         "message_text": "body.text",
+        "media_type": "body.mediaType",
+        "media_url": "body.mediaUrl",
         "timestamp": "body.timestamp"
       }
     },
     {
       "name": "node-parse-message",
       "type": "code",
-      "description": "Extrai dados da mensagem e normaliza",
+      "description": "Extrai e normaliza dados da mensagem recebida",
       "inputs": ["node-webhook-whatsapp"],
       "logic": {
-        "extract": ["phone", "text", "media_url"],
+        "extract": ["phone", "text", "media_url", "media_type"],
         "normalize": "lowercase text, validate phone format",
         "detect_language": "Portuguese"
       }
@@ -46,7 +51,7 @@
     {
       "name": "node-get-or-create-lead",
       "type": "supabase",
-      "description": "Cria ou busca lead correspondente",
+      "description": "Cria ou busca lead correspondente ao número",
       "logic": {
         "query": "SELECT * FROM leads WHERE user_id = $1 AND numero_whatsapp = $2",
         "if_not_found": "INSERT new lead with phone number and whatsapp stage",
@@ -58,122 +63,246 @@
       "name": "node-validate-user",
       "type": "supabase",
       "description": "Valida autenticação e subscription do usuário",
-      "query": "SELECT u.id, u.role, a.plano, a.status, a.creditos_tokens FROM profiles u JOIN assinaturas a ON u.id = a.user_id WHERE u.id = $1",
+      "query": "SELECT u.id, u.role, a.plano, a.status, a.creditos_tokens, a.addon_objecao, a.agentes_extras FROM profiles u JOIN assinaturas a ON u.id = a.user_id WHERE u.id = $1",
       "checks": {
         "subscription_active": "assinaturas.status = 'active'",
         "tokens_available": "creditos_tokens > 0",
         "account_not_suspended": "NOT (assinaturas.status = 'suspended')"
       },
       "inputs": ["node-get-or-create-lead"],
-      "error_response": "Subscription inativa ou tokens zerados"
+      "error_response": "Sua assinatura está inativa ou saldo de tokens zerado."
     },
     {
       "name": "node-detect-agent-type",
       "type": "code",
       "description": "Detecta qual agente deve responder (principal, objeção, extra)",
       "logic": {
-        "check_lead_stage": "if lead.stage = 'objecoes' then agent=objecao else agent=principal",
-        "check_objection_count": "if objecoes_count > 2 then agent=objecao",
-        "check_user_addons": "if addon_agente_extra active then agent=extra",
-        "agent_index": "ae0, ae1, etc for extras"
+        "check_lead_stage": "if lead.stage = 'objecoes' → agent = objecao",
+        "check_objection_count": "if objecoes_count > 2 → agent = objecao",
+        "check_user_addons": "if addon_agente_extra active → agent = extra",
+        "agent_index": "ae0, ae1, ae2… para extras"
       },
       "inputs": ["node-validate-user"],
       "outputs": ["agent_type", "agent_index"]
     },
+
     {
       "name": "node-busca-configs-sdr",
       "type": "supabase_rest",
-      "description": "Busca configurações customizadas do agente do software",
+      "description": "Busca TODAS as configurações customizadas do cliente no software (agente_config)",
       "method": "GET",
-      "endpoint": "agente_config?user_id=eq.{user_id}&chave=in.(sistema_prompt,tonalidade,criterios_qualificacao)",
+      "endpoint": "agente_config?user_id=eq.{user_id}&chave=in.(sistema_prompt,ob_sistema_prompt,ae0_sistema_prompt,ae1_sistema_prompt,ae2_sistema_prompt,tonalidade,criterios_qualificacao,msg_qualificado,msg_desqualificado,responder_em_audio,numero_destino,grupo_destino,notif_destino,gateway_padrao,fallback-mercado_pago,fallback-asaas,fallback-infinitepay)",
       "headers": {
         "Authorization": "Bearer {jwt_token}",
         "apikey": "{supabase_api_key}"
       },
       "inputs": ["node-detect-agent-type"],
+      "post_processing": {
+        "description": "Converte array [{chave, valor}] em objeto configMap para uso nos nós seguintes",
+        "code": "const configMap = {}; items.forEach(i => { configMap[i.chave] = i.valor; }); return configMap;"
+      },
       "returns": {
-        "sistema_prompt": "custom system prompt or fallback",
-        "ob_sistema_prompt": "for objection agent",
-        "ae0_sistema_prompt": "for extra agent 0",
-        "tonalidade": "tone of voice setting",
-        "criterios_qualificacao": "qualification criteria"
+        "sistema_prompt": "Prompt do agente principal (ou fallback padrão)",
+        "ob_sistema_prompt": "Prompt do agente de objeção",
+        "ae0_sistema_prompt": "Prompt do agente extra 0",
+        "ae1_sistema_prompt": "Prompt do agente extra 1",
+        "ae2_sistema_prompt": "Prompt do agente extra 2",
+        "tonalidade": "Tom de voz configurado pelo cliente",
+        "criterios_qualificacao": "Critérios de triagem (um por linha)",
+        "msg_qualificado": "Mensagem enviada ao lead qualificado",
+        "msg_desqualificado": "Mensagem enviada ao lead desqualificado",
+        "responder_em_audio": "'true' | 'false' — se deve usar TTS",
+        "numero_destino": "Número do supervisor para notificações",
+        "grupo_destino": "JID do grupo WhatsApp para notificações",
+        "notif_destino": "'numero' | 'grupo' | 'ambos'",
+        "gateway_padrao": "'stripe' | 'mercado_pago' | 'asaas' | 'infinitepay'",
+        "fallback-mercado_pago": "'true' | 'false'",
+        "fallback-asaas": "'true' | 'false'",
+        "fallback-infinitepay": "'true' | 'false'"
       }
     },
+
     {
       "name": "node-build-system-prompt",
       "type": "code",
-      "description": "Monta system prompt final com prefixos por agente",
-      "logic": {
-        "if_agent_principal": "use sistema_prompt or PROMPT_PADRAO_PRINCIPAL",
-        "if_agent_objecao": "use ob_sistema_prompt or PROMPT_PADRAO_OBJECAO",
-        "if_agent_extra": "use ae{index}_sistema_prompt or PROMPT_PADRAO_EXTRA",
-        "append_tonalidade": "add tonalidade setting to prompt",
-        "append_criterios": "add qualification criteria to prompt"
-      },
+      "description": "Monta o system prompt final com base no agente ativo e configs do cliente",
       "inputs": ["node-busca-configs-sdr"],
-      "outputs": ["final_system_prompt"]
+      "logic": {
+        "select_base_prompt": {
+          "if_agent_principal": "configMap.sistema_prompt || PROMPT_PADRAO_PRINCIPAL",
+          "if_agent_objecao": "configMap.ob_sistema_prompt || PROMPT_PADRAO_OBJECAO",
+          "if_agent_extra": "configMap['ae{agent_index}_sistema_prompt'] || PROMPT_PADRAO_EXTRA"
+        },
+        "append_tonalidade": {
+          "condition": "configMap.tonalidade is set",
+          "action": "Adicionar ao prompt: '\\n\\nTONALIDADE: {configMap.tonalidade}'"
+        },
+        "append_criterios": {
+          "condition": "configMap.criterios_qualificacao is set",
+          "action": "Adicionar ao prompt: '\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n{configMap.criterios_qualificacao}'"
+        }
+      },
+      "outputs": ["final_system_prompt", "msg_qualificado", "msg_desqualificado", "responder_em_audio", "numero_destino", "grupo_destino", "notif_destino", "gateway_padrao"]
     },
+
     {
       "name": "node-load-conversation-history",
       "type": "supabase",
-      "description": "Carrega histórico de conversas para context",
+      "description": "Carrega histórico de conversas para contexto do LLM",
       "query": "SELECT conteudo, sender FROM message_history WHERE lead_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 10",
       "inputs": ["node-build-system-prompt"],
       "outputs": ["conversation_context"]
     },
+
     {
       "name": "node-llm-openai",
-      "type": "openai",
-      "description": "Chama OpenAI GPT-4 com prompt customizado",
-      "inputs": ["node-load-conversation-history"],
-      "config": {
+      "type": "http_request",
+      "description": "Chama llm-proxy (edge function) com prompt e histórico montados",
+      "method": "POST",
+      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "Content-Type": "application/json"
+      },
+      "payload": {
         "model": "gpt-4",
         "temperature": 0.7,
         "max_tokens": 500,
-        "system": "{final_system_prompt}",
         "messages": [
           { "role": "system", "content": "{final_system_prompt}" },
-          { "role": "user", "content": "{conversation_context}\\n\\nNova mensagem: {message_text}" }
-        ]
+          { "role": "user", "content": "{conversation_context}\n\nNova mensagem do lead: {message_text}" }
+        ],
+        "user_id": "{user_id}"
       },
+      "inputs": ["node-load-conversation-history"],
       "output_processing": {
         "response_text": "choices[0].message.content",
         "tokens_input": "usage.prompt_tokens",
         "tokens_output": "usage.completion_tokens",
-        "model_used": "model",
-        "time_ms": "measure duration"
+        "model_used": "model"
       }
     },
+
     {
       "name": "node-detect-qualification",
       "type": "code",
-      "description": "Detecta se lead foi qualificado ou desqualificado",
-      "logic": {
-        "analyze_response": "check if response contains qualification markers",
-        "matched_criteria": "count how many criteria were met",
-        "qualification_score": "calculate score from 0-100",
-        "decision": "if score > threshold then qualified else unqualified"
-      },
+      "description": "Detecta qualificação ou desqualificação do lead pela resposta do LLM",
       "inputs": ["node-llm-openai"],
-      "outputs": ["qualified", "qualification_score", "criteria_matched"]
+      "logic": {
+        "check_markers": "Verifica marcadores [LEAD_QUALIFICADO] / [LEAD_DESQUALIFICADO] na resposta",
+        "fallback_score": "Se não houver marcador, calcula score pelos critérios de qualificação",
+        "decision": "qualified = true | false"
+      },
+      "outputs": ["qualified", "disqualified", "qualification_score"]
     },
+
     {
       "name": "node-detect-objections",
       "type": "code",
-      "description": "Detecta objeções na resposta do lead",
-      "logic": {
-        "nlp_analysis": "analyze response for objection keywords",
-        "objection_types": ["price", "timing", "competitor", "other"],
-        "objection_count": "increment lead.objecoes_count",
-        "suggestion": "generate objection handling strategy"
-      },
+      "description": "Detecta objeções na mensagem do lead",
       "inputs": ["node-llm-openai"],
+      "logic": {
+        "nlp_analysis": "Analisa resposta por palavras-chave de objeção",
+        "objection_types": ["preco", "timing", "concorrente", "outro"],
+        "suggestion": "Gera estratégia de contorno via ob_sistema_prompt"
+      },
       "outputs": ["has_objection", "objection_type", "handling_strategy"]
     },
+
+    {
+      "name": "node-decide-response-format",
+      "type": "code",
+      "description": "Decide se resposta será texto ou áudio (TTS) com base em responder_em_audio",
+      "inputs": ["node-detect-qualification", "node-detect-objections"],
+      "logic": {
+        "check_audio_flag": "if responder_em_audio === 'true' → format = 'audio' else format = 'text'",
+        "if_audio": "POST para evo-proxy com endpoint send-audio e texto para sintetizar",
+        "if_text": "POST para evo-proxy com endpoint send-text"
+      },
+      "outputs": ["response_format"]
+    },
+
+    {
+      "name": "node-send-whatsapp",
+      "type": "http_request",
+      "description": "Envia resposta via evo-proxy (texto ou áudio TTS)",
+      "method": "POST",
+      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "Content-Type": "application/json"
+      },
+      "payload_text": {
+        "action": "send-text",
+        "instance": "{evo_instance}",
+        "chatId": "{phone_number}",
+        "text": "{response_text}"
+      },
+      "payload_audio": {
+        "action": "send-audio",
+        "instance": "{evo_instance}",
+        "chatId": "{phone_number}",
+        "text": "{response_text}"
+      },
+      "inputs": ["node-decide-response-format"]
+    },
+
+    {
+      "name": "node-send-qualified-message",
+      "type": "http_request",
+      "description": "Envia msg_qualificado ou msg_desqualificado ao lead quando detectado",
+      "condition": "if qualified === true OR disqualified === true",
+      "method": "POST",
+      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "Content-Type": "application/json"
+      },
+      "payload": {
+        "action": "send-text",
+        "instance": "{evo_instance}",
+        "chatId": "{phone_number}",
+        "text": "if qualified → msg_qualificado || 'Parabéns! Você foi qualificado.' \n       if disqualified → msg_desqualificado || 'Obrigado pelo contato.'"
+      },
+      "inputs": ["node-detect-qualification"]
+    },
+
+    {
+      "name": "node-route-to-supervisor",
+      "type": "conditional",
+      "description": "Notifica supervisor quando lead é qualificado — usa numero_destino, grupo_destino e notif_destino do agente_config",
+      "condition": "qualified === true",
+      "inputs": ["node-detect-qualification"],
+      "routing": {
+        "notif_destino_numero": {
+          "condition": "notif_destino === 'numero' OR notif_destino === 'ambos'",
+          "action": "POST evo-proxy send-text → numero_destino",
+          "payload": {
+            "action": "send-text",
+            "instance": "{evo_instance}",
+            "chatId": "{numero_destino}@s.whatsapp.net",
+            "text": "🎯 *Novo lead qualificado!*\n\n*Nome:* {lead_nome}\n*Telefone:* {phone_number}\n*Score:* {qualification_score}/100\n*Critérios atendidos:* {criteria_matched}\n*Última mensagem:* {message_text}"
+          }
+        },
+        "notif_destino_grupo": {
+          "condition": "notif_destino === 'grupo' OR notif_destino === 'ambos'",
+          "condition_extra": "grupo_destino is set AND lead is member of group",
+          "action": "POST evo-proxy send-text → grupo_destino",
+          "payload": {
+            "action": "send-text",
+            "instance": "{evo_instance}",
+            "chatId": "{grupo_destino}",
+            "text": "🎯 *Novo lead qualificado!*\n\n*Nome:* {lead_nome}\n*Telefone:* {phone_number}\n*Score:* {qualification_score}/100\n*Critérios atendidos:* {criteria_matched}"
+          }
+        }
+      },
+      "after": "UPDATE leads SET aguardando_resposta = true WHERE id = {lead_id}"
+    },
+
     {
       "name": "node-save-response-log",
       "type": "supabase",
-      "description": "Salva resposta do agente no histórico",
+      "description": "Persiste mensagem do agente no histórico de conversas",
       "table": "message_history",
       "data": {
         "user_id": "{user_id}",
@@ -185,60 +314,39 @@
         "agent_type": "{agent_type}",
         "timestamp": "now()"
       },
-      "inputs": ["node-detect-objections"]
+      "inputs": ["node-send-whatsapp"]
     },
-    {
-      "name": "node-send-whatsapp",
-      "type": "evolution_api",
-      "description": "Envia resposta via WhatsApp",
-      "endpoint": "message/sendText",
-      "data": {
-        "chatId": "{phone_number}",
-        "text": "{response_text}"
-      },
-      "inputs": ["node-save-response-log"],
-      "headers": {
-        "Authorization": "Bearer {evolution_api_token}"
-      }
-    },
+
     {
       "name": "node-update-lead",
       "type": "supabase",
-      "description": "Atualiza status do lead conforme resultado",
+      "description": "Atualiza estágio e contadores do lead",
       "logic": {
-        "if_qualified": "UPDATE leads SET stage = 'qualified', ultima_pergunta = $1, updated_at = now()",
+        "if_qualified": "UPDATE leads SET stage = 'qualified', updated_at = now()",
+        "if_disqualified": "UPDATE leads SET stage = 'unqualified', updated_at = now()",
         "if_objection": "UPDATE leads SET objecoes_count = objecoes_count + 1, updated_at = now()",
-        "if_unqualified": "UPDATE leads SET stage = 'unqualified', updated_at = now()"
+        "always": "UPDATE leads SET ultima_pergunta = {message_text}, updated_at = now()"
       },
       "inputs": ["node-detect-qualification", "node-detect-objections"]
     },
-    {
-      "name": "node-route-to-supervisor",
-      "type": "conditional",
-      "description": "Roteia para supervisor se qualificado",
-      "condition": "if qualified and lead.stage = 'qualified'",
-      "actions": {
-        "send_notification": "POST to WhatsApp supervisor number with lead summary",
-        "update_lead_status": "SET aguardando_resposta = true"
-      },
-      "inputs": ["node-detect-qualification"]
-    },
+
     {
       "name": "node-update-tokens",
       "type": "supabase",
-      "description": "Decrementa tokens e atualiza saldo",
+      "description": "Decrementa saldo de tokens na assinatura do usuário",
+      "query": "UPDATE assinaturas SET creditos_tokens = creditos_tokens - {tokens_total} WHERE user_id = '{user_id}'",
       "logic": {
-        "total_tokens": "{tokens_input} + {tokens_output}",
-        "UPDATE assinaturas SET creditos_tokens = creditos_tokens - {total_tokens} WHERE user_id = {user_id}"
+        "tokens_total": "{tokens_input} + {tokens_output}"
       },
       "inputs": ["node-llm-openai"]
     },
+
     {
       "name": "node-log-execution",
-      "type": "edge_function",
-      "description": "Registra execução do workflow no Supabase para monitoramento",
-      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/log-workflow-execution",
+      "type": "http_request",
+      "description": "Registra execução no dashboard de monitoramento (edge function)",
       "method": "POST",
+      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/log-workflow-execution",
       "headers": {
         "Authorization": "Bearer {jwt_token}",
         "Content-Type": "application/json"
@@ -248,21 +356,126 @@
         "lead_id": "{lead_id}",
         "agent_type": "{agent_type}",
         "agent_index": "{agent_index}",
-        "duracao_ms": "{workflow_duration}",
-        "status": "sucesso|erro|timeout",
+        "duracao_ms": "{workflow_duration_ms}",
+        "status": "sucesso",
         "tokens_input": "{tokens_input}",
         "tokens_output": "{tokens_output}",
-        "modelo_usado": "gpt-4",
+        "modelo_usado": "{model_used}",
         "resposta_gerada": "{response_text}",
         "numero_whatsapp": "{phone_number}",
-        "erro_mensagem": null,
-        "erro_tipo": null
+        "erro_mensagem": null
       },
-      "inputs": ["node-update-tokens", "node-send-whatsapp"],
-      "retry_on_failure": true,
-      "error_handling": "Log errors but don't block workflow"
+      "inputs": ["node-update-tokens", "node-save-response-log"],
+      "error_handling": "fail_silently — nunca bloqueia o workflow"
+    },
+
+    {
+      "name": "node-detect-payment-intent",
+      "type": "code",
+      "description": "Detecta se o lead expressou intenção de pagar na mensagem",
+      "inputs": ["node-llm-openai"],
+      "logic": {
+        "keywords": ["quero pagar", "como pago", "vou fechar", "quero comprar", "valor", "boleto", "pix", "cartão", "parcelas"],
+        "llm_marker": "Verifica se resposta do LLM contém [INICIAR_PAGAMENTO]",
+        "decision": "payment_intent = true | false",
+        "note": "Para usar o marcador, instrua o sistema_prompt do agente a incluir [INICIAR_PAGAMENTO] quando detectar interesse em pagamento"
+      },
+      "outputs": ["payment_intent"]
+    },
+
+    {
+      "name": "node-busca-gateway-config",
+      "type": "supabase_rest",
+      "description": "Busca credenciais dos gateways de pagamento configurados pelo cliente",
+      "condition": "payment_intent === true",
+      "method": "GET",
+      "endpoint": "agente_config?user_id=eq.{user_id}&chave=in.(gateway_padrao,stripe_publishable,stripe_secret,stripe_webhook,mercado_pago_access,mercado_pago_public,asaas_api_key,asaas_account_id,infinitepay_api_key,infinitepay_public,fallback-mercado_pago,fallback-asaas,fallback-infinitepay)",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "apikey": "{supabase_api_key}"
+      },
+      "inputs": ["node-detect-payment-intent"],
+      "post_processing": "Converte array em gatewayMap",
+      "returns": {
+        "gateway_padrao": "Gateway configurado como padrão",
+        "stripe_publishable": "pk_live_...",
+        "stripe_secret": "sk_live_... (nunca exposta ao lead)",
+        "mercado_pago_access": "APP_USR_...",
+        "asaas_api_key": "$aact_...",
+        "infinitepay_api_key": "sk_...",
+        "fallback_order": "Lista de gateways de fallback ativos"
+      }
+    },
+
+    {
+      "name": "node-create-payment",
+      "type": "http_request",
+      "description": "Cria cobrança no gateway configurado pelo cliente via edge function",
+      "condition": "payment_intent === true AND gateway_padrao is set",
+      "method": "POST",
+      "endpoint_logic": {
+        "stripe": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/payment-stripe",
+        "mercado_pago": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/payment-mercado-pago",
+        "asaas": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/payment-asaas",
+        "infinitepay": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/payment-infinitepay"
+      },
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "Content-Type": "application/json"
+      },
+      "payload": {
+        "user_id": "{user_id}",
+        "lead_id": "{lead_id}",
+        "lead_email": "{lead_email}",
+        "lead_nome": "{lead_nome}",
+        "amount_cents": "{valor_cobranca}",
+        "currency": "BRL",
+        "description": "{descricao_produto}",
+        "gateway_credentials": "{gatewayMap}"
+      },
+      "inputs": ["node-busca-gateway-config"],
+      "fallback": {
+        "description": "Se o gateway padrão falhar, tenta fallbacks na ordem configurada",
+        "order": "fallback-mercado_pago → fallback-asaas → fallback-infinitepay"
+      },
+      "outputs": ["payment_url", "payment_id", "gateway_usado"]
+    },
+
+    {
+      "name": "node-send-payment-link",
+      "type": "http_request",
+      "description": "Envia o link de pagamento ao lead via WhatsApp",
+      "condition": "payment_intent === true AND payment_url is set",
+      "method": "POST",
+      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "Content-Type": "application/json"
+      },
+      "payload": {
+        "action": "send-text",
+        "instance": "{evo_instance}",
+        "chatId": "{phone_number}",
+        "text": "💳 *Seu link de pagamento está pronto!*\n\nClique para pagar com segurança:\n{payment_url}\n\n_Link válido por 24 horas._"
+      },
+      "inputs": ["node-create-payment"]
     }
   ],
+
+  "flow_diagram": {
+    "description": "Fluxo completo do workflow v2.2",
+    "sequence": [
+      "webhook → parse → lookup-session → get-or-create-lead → validate-user",
+      "→ detect-agent-type → busca-configs-sdr → build-system-prompt",
+      "→ load-conversation-history → llm-openai",
+      "→ [parallel] detect-qualification + detect-objections + detect-payment-intent",
+      "→ decide-response-format → send-whatsapp",
+      "→ [if qualified] send-qualified-message + route-to-supervisor",
+      "→ [if payment_intent] busca-gateway-config → create-payment → send-payment-link",
+      "→ save-response-log → update-lead → update-tokens → log-execution"
+    ]
+  },
+
   "configuration": {
     "environment_variables": {
       "SUPABASE_URL": "https://vyvdrbkcrvklcaombjqu.supabase.co",
@@ -276,52 +489,54 @@
       "openai_call": 30000,
       "supabase_query": 10000,
       "evolution_send": 15000,
+      "payment_create": 20000,
       "workflow_total": 120000
     },
     "error_handling": {
       "retry_failed_nodes": true,
       "max_retries": 2,
       "backoff_ms": 1000,
-      "fail_silently_for": ["node-log-execution"]
+      "fail_silently_for": ["node-log-execution"],
+      "payment_fallback": true
     }
   },
+
   "changelog": {
+    "v2.2": {
+      "date": "2026-03-19",
+      "changes": [
+        "✅ node-busca-configs-sdr agora busca TODAS as configs: prompts, tonalidade, critérios, msg_qualificado, msg_desqualificado, responder_em_audio, numero_destino, grupo_destino, notif_destino, gateway_padrao e fallbacks",
+        "✅ node-build-system-prompt expõe msg_qualificado, msg_desqualificado e demais configs para nós seguintes",
+        "✅ node-send-whatsapp agora usa evo-proxy e suporta texto e áudio TTS via responder_em_audio",
+        "✅ node-send-qualified-message envia msg_qualificado ou msg_desqualificado configurado pelo cliente",
+        "✅ node-route-to-supervisor usa numero_destino, grupo_destino e notif_destino dinâmicos do agente_config",
+        "✅ node-detect-payment-intent detecta intenção de pagamento via palavras-chave e marcador [INICIAR_PAGAMENTO]",
+        "✅ node-busca-gateway-config busca credenciais do gateway ativo do cliente",
+        "✅ node-create-payment roteia para a edge function correta (Stripe, Mercado Pago, ASAAS ou InfinitePay) com fallback automático",
+        "✅ node-send-payment-link envia link de pagamento ao lead via WhatsApp"
+      ]
+    },
     "v2.1": {
       "date": "2026-03-19",
       "changes": [
-        "✅ Sincronização com tabela agente_config usando prefixos (sistema_prompt, ob_sistema_prompt, ae{index}_sistema_prompt)",
-        "✅ Node 'node-busca-configs-sdr' busca todas as configs customizadas",
-        "✅ Node 'node-build-system-prompt' monta prompt final com todas as customizações",
-        "✅ Node 'node-log-execution' envia logs para edge function de monitoramento",
-        "✅ Token tracking em todos os agentes (principal, objeção, extra)",
-        "✅ Suporte a múltiplos agentes extras com índices (ae0, ae1, ae2, etc)",
-        "✅ Validação de subscription em node-validate-user",
-        "✅ Error handling robusto para timeouts e API failures"
+        "Sincronização com agente_config (sistema_prompt, ob, ae{n})",
+        "node-log-execution para monitoramento",
+        "Token tracking e multi-agent support"
       ]
     },
     "v2.0": {
       "date": "2026-03-15",
       "changes": [
-        "Initial release with multi-agent support",
-        "Lead qualification and objection handling",
-        "WhatsApp integration via Evolution API",
-        "OpenAI GPT-4 integration",
-        "Supabase data persistence"
+        "Release inicial com multi-agent, qualificação, WhatsApp e OpenAI"
       ]
     }
   },
+
   "integration_notes": {
-    "software_sync": "All agent configurations stored in agente_config table and synced via node-busca-configs-sdr",
-    "customization_fields": [
-      "sistema_prompt (principal agent)",
-      "ob_sistema_prompt (objection agent)",
-      "ae{index}_sistema_prompt (extra agents)",
-      "tonalidade (tone of voice)",
-      "criterios_qualificacao (qualification criteria)",
-      "msg_qualificado (qualified message)",
-      "msg_desqualificado (unqualified message)"
-    ],
-    "monitoring": "All executions logged to workflow_executions table via edge function",
-    "token_tracking": "Input and output tokens tracked per execution and aggregated for billing"
+    "software_sync": "Todas as configs vêm de agente_config via node-busca-configs-sdr — zero hardcode no workflow",
+    "payment_flow": "Credenciais de gateway nunca ficam expostas no frontend — buscadas apenas no nó server-side do N8N",
+    "audio_tts": "responder_em_audio='true' faz node-send-whatsapp usar endpoint send-audio do evo-proxy",
+    "supervisor_routing": "notif_destino controla se notificação vai para numero, grupo ou ambos",
+    "payment_marker": "Para pagamentos, oriente o sistema_prompt do agente a incluir [INICIAR_PAGAMENTO] na resposta quando o lead expressar interesse em comprar"
   }
 }
