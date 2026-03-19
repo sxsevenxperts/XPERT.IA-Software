@@ -1392,6 +1392,12 @@
       }
     }
 
+  /* ── Tabs de configuração de agente ──────────────────────────────────── */
+  .agente-cfg-tabs { display:flex; gap:4px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:0; }
+  .agente-cfg-tab { background:none; border:none; border-bottom:2px solid transparent; padding:8px 16px; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; transition:color .15s,border-color .15s; margin-bottom:-1px; }
+  .agente-cfg-tab:hover { color:var(--text1); }
+  .agente-cfg-tab.active { color:var(--lime); border-bottom-color:var(--lime); }
+
   </style>
   <link rel="stylesheet" href="https://unpkg.com/drawflow/dist/drawflow.min.css" />
 </head>
@@ -2513,18 +2519,115 @@
 
     <!-- AGENTE DE OBJEÇÃO -->
     <div class="page addon-objecao-page" id="page-agente-objecao">
-      <div class="page-header"><h1>Agente de Objeção</h1><p>Configure o prompt específico para o agente que trata objeções</p></div>
-      
-      <div class="card">
-        <div class="card-title">Prompt do Agente de Objeção</div>
-        <textarea id="cfg-prompt_agente_objecao" style="width:100%;min-height:300px;font-family:monospace;padding:12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#c9d1d9;font-size:13px;resize:vertical;"></textarea>
+      <div class="page-header"><h1>Agente de Objeção</h1><p>Configuração completa e independente do agente de objeção</p></div>
+      <div class="agente-cfg-tabs">
+        <button class="agente-cfg-tab active" onclick="switchAgenteTab('ob','prompt',this)">Prompt</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','comunicacao',this)">Comunicação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','qualificacao',this)">Qualificação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','base',this)">Base de Conhecimento</button>
       </div>
 
-      <div style="display:flex;gap:12px;margin-top:20px;">
-        <button class="btn-save" onclick="saveConfigs(['prompt_agente_objecao'],'agente-objecao')">Salvar Prompt</button>
-        <button class="btn-secondary" onclick="resetAddonConfig('prompt_agente_objecao','agente-objecao')">Restaurar Padrão</button>
+      <!-- Tab Prompt -->
+      <div id="ob-tab-prompt">
+        <div class="card"><h3>Objetivo</h3>
+          <div class="field-group"><label>Qual é o objetivo deste agente?</label>
+            <textarea id="cfg-ob_objetivo" placeholder="Ex: Identificar e reverter objeções de compra com empatia e argumentos sólidos."></textarea></div></div>
+        <div class="card"><h3>Prompt Principal</h3>
+          <div class="field-group"><label>Instruções detalhadas do agente</label>
+            <textarea id="cfg-ob_prompt_sistema" style="min-height:200px;" placeholder="Você é um especialista em reversão de objeções..."></textarea></div></div>
+        <div class="card"><h3>Instrução de Execução</h3>
+          <div class="field-group"><label>Como este agente deve conduzir a execução?</label>
+            <textarea id="cfg-ob_instrucoes_execucao" placeholder="Ex: Inicie com empatia. Nunca prometa algo além do produto. Máximo 5 trocas antes de escalar."></textarea></div></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['ob_objetivo','ob_prompt_sistema','ob_instrucoes_execucao'],'ob-prompt')">Salvar</button>
+          <span class="save-status" id="save-ob-prompt"></span>
+        </div>
       </div>
-      <span class="save-status" id="save-agente-objecao"></span>
+
+      <!-- Tab Comunicação -->
+      <div id="ob-tab-comunicacao" style="display:none;">
+        <div class="card"><h3>Tonalidade de Voz</h3>
+          <div class="field-group"><label>Como o agente deve falar?</label>
+            <textarea id="cfg-ob_tonalidade" placeholder="Ex: Empático, firme e persuasivo. Tom calmo mesmo sob pressão."></textarea></div></div>
+        <div class="card"><h3>Regras de Comunicação</h3>
+          <div class="field-group"><label>Instruções específicas de como conduzir a conversa</label>
+            <textarea id="cfg-ob_instrucoes_comunicacao" placeholder="Ex: Uma objeção por vez. Valide o sentimento antes de argumentar. Nunca discuta."></textarea></div></div>
+        <div class="card"><h3>Mensagens de Encerramento</h3>
+          <div class="field-group"><label>Mensagem quando objeção é resolvida (lead qualificado)</label>
+            <textarea id="cfg-ob_msg_qualificado" placeholder="Ex: Fico feliz que tenha esclarecido! Vou conectar você ao nosso consultor agora."></textarea></div>
+          <div class="field-group"><label>Mensagem quando objeção não foi revertida (desqualificado)</label>
+            <textarea id="cfg-ob_msg_desqualificado" placeholder="Ex: Entendo sua posição. Fico à disposição se quiser retomar a conversa no futuro."></textarea></div></div>
+        <div class="card"><h3>Resposta em Áudio</h3>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Responder em áudio no WhatsApp</div>
+              <div class="toggle-desc">Quando ativado, o agente envia a resposta como mensagem de voz.</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="cfg-ob_responder_em_audio"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['ob_tonalidade','ob_instrucoes_comunicacao','ob_msg_qualificado','ob_msg_desqualificado','ob_responder_em_audio'],'ob-comunicacao')">Salvar</button>
+          <span class="save-status" id="save-ob-comunicacao"></span>
+        </div>
+      </div>
+
+      <!-- Tab Qualificação -->
+      <div id="ob-tab-qualificacao" style="display:none;">
+        <div class="card"><h3>Critérios de Qualificação</h3>
+          <div class="field-group"><label>Critérios · um por linha</label>
+            <textarea id="cfg-ob_criterios_qualificacao" style="min-height:140px;resize:vertical;" placeholder="1. Lead demonstra interesse genuíno após esclarecimentos&#10;2. Objeção principal foi endereçada com sucesso&#10;3. Lead concordou em avançar no processo"></textarea></div></div>
+        <div class="card"><h3>Roteamento de Notificações</h3>
+          <div class="field-group"><label>Número do Responsável (DDI+DDD+número)</label>
+            <input type="tel" id="cfg-ob_numero_destino" placeholder="5511999999999" /></div>
+          <div class="field-group"><label>Grupo WhatsApp (JID · opcional)</label>
+            <input type="text" id="cfg-ob_grupo_destino" placeholder="120363XXXXXXXXXX@g.us" style="font-family:monospace;" /></div></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['ob_criterios_qualificacao','ob_numero_destino','ob_grupo_destino'],'ob-qualificacao')">Salvar</button>
+          <span class="save-status" id="save-ob-qualificacao"></span>
+        </div>
+      </div>
+
+      <!-- Tab Base de Conhecimento -->
+      <div id="ob-tab-base" style="display:none;">
+        <div class="card">
+          <h3>Busca na Web em Tempo Real</h3>
+          <div class="toggle-row" style="padding:0;">
+            <div class="toggle-info">
+              <div class="toggle-label">Permitir busca na web</div>
+              <div class="toggle-desc">O agente pode pesquisar na internet durante a conversa.</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="cfg-ob_web_search" onchange="saveConfigs(['ob_web_search'],'ob-base')"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="card"><h3>Links de Referência</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">URLs que este agente vai priorizar ao buscar informações.</p>
+          <div id="ob-web-urls-list" style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="field-group" style="margin:0;flex:2;min-width:200px;"><label>URL</label>
+              <input type="url" id="ob-web-url-input" placeholder="https://..." /></div>
+            <div class="field-group" style="margin:0;flex:1;min-width:140px;"><label>Descrição</label>
+              <input type="text" id="ob-web-url-desc" placeholder="Ex: Página de objeções comuns" maxlength="60" /></div>
+            <button class="btn-save" onclick="addAgenteWebUrl('ob')" style="padding:10px 18px;align-self:flex-end;">Adicionar</button>
+          </div>
+          <span class="save-status" id="ob-web-urls-status" style="margin-top:8px;display:block;"></span>
+        </div>
+        <div class="card"><h3>Enviar PDF para este Agente</h3>
+          <div class="field-group"><label>Nome do documento</label>
+            <input type="text" id="ob-pdf-nome" placeholder="Ex: Guia de Reversão de Objeções" /></div>
+          <div class="field-group"><label>Arquivo</label>
+            <div class="upload-area" onclick="document.getElementById('ob-pdf-file').click()">
+              <div style="font-size:24px;opacity:.4">↑</div>
+              <p id="ob-pdf-filename">Clique para selecionar um PDF</p>
+              <input type="file" id="ob-pdf-file" accept=".pdf" onchange="this.previousElementSibling.textContent=this.files[0]?.name||'Clique para selecionar um PDF'" />
+            </div></div>
+          <button class="upload-btn" id="ob-btn-upload-pdf" onclick="uploadPDFForAgente('ob')">Enviar para o agente</button>
+          <span class="save-status" id="ob-upload-status"></span>
+        </div>
+        <div class="card"><h3>Documentos nesta base</h3>
+          <div id="ob-pdf-list"><p class="loading">Carregando...</p></div>
+        </div>
+      </div>
     </div>
 
     <!-- AGENTES EXTRAS -->
@@ -4994,6 +5097,11 @@
     if (name === 'integracoes') loadIntegracoes();
     if (name === 'perfil') loadConfiguracoes();
     if (name === 'agenda') loadAgendaPage();
+    if (name === 'agente-objecao') loadAgenteConfigs('ob');
+    if (name?.startsWith('agente-extra-')) {
+      const idx = name.replace('agente-extra-','');
+      loadAgenteConfigs(`ae${idx}`);
+    }
     if (name === 'fluxos') {
       setTimeout(() => loadFluxosPage(), 100);
     }
@@ -5333,6 +5441,427 @@
         if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'QR expirado. Clique em "Gerar QR Code" para um novo.'; }
       }
     }, 1000);
+  }
+
+  // =====================
+  // CONFIGURAÇÃO COMPLETA POR AGENTE
+  // =====================
+
+  function buildAgenteExtraConfigHTML(i) {
+    const p = `ae${i}`;
+    return `
+      <div class="page-header"><h1>Agente Extra ${i}</h1><p>Configuração completa e independente do agente</p></div>
+      <div class="agente-cfg-tabs">
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('${p}','modelo',this)">Modelo de IA</button>
+        <button class="agente-cfg-tab active" onclick="switchAgenteTab('${p}','prompt',this)">Prompt</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('${p}','comunicacao',this)">Comunicação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('${p}','qualificacao',this)">Qualificação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('${p}','base',this)">Base de Conhecimento</button>
+      </div>
+
+      <!-- Tab Modelo de IA -->
+      <div id="${p}-tab-modelo" style="display:none;">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Modelo de IA</h3>
+          <p style="font-size:13px;color:var(--text2);margin:6px 0 16px;">Escolha o provedor ativo e configure as chaves.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="ai-provider-btn active" id="${p}-btn-provider-openai" onclick="switchAiProvider('openai','${p}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.28a5.76 5.76 0 00-.5-4.73 5.82 5.82 0 00-6.27-2.8A5.77 5.77 0 0011.19 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.83 5.77 5.77 0 00.5 4.73 5.82 5.82 0 006.27 2.8A5.77 5.77 0 0012.81 24a5.83 5.83 0 005.57-4.04 5.77 5.77 0 003.85-2.8 5.82 5.82 0 00-.95-6.88zM12.81 22.4a4.3 4.3 0 01-2.77-1c.04-.02.1-.05.14-.08l4.6-2.66a.74.74 0 00.37-.65v-6.5l1.95 1.12a.07.07 0 01.04.05v5.38a4.33 4.33 0 01-4.33 4.34zm-9.3-3.98a4.3 4.3 0 01-.52-2.9c.03.02.09.06.14.08l4.6 2.66a.74.74 0 00.74 0l5.62-3.24v2.24a.07.07 0 01-.03.06L9.4 20.01a4.33 4.33 0 01-5.9-1.59zm-1.21-9.5A4.3 4.3 0 014.6 6.8l-.01.16v5.32a.74.74 0 00.37.65l5.62 3.25-1.95 1.12a.07.07 0 01-.07 0L4.1 14.63a4.33 4.33 0 01-.8-5.71zm16.04 3.72l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.47 2.58a4.32 4.32 0 01-.67 7.8v-.17V12.3a.74.74 0 00-.2-.66zm1.94-2.92a6.8 6.8 0 00-.14-.08l-4.6-2.65a.74.74 0 00-.74 0L9.18 10.2V7.96a.07.07 0 01.03-.06l4.47-2.58a4.32 4.32 0 016.6 4.4zm-12.21 4l-1.95-1.12a.07.07 0 01-.04-.05V7.19a4.32 4.32 0 017.08-3.32l-.14.08-4.6 2.66a.74.74 0 00-.37.65l-.01 6.49zm1.06-2.28l2.5-1.45 2.5 1.44v2.88l-2.5 1.45-2.5-1.44V11.44z"/></svg>
+              OpenAI
+            </button>
+            <button class="ai-provider-btn" id="${p}-btn-provider-claude" onclick="switchAiProvider('claude','${p}')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.95 3h14.1L24 12l-4.95 9H4.95L0 12z"/></svg>
+              Claude (Anthropic)
+            </button>
+            <button class="ai-provider-btn" id="${p}-btn-provider-google" onclick="switchAiProvider('google','${p}')" style="background:rgba(66,133,244,.12);border-color:rgba(66,133,244,.3);color:#93c5fd;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Google (Gemini)
+            </button>
+          </div>
+          <div id="${p}-ai-config-openai">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="field-group" style="margin:0;">
+                  <label>Chave de API OpenAI</label>
+                  <input type="password" id="cfg-${p}_openai_api_key" placeholder="sk-..." autocomplete="new-password" />
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field-group" style="margin:0;">
+                    <label>Temperature <span style="color:var(--text3);font-weight:400;">(0–2)</span></label>
+                    <input type="number" id="cfg-${p}_openai_temperature" value="0.7" min="0" max="2" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin:0;">
+                    <label>Max tokens</label>
+                    <input type="number" id="cfg-${p}_openai_max_tokens" value="1024" min="64" max="4096" step="64" />
+                  </div>
+                </div>
+                <select id="cfg-${p}_openai_model" style="display:none;">
+                  <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                  <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+                  <option value="gpt-4.1">gpt-4.1</option>
+                  <option value="gpt-4o">gpt-4o</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo</label>
+                <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:200px;overflow-y:auto;">
+                  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                    <tbody>
+                      <tr class="ai-model-row" data-provider="openai" data-model="gpt-3.5-turbo" onclick="selectAiModel('openai','gpt-3.5-turbo','${p}')" style="border-bottom:1px solid var(--border);cursor:pointer;">
+                        <td style="padding:6px 10px;">gpt-3.5-turbo</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:#6ee7b7;">0.2×</td>
+                      </tr>
+                      <tr class="ai-model-row ai-model-selected" data-provider="openai" data-model="gpt-4o-mini" onclick="selectAiModel('openai','gpt-4o-mini','${p}')" style="border-bottom:1px solid var(--border);cursor:pointer;background:rgba(16,163,127,.1);">
+                        <td style="padding:6px 10px;">gpt-4o-mini</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:#6ee7b7;">1.0×</td>
+                      </tr>
+                      <tr class="ai-model-row" data-provider="openai" data-model="gpt-4.1" onclick="selectAiModel('openai','gpt-4.1','${p}')" style="border-bottom:1px solid var(--border);cursor:pointer;">
+                        <td style="padding:6px 10px;">gpt-4.1</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:#fb923c;">5.5×</td>
+                      </tr>
+                      <tr class="ai-model-row" data-provider="openai" data-model="gpt-4o" onclick="selectAiModel('openai','gpt-4o','${p}')" style="cursor:pointer;">
+                        <td style="padding:6px 10px;">gpt-4o</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:#f87171;">8.0×</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="${p}-ai-config-claude" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="field-group" style="margin:0;">
+                  <label>Chave de API Anthropic</label>
+                  <input type="password" id="cfg-${p}_claude_api_key" placeholder="sk-ant-..." autocomplete="new-password" />
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field-group" style="margin:0;">
+                    <label>Temperature <span style="color:var(--text3);font-weight:400;">(0–1)</span></label>
+                    <input type="number" id="cfg-${p}_claude_temperature" value="0.7" min="0" max="1" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin:0;">
+                    <label>Max tokens</label>
+                    <input type="number" id="cfg-${p}_claude_max_tokens" value="1024" min="64" max="8192" step="64" />
+                  </div>
+                </div>
+                <select id="cfg-${p}_claude_model" style="display:none;">
+                  <option value="claude-haiku-4-5-20251001" selected>claude-haiku-4-5-20251001</option>
+                  <option value="claude-sonnet-4-6">claude-sonnet-4-6</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo</label>
+                <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);">
+                  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                    <tbody>
+                      <tr class="ai-model-row ai-model-selected" data-provider="claude" data-model="claude-haiku-4-5-20251001" onclick="selectAiModel('claude','claude-haiku-4-5-20251001','${p}')" style="border-bottom:1px solid var(--border);cursor:pointer;background:rgba(99,102,241,.1);">
+                        <td style="padding:6px 10px;">claude-haiku</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:#a5b4fc;">0.9×</td>
+                      </tr>
+                      <tr class="ai-model-row" data-provider="claude" data-model="claude-sonnet-4-6" onclick="selectAiModel('claude','claude-sonnet-4-6','${p}')" style="cursor:pointer;">
+                        <td style="padding:6px 10px;">claude-sonnet</td><td style="padding:6px 10px;text-align:right;font-weight:800;color:#fde68a;">10×</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="${p}-ai-config-google" style="display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div class="field-group" style="margin:0;">
+                  <label>Chave de API Google AI Studio</label>
+                  <input type="password" id="cfg-${p}_google_api_key" placeholder="AIza..." autocomplete="new-password" />
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                  <div class="field-group" style="margin:0;">
+                    <label>Temperature <span style="color:var(--text3);font-weight:400;">(0–1)</span></label>
+                    <input type="number" id="cfg-${p}_google_temperature" value="0.7" min="0" max="1" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin:0;">
+                    <label>Max tokens</label>
+                    <input type="number" id="cfg-${p}_google_max_tokens" value="1024" min="64" max="8192" step="64" />
+                  </div>
+                </div>
+                <select id="cfg-${p}_google_model" style="display:none;">
+                  <option value="gemini-2.0-flash" selected>gemini-2.0-flash</option>
+                  <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo</label>
+                <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);">
+                  <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                    <tbody>
+                      <tr class="gemini-ref-row gemini-model-selected" data-model="gemini-2.0-flash" onclick="selectAiModel('google','gemini-2.0-flash','${p}')" style="border-bottom:1px solid var(--border);cursor:pointer;background:rgba(66,133,244,.1);">
+                        <td style="padding:8px 12px;">gemini-2.0-flash</td><td style="padding:8px 12px;text-align:right;font-weight:800;color:#4ade80;">0.2×</td>
+                      </tr>
+                      <tr class="gemini-ref-row" data-model="gemini-1.5-pro" onclick="selectAiModel('google','gemini-1.5-pro','${p}')" style="cursor:pointer;">
+                        <td style="padding:8px 12px;">gemini-1.5-pro</td><td style="padding:8px 12px;text-align:right;font-weight:800;color:#fb923c;">1.5×</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:16px;">
+            <button class="btn-save" onclick="saveConfigs(['${p}_openai_api_key','${p}_openai_temperature','${p}_openai_max_tokens','${p}_openai_model','${p}_claude_api_key','${p}_claude_temperature','${p}_claude_max_tokens','${p}_claude_model','${p}_google_api_key','${p}_google_temperature','${p}_google_max_tokens','${p}_google_model'],'${p}-modelo')">Salvar</button>
+            <span class="save-status" id="save-${p}-modelo"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Prompt -->
+      <div id="${p}-tab-prompt">
+        <div class="card"><h3>Número WhatsApp</h3>
+          <div class="field-group"><label>Qual número este agente usará? (deixe em branco para usar o padrão)</label>
+            <input type="tel" id="cfg-${p}_numero_whatsapp" placeholder="Seleción de número ou deixe em branco" /></div></div>
+        <div class="card"><h3>Objetivo</h3>
+          <div class="field-group"><label>Qual é o objetivo deste agente?</label>
+            <textarea id="cfg-${p}_objetivo" placeholder="Ex: Qualificar leads para o produto X."></textarea></div></div>
+        <div class="card"><h3>Prompt Principal</h3>
+          <div class="field-group"><label>Instruções detalhadas do agente</label>
+            <textarea id="cfg-${p}_prompt_sistema" style="min-height:200px;" placeholder="Você é um assistente especializado em..."></textarea></div></div>
+        <div class="card"><h3>Instrução de Execução</h3>
+          <div class="field-group"><label>Como este agente deve conduzir a execução?</label>
+            <textarea id="cfg-${p}_instrucoes_execucao" placeholder="Ex: Faça uma pergunta por vez. Máximo 8 trocas. Escale se não qualificar."></textarea></div></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['${p}_numero_whatsapp','${p}_objetivo','${p}_prompt_sistema','${p}_instrucoes_execucao'],'${p}-prompt')">Salvar</button>
+          <span class="save-status" id="save-${p}-prompt"></span>
+        </div>
+      </div>
+
+      <!-- Tab Comunicação -->
+      <div id="${p}-tab-comunicacao" style="display:none;">
+        <div class="card"><h3>Tonalidade de Voz</h3>
+          <div class="field-group"><label>Como o agente deve falar?</label>
+            <textarea id="cfg-${p}_tonalidade" placeholder="Ex: Profissional e direto. Sem gírias."></textarea></div></div>
+        <div class="card"><h3>Regras de Comunicação</h3>
+          <div class="field-group"><label>Instruções específicas de como conduzir a conversa</label>
+            <textarea id="cfg-${p}_instrucoes_comunicacao" placeholder="Ex: Uma pergunta por vez. Nunca pressione."></textarea></div></div>
+        <div class="card"><h3>Mensagens de Encerramento</h3>
+          <div class="field-group"><label>Mensagem quando lead é QUALIFICADO</label>
+            <textarea id="cfg-${p}_msg_qualificado" placeholder="Ex: Ótimo! Vou encaminhar suas informações ao responsável."></textarea></div>
+          <div class="field-group"><label>Mensagem quando lead NÃO é qualificado</label>
+            <textarea id="cfg-${p}_msg_desqualificado" placeholder="Ex: Obrigado pelo contato! Não identificamos um perfil adequado no momento."></textarea></div></div>
+        <div class="card"><h3>Resposta em Áudio</h3>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Responder em áudio no WhatsApp</div>
+              <div class="toggle-desc">Quando ativado, o agente envia a resposta como mensagem de voz.</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="cfg-${p}_responder_em_audio"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['${p}_tonalidade','${p}_instrucoes_comunicacao','${p}_msg_qualificado','${p}_msg_desqualificado','${p}_responder_em_audio'],'${p}-comunicacao')">Salvar</button>
+          <span class="save-status" id="save-${p}-comunicacao"></span>
+        </div>
+      </div>
+
+      <!-- Tab Qualificação -->
+      <div id="${p}-tab-qualificacao" style="display:none;">
+        <div class="card"><h3>Critérios de Qualificação</h3>
+          <div class="field-group"><label>Critérios · um por linha</label>
+            <textarea id="cfg-${p}_criterios_qualificacao" style="min-height:140px;resize:vertical;" placeholder="1. Tem interesse genuíno&#10;2. Possui orçamento&#10;3. É o tomador de decisão"></textarea></div></div>
+        <div class="card"><h3>Roteamento de Notificações</h3>
+          <div class="field-group"><label>Número do Responsável (DDI+DDD+número)</label>
+            <input type="tel" id="cfg-${p}_numero_destino" placeholder="5511999999999" /></div>
+          <div class="field-group"><label>Grupo WhatsApp (JID · opcional)</label>
+            <input type="text" id="cfg-${p}_grupo_destino" placeholder="120363XXXXXXXXXX@g.us" style="font-family:monospace;" /></div></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['${p}_criterios_qualificacao','${p}_numero_destino','${p}_grupo_destino'],'${p}-qualificacao')">Salvar</button>
+          <span class="save-status" id="save-${p}-qualificacao"></span>
+        </div>
+      </div>
+
+      <!-- Tab Base de Conhecimento -->
+      <div id="${p}-tab-base" style="display:none;">
+        <div class="card">
+          <h3>Busca na Web em Tempo Real</h3>
+          <div class="toggle-row" style="padding:0;">
+            <div class="toggle-info">
+              <div class="toggle-label">Permitir busca na web</div>
+              <div class="toggle-desc">O agente pode pesquisar na internet durante a conversa.</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="cfg-${p}_web_search" onchange="saveConfigs(['${p}_web_search'],'${p}-base')"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="card"><h3>Links de Referência</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">URLs que este agente vai priorizar ao buscar informações.</p>
+          <div id="${p}-web-urls-list" style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="field-group" style="margin:0;flex:2;min-width:200px;"><label>URL</label>
+              <input type="url" id="${p}-web-url-input" placeholder="https://..." /></div>
+            <div class="field-group" style="margin:0;flex:1;min-width:140px;"><label>Descrição</label>
+              <input type="text" id="${p}-web-url-desc" placeholder="Descrição" maxlength="60" /></div>
+            <button class="btn-save" onclick="addAgenteWebUrl('${p}')" style="padding:10px 18px;align-self:flex-end;">Adicionar</button>
+          </div>
+          <span class="save-status" id="${p}-web-urls-status" style="margin-top:8px;display:block;"></span>
+        </div>
+        <div class="card"><h3>Enviar PDF para este Agente</h3>
+          <div class="field-group"><label>Nome do documento</label>
+            <input type="text" id="${p}-pdf-nome" placeholder="Ex: Catálogo de Produtos 2024" /></div>
+          <div class="field-group"><label>Arquivo</label>
+            <div class="upload-area" onclick="document.getElementById('${p}-pdf-file').click()">
+              <div style="font-size:24px;opacity:.4">↑</div>
+              <p id="${p}-pdf-filename">Clique para selecionar um PDF</p>
+              <input type="file" id="${p}-pdf-file" accept=".pdf" onchange="this.previousElementSibling.textContent=this.files[0]?.name||'Clique para selecionar um PDF'" />
+            </div></div>
+          <button class="upload-btn" id="${p}-btn-upload-pdf" onclick="uploadPDFForAgente('${p}')">Enviar para o agente</button>
+          <span class="save-status" id="${p}-upload-status"></span>
+        </div>
+        <div class="card"><h3>Documentos nesta base</h3>
+          <div id="${p}-pdf-list"><p class="loading">Carregando...</p></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function switchAgenteTab(prefix, tab, btn) {
+    // Esconde todos os tabs do agente
+    ['modelo','prompt','comunicacao','qualificacao','base'].forEach(t => {
+      const el = document.getElementById(`${prefix}-tab-${t}`);
+      if (el) el.style.display = 'none';
+    });
+    // Remove active de todos os botões de tab do container pai
+    if (btn) {
+      btn.closest('.agente-cfg-tabs')?.querySelectorAll('.agente-cfg-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    // Mostra tab selecionado
+    const tabEl = document.getElementById(`${prefix}-tab-${tab}`);
+    if (tabEl) tabEl.style.display = 'block';
+    // Carrega lista de PDFs quando entra na aba Base
+    if (tab === 'base') {
+      loadPDFListForAgente(prefix);
+      renderAgenteWebUrls(prefix);
+    }
+    // Carrega configs quando entra em qualquer aba
+    if (tab === 'modelo') {
+      loadAgenteConfigs(prefix);
+    }
+  }
+
+  async function loadAgenteConfigs(prefix) {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+    const { data: configs } = await db.from('agente_config')
+      .select('chave,valor')
+      .eq('user_id', user.id)
+      .like('chave', `${prefix}_%`);
+    if (!configs) return;
+    configs.forEach(row => {
+      const el = document.getElementById('cfg-' + row.chave);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = row.valor === 'true';
+      else el.value = row.valor;
+    });
+  }
+
+  async function addAgenteWebUrl(prefix) {
+    const urlInput = document.getElementById(`${prefix}-web-url-input`);
+    const descInput = document.getElementById(`${prefix}-web-url-desc`);
+    const statusEl = document.getElementById(`${prefix}-web-urls-status`);
+    const url = urlInput?.value.trim();
+    const desc = descInput?.value.trim();
+    if (!url || !desc) { alert('Preencha a URL e a descrição.'); return; }
+    if (!url.startsWith('http')) { alert('URL inválida.'); return; }
+
+    const { data: { user } } = await db.auth.getUser();
+    const key = `${prefix}_web_urls`;
+    const { data: existing } = await db.from('agente_config').select('valor').eq('user_id', user.id).eq('chave', key).maybeSingle();
+    const urls = existing?.valor ? JSON.parse(existing.valor) : [];
+    urls.push({ url, desc });
+    await db.from('agente_config').upsert({ chave: key, valor: JSON.stringify(urls), user_id: user.id, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,chave' });
+    urlInput.value = ''; descInput.value = '';
+    renderAgenteWebUrls(prefix);
+    if (statusEl) { statusEl.textContent = 'Link adicionado!'; statusEl.style.color = '#4ade80'; setTimeout(() => statusEl.textContent = '', 3000); }
+  }
+
+  async function renderAgenteWebUrls(prefix) {
+    const container = document.getElementById(`${prefix}-web-urls-list`);
+    if (!container) return;
+    const { data: { user } } = await db.auth.getUser();
+    const { data } = await db.from('agente_config').select('valor').eq('user_id', user.id).eq('chave', `${prefix}_web_urls`).maybeSingle();
+    const urls = data?.valor ? JSON.parse(data.valor) : [];
+    if (!urls.length) { container.innerHTML = '<p style="font-size:13px;color:var(--text3);">Nenhum link cadastrado.</p>'; return; }
+    container.innerHTML = urls.map((item, idx) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-card2);border-radius:8px;border:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--text1);margin-bottom:2px;">${item.desc}</div>
+          <a href="${item.url}" target="_blank" style="font-size:11px;color:var(--lime);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${item.url.substring(0,60)}${item.url.length>60?'…':''}</a>
+        </div>
+        <button onclick="removeAgenteWebUrl('${prefix}',${idx})" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:18px;flex-shrink:0;">×</button>
+      </div>`).join('');
+  }
+
+  async function removeAgenteWebUrl(prefix, idx) {
+    const { data: { user } } = await db.auth.getUser();
+    const key = `${prefix}_web_urls`;
+    const { data: existing } = await db.from('agente_config').select('valor').eq('user_id', user.id).eq('chave', key).maybeSingle();
+    const urls = existing?.valor ? JSON.parse(existing.valor) : [];
+    urls.splice(idx, 1);
+    await db.from('agente_config').upsert({ chave: key, valor: JSON.stringify(urls), user_id: user.id, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,chave' });
+    renderAgenteWebUrls(prefix);
+  }
+
+  async function uploadPDFForAgente(prefix) {
+    const nome = document.getElementById(`${prefix}-pdf-nome`)?.value.trim();
+    const file = document.getElementById(`${prefix}-pdf-file`)?.files[0];
+    const btn = document.getElementById(`${prefix}-btn-upload-pdf`);
+    const status = document.getElementById(`${prefix}-upload-status`);
+    if (!nome || !file) { alert('Preencha o nome e selecione um PDF.'); return; }
+    btn.disabled = true; btn.textContent = 'Processando...';
+    const formData = new FormData();
+    formData.append('nome', nome);
+    formData.append('categoria', `__agente:${prefix}__`);
+    formData.append('file', file);
+    try {
+      const { data: { session } } = await db.auth.getSession();
+      const res = await fetch(PROCESS_PDF_URL, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': SUPABASE_KEY },
+        body: formData
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Erro desconhecido');
+      if (status) { status.textContent = `PDF processado! ${result.chunks} chunks indexados.`; status.style.color = '#16a34a'; }
+      document.getElementById(`${prefix}-pdf-nome`).value = '';
+      document.getElementById(`${prefix}-pdf-file`).value = '';
+      document.getElementById(`${prefix}-pdf-filename`).textContent = 'Clique para selecionar um PDF';
+      loadPDFListForAgente(prefix);
+    } catch(e) {
+      if (status) { status.textContent = 'Erro: ' + e.message; status.style.color = '#ef4444'; }
+    }
+    btn.disabled = false; btn.textContent = 'Enviar para o agente';
+    setTimeout(() => { if (status) status.textContent = ''; }, 6000);
+  }
+
+  async function loadPDFListForAgente(prefix) {
+    const container = document.getElementById(`${prefix}-pdf-list`);
+    if (!container) return;
+    const categoryTag = `__agente:${prefix}__`;
+    const { data } = await db.from('documentos_conhecimento').select('metadata').contains('metadata', { categoria: categoryTag }).order('id', { ascending: false }).limit(100);
+    if (!data || !data.length) { container.innerHTML = '<p class="empty-state">Nenhum documento nesta base ainda.</p>'; return; }
+    const unique = {};
+    data.forEach(d => {
+      const k = d.metadata?.nome || 'Sem nome';
+      if (!unique[k]) unique[k] = { ...d.metadata, chunks: 0 };
+      unique[k].chunks++;
+    });
+    container.innerHTML = '<div class="pdf-list">' + Object.entries(unique).map(([nome, meta]) => `
+      <div class="pdf-item">
+        <span>${meta.nome || nome}</span>
+        <span class="pdf-chunks">${meta.chunks} trechos</span>
+        <button class="btn-delete-pdf" onclick="deletePDFForAgente('${nome.replace(/'/g,"\\'")}','${prefix}')" title="Remover da base">Remover</button>
+      </div>`).join('') + '</div>';
+  }
+
+  async function deletePDFForAgente(nome, prefix) {
+    if (!confirm(`Remover "${nome}" da base deste agente?`)) return;
+    const categoryTag = `__agente:${prefix}__`;
+    await db.from('documentos_conhecimento').delete().contains('metadata', { nome, categoria: categoryTag });
+    loadPDFListForAgente(prefix);
   }
 
   // =====================
@@ -6752,28 +7281,21 @@
     'gemini-2.5-pro-exp-03-25': { color:'#c084fc', html:'<strong>gemini-2.5-pro-exp:</strong> experimental/beta — custo variável (~fator 5×) · pode virar pago a qualquer momento' },
   };
 
-  function selectAiModel(provider, model) {
+  function selectAiModel(provider, model, prefix = '') {
     // Atualiza o select oculto
-    const sel = document.getElementById('cfg-' + provider + '_model');
+    const sel = document.getElementById('cfg-' + (prefix ? prefix + '_' : '') + provider + '_model');
     if (sel) sel.value = model;
 
     // Destaca linha na tabela
-    document.querySelectorAll(`.ai-model-row[data-provider="${provider}"]`).forEach(row => {
+    const container = prefix ? document.getElementById(`${prefix}-ai-config-${provider}`) : null;
+    const rows = container ? container.querySelectorAll(`.ai-model-row[data-provider="${provider}"]`) : document.querySelectorAll(`.ai-model-row[data-provider="${provider}"]`);
+    rows.forEach(row => {
       const isSelected = row.dataset.model === model;
       row.classList.toggle('ai-model-selected', isSelected);
       row.style.background = isSelected
         ? (provider === 'openai' ? 'rgba(16,163,127,.1)' : provider === 'claude' ? 'rgba(99,102,241,.1)' : 'rgba(66,133,244,.1)')
         : '';
     });
-
-    // Atualiza banner de custo
-    const info = AI_MODEL_INFO[model];
-    const bannerId = provider === 'openai' ? 'openai-model-info' : provider === 'claude' ? 'claude-model-info' : 'google-model-info';
-    const banner = document.getElementById(bannerId);
-    if (banner && info) {
-      banner.style.color = info.color;
-      banner.innerHTML = info.html;
-    }
   }
 
   // Alias para compatibilidade com chamadas antigas nos atributos HTML
@@ -6830,14 +7352,22 @@
     switchAiProvider(provider, false);
   }
 
-  function switchAiProvider(provider, save = false) {
-    document.getElementById('ai-config-openai').style.display = provider === 'openai' ? '' : 'none';
-    document.getElementById('ai-config-claude').style.display  = provider === 'claude'  ? '' : 'none';
-    document.getElementById('ai-config-google').style.display  = provider === 'google'  ? '' : 'none';
-    document.getElementById('btn-provider-openai').classList.toggle('active', provider === 'openai');
-    document.getElementById('btn-provider-claude').classList.toggle('active', provider === 'claude');
-    document.getElementById('btn-provider-google').classList.toggle('active', provider === 'google');
-    if (save) saveAiConfig();
+  function switchAiProvider(provider, prefix = '', save = false) {
+    // Se prefix for true/false, é o parâmetro save (compatibilidade)
+    if (typeof prefix === 'boolean') {
+      save = prefix;
+      prefix = '';
+    }
+
+    const getById = (id) => document.getElementById((prefix ? `${prefix}-` : '') + id);
+
+    getById('ai-config-openai').style.display = provider === 'openai' ? '' : 'none';
+    getById('ai-config-claude').style.display  = provider === 'claude'  ? '' : 'none';
+    getById('ai-config-google').style.display  = provider === 'google'  ? '' : 'none';
+    getById('btn-provider-openai').classList.toggle('active', provider === 'openai');
+    getById('btn-provider-claude').classList.toggle('active', provider === 'claude');
+    getById('btn-provider-google').classList.toggle('active', provider === 'google');
+    if (save && !prefix) saveAiConfig();
   }
 
   async function saveAiConfig() {
@@ -7001,10 +7531,8 @@
   async function saveConfigs(keys, statusPage) {
     // Determina o statusId baseado nas chaves ou página
     let statusId;
-    if (statusPage === 'agente-objecao') {
-      statusId = 'save-agente-objecao';
-    } else if (statusPage?.startsWith('agente-extra-')) {
-      statusId = `save-${statusPage}`;
+    if (statusPage) {
+      statusId = 'save-' + statusPage;
     } else {
       statusId = keys.includes('prompt_sistema') ? 'save-agente'
         : keys.includes('tonalidade') ? 'save-comunicacao' : 'save-qualificacao';
@@ -7092,20 +7620,7 @@
       const page = document.createElement('div');
       page.className = 'page agente-extra-page';
       page.id = `page-agente-extra-${i}`;
-      page.innerHTML = `
-        <div class="page-header"><h1>Agente Extra ${i}</h1><p>Configure o prompt específico para este agente extra</p></div>
-        
-        <div class="card">
-          <div class="card-title">Prompt do Agente Extra ${i}</div>
-          <textarea id="cfg-prompt_agente_extra_${i}" style="width:100%;min-height:300px;font-family:monospace;padding:12px;border:1px solid #30363d;border-radius:8px;background:#0d1117;color:#c9d1d9;font-size:13px;resize:vertical;"></textarea>
-        </div>
-
-        <div style="display:flex;gap:12px;margin-top:20px;">
-          <button class="btn-save" onclick="saveConfigs(['prompt_agente_extra_${i}'],'agente-extra-${i}')">Salvar Prompt</button>
-          <button class="btn-secondary" onclick="resetAddonConfig('prompt_agente_extra_${i}','agente-extra-${i}')">Restaurar Padrão</button>
-        </div>
-        <span class="save-status" id="save-agente-extra-${i}"></span>
-      `;
+      page.innerHTML = buildAgenteExtraConfigHTML(i);
       if (containerPages) containerPages.appendChild(page);
     }
 
