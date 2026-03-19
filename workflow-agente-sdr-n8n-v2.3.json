@@ -12,82 +12,187 @@
       "name": "Webhook WhatsApp",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [250, 300],
+      "position": [220, 340],
       "webhookId": "webhook-whatsapp-sdr"
     },
     {
       "parameters": {
-        "jsCode": "// Extrai e normaliza dados da mensagem recebida\nconst body = $input.first().json.body || $input.first().json;\nconst from = body.from || body.number_whatsapp || body.data?.key?.remoteJid || '';\nconst message_text = body.text || body.message || body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || '';\nconst media_type = body.mediaType || body.data?.messageType || null;\nconst media_url = body.mediaUrl || null;\nconst timestamp = body.timestamp || new Date().toISOString();\n\n// Limpa número (remove @s.whatsapp.net)\nconst phone = from.replace('@s.whatsapp.net', '').replace(/\\D/g, '');\n\nreturn [{\n  json: {\n    phone,\n    text: message_text || '',\n    media_type,\n    media_url,\n    timestamp,\n    language: 'pt-BR'\n  }\n}];"
+        "jsCode": "// ========================================================\n// PARSE MESSAGE — Extrai dados do webhook Evolution API\n// Formato Evolution API v2:\n// { event, instance, data: { key: { remoteJid, fromMe }, message: { conversation }, messageType } }\n// ========================================================\nconst body = $input.first().json.body || $input.first().json;\n\n// Ignora mensagens enviadas por nós (fromMe)\nif (body.data?.key?.fromMe === true) {\n  return []; // Para execução — não processar eco\n}\n\n// Ignora eventos que não são mensagens\nconst event = body.event || '';\nif (event && !event.includes('messages')) {\n  return [];\n}\n\n// Extrai instance name\nconst instance = body.instance || body.instanceName || '';\n\n// Extrai número do remetente\nconst remoteJid = body.data?.key?.remoteJid || '';\nconst phone = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '').replace(/\\D/g, '');\n\n// Ignora grupos (termina com @g.us)\nif (remoteJid.includes('@g.us')) {\n  return [];\n}\n\n// Extrai texto da mensagem\nconst message = body.data?.message;\nlet text = '';\nif (message?.conversation) {\n  text = message.conversation;\n} else if (message?.extendedTextMessage?.text) {\n  text = message.extendedTextMessage.text;\n} else if (message?.imageMessage?.caption) {\n  text = message.imageMessage.caption;\n} else if (message?.videoMessage?.caption) {\n  text = message.videoMessage.caption;\n}\n\n// Tipo de mídia\nconst messageType = body.data?.messageType || 'conversation';\nlet media_type = null;\nlet media_url = null;\nif (messageType === 'imageMessage') media_type = 'image';\nelse if (messageType === 'audioMessage') media_type = 'audio';\nelse if (messageType === 'videoMessage') media_type = 'video';\nelse if (messageType === 'documentMessage') media_type = 'document';\n\n// Se não tem texto nem mídia, ignorar\nif (!text && !media_type) {\n  return [];\n}\n\nreturn [{\n  json: {\n    instance,\n    phone,\n    remoteJid,\n    text: text || '[mídia recebida]',\n    media_type,\n    media_url,\n    messageType,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
       "id": "a1b2c3d4-1111-4aaa-bbbb-000000000002",
       "name": "Parse Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [440, 340]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/message_history?numero_whatsapp=eq.{{ $json.phone }}&order=created_at.desc&limit=1&select=*,leads!inner(user_id,stage,fluxo_id,id,objecoes_count)",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/profiles?evo_instance=eq.{{ $json.instance }}&select=id,role,display_name,active,evo_instance",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" }
-          ]
-        },
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": false
-            }
-          }
-        }
-      },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000003",
-      "name": "Lookup Session",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [670, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Verifica se encontrou sessão existente ou precisa criar lead\nconst session = $input.first().json;\nconst phone = $('Parse Message').first().json.phone;\n\nlet user_id, lead_id, stage, fluxo_id, objecoes_count;\n\nif (session && session.leads) {\n  // Sessão existente\n  user_id = session.leads.user_id;\n  lead_id = session.leads.id;\n  stage = session.leads.stage;\n  fluxo_id = session.leads.fluxo_id;\n  objecoes_count = session.leads.objecoes_count || 0;\n} else if (Array.isArray(session) && session.length > 0 && session[0].leads) {\n  user_id = session[0].leads.user_id;\n  lead_id = session[0].leads.id;\n  stage = session[0].leads.stage;\n  fluxo_id = session[0].leads.fluxo_id;\n  objecoes_count = session[0].leads.objecoes_count || 0;\n} else {\n  // Novo lead — precisa buscar user_id pelo número ou criar\n  user_id = null;\n  lead_id = null;\n  stage = 'novo_contato';\n  fluxo_id = '';\n  objecoes_count = 0;\n}\n\nreturn [{\n  json: {\n    user_id,\n    lead_id,\n    stage,\n    fluxo_id,\n    objecoes_count,\n    phone,\n    is_new: !user_id\n  }\n}];"
-      },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000004",
-      "name": "Process Session",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [880, 300]
-    },
-    {
-      "parameters": {
-        "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/profiles?id=eq.{{ $json.user_id }}&select=id,role,display_name,assinaturas(plano,status,creditos_tokens,addon_objecao,agentes_extras)",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" }
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
           ]
         },
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000005",
-      "name": "Validate User",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000003",
+      "name": "Find User by Instance",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1090, 300]
+      "position": [660, 340]
     },
     {
       "parameters": {
-        "jsCode": "// Detecta tipo de agente: principal, prospecção, objeção ou extra\nconst session = $('Process Session').first().json;\nconst userDataRaw = $('Validate User').first().json;\nconst userData = Array.isArray(userDataRaw) ? userDataRaw[0] : userDataRaw;\nconst subscription = userData?.assinaturas?.[0] || userData?.assinaturas || {};\n\nconst objecoes_count = session.objecoes_count || 0;\nconst stage = session.stage || 'novo_contato';\nconst fluxo_id = session.fluxo_id || '';\n\nlet agent_type = 'principal';\nlet agent_index = 0;\n\nif (stage === 'objecoes' || objecoes_count > 2) {\n  agent_type = 'objecao';\n} else if (stage === 'prospecao' || fluxo_id?.includes('prospec')) {\n  agent_type = 'prospec';\n} else if (subscription?.agentes_extras > 0 && fluxo_id?.match(/ae(\\d)/)) {\n  agent_type = 'extra';\n  const match = fluxo_id.match(/ae(\\d)/);\n  agent_index = match ? parseInt(match[1]) : 0;\n}\n\nreturn [{\n  json: {\n    agent_type,\n    agent_index,\n    user_id: session.user_id,\n    lead_id: session.lead_id,\n    subscription_status: subscription?.status || 'unknown',\n    creditos_tokens: subscription?.creditos_tokens || 0,\n    addon_objecao: subscription?.addon_objecao || false\n  }\n}];"
+        "jsCode": "// ========================================================\n// VALIDATE USER — Verifica se usuário existe e está ativo\n// ========================================================\nconst users = $('Find User by Instance').first().json;\nconst userArray = Array.isArray(users) ? users : [users];\nconst phone = $('Parse Message').first().json.phone;\nconst instance = $('Parse Message').first().json.instance;\n\nif (!userArray.length || !userArray[0]?.id) {\n  // Nenhum usuário encontrado para esta instância\n  // Tenta busca parcial (instância pode ter sufixo)\n  return [{\n    json: {\n      error: true,\n      message: `Nenhum usuário encontrado para instância: ${instance}`,\n      phone,\n      instance\n    }\n  }];\n}\n\nconst user = userArray[0];\n\nif (user.active === false) {\n  return [{\n    json: {\n      error: true,\n      message: 'Usuário desativado',\n      phone,\n      instance\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    error: false,\n    user_id: user.id,\n    display_name: user.display_name,\n    evo_instance: user.evo_instance,\n    phone,\n    instance\n  }\n}];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000006",
-      "name": "Detect Agent Type",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000004",
+      "name": "Validate User",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1300, 300]
+      "position": [880, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-valid",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000005",
+      "name": "User Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 340]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/assinaturas?user_id=eq.{{ $json.user_id }}&select=plano,status,creditos_tokens,addon_objecao,agentes_extras,numeros_extras",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000006",
+      "name": "Get Subscription",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 240]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/leads?user_id=eq.{{ $('Validate User').first().json.user_id }}&numero_whatsapp=eq.{{ $('Parse Message').first().json.phone }}&select=id,nome,stage,fluxo_id,objecoes_count,aguardando_resposta,ultima_pergunta&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000007",
+      "name": "Find Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========================================================\n// PROCESS LEAD — Cria lead se não existe, detecta tipo de agente\n// ========================================================\nconst leadResult = $('Find Lead').first().json;\nconst subResult = $('Get Subscription').first().json;\nconst userData = $('Validate User').first().json;\n\nconst leads = Array.isArray(leadResult) ? leadResult : (leadResult?.id ? [leadResult] : []);\nconst subs = Array.isArray(subResult) ? subResult : (subResult?.plano ? [subResult] : []);\nconst subscription = subs[0] || {};\n\nlet lead = leads[0] || null;\nlet is_new_lead = !lead;\n\n// Detecta tipo de agente\nconst stage = lead?.stage || 'novo_contato';\nconst fluxo_id = lead?.fluxo_id || '';\nconst objecoes_count = lead?.objecoes_count || 0;\n\nlet agent_type = 'principal';\nlet agent_index = 0;\n\nif ((stage === 'objecoes' || objecoes_count > 2) && subscription.addon_objecao) {\n  agent_type = 'objecao';\n} else if (stage === 'prospecao' || fluxo_id?.includes('prospec')) {\n  agent_type = 'prospec';\n} else if (subscription.agentes_extras > 0 && fluxo_id?.match(/ae(\\d)/)) {\n  agent_type = 'extra';\n  const match = fluxo_id.match(/ae(\\d)/);\n  agent_index = match ? parseInt(match[1]) : 0;\n}\n\n// Verifica saldo de tokens\nconst has_tokens = (subscription.creditos_tokens || 0) > 0;\nconst sub_active = subscription.status === 'ativo' || subscription.status === 'active';\n\nreturn [{\n  json: {\n    user_id: userData.user_id,\n    lead_id: lead?.id || null,\n    lead_nome: lead?.nome || null,\n    is_new_lead,\n    stage,\n    fluxo_id,\n    agent_type,\n    agent_index,\n    has_tokens,\n    sub_active,\n    subscription_status: subscription.status,\n    creditos_tokens: subscription.creditos_tokens || 0,\n    addon_objecao: subscription.addon_objecao || false,\n    agentes_extras: subscription.agentes_extras || 0,\n    evo_instance: userData.evo_instance,\n    phone: userData.phone\n  }\n}];"
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000008",
+      "name": "Process Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-new-lead",
+              "leftValue": "={{ $json.is_new_lead }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000009",
+      "name": "New Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1760, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ user_id: $('Process Lead').first().json.user_id, numero_whatsapp: $('Parse Message').first().json.phone, nome: $('Parse Message').first().json.phone, stage: 'novo_contato', criado_em: new Date().toISOString() }) }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000010",
+      "name": "Create Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 240]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ========================================================\n// MERGE LEAD DATA — Combina lead novo ou existente\n// ========================================================\nconst processData = $('Process Lead').first().json;\nconst isNew = processData.is_new_lead;\n\nlet lead_id = processData.lead_id;\n\nif (isNew) {\n  try {\n    const created = $('Create Lead').first().json;\n    const createdArr = Array.isArray(created) ? created : [created];\n    lead_id = createdArr[0]?.id || null;\n  } catch(e) {\n    // Create Lead não executou (lead existente)\n  }\n}\n\nreturn [{\n  json: {\n    ...processData,\n    lead_id,\n    is_new_lead: isNew\n  }\n}];"
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000011",
+      "name": "Merge Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 340]
     },
     {
       "parameters": {
@@ -96,56 +201,46 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" }
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
           ]
         },
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000007",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000012",
       "name": "Busca Configs SDR",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1510, 300]
-    },
-    {
-      "parameters": {
-        "jsCode": "// Monta system prompt + seleciona provider e modelo dinâmico\nconst configArray = $('Busca Configs SDR').first().json;\nconst configs = Array.isArray(configArray) ? configArray : [];\nconst configMap = {};\n\nconfigs.forEach(item => {\n  if (item.chave && item.valor) configMap[item.chave] = item.valor;\n});\n\nconst agentData = $('Detect Agent Type').first().json;\nconst agent_type = agentData.agent_type;\nconst agent_index = agentData.agent_index;\nconst prefix = agent_type === 'principal' ? '' : agent_type === 'prospec' ? 'prospec_' : agent_type === 'objecao' ? 'ob_' : `ae${agent_index}_`;\n\n// Seleciona prompt base\nlet sistema_prompt = configMap[`${prefix}sistema_prompt`] || configMap['sistema_prompt'] || 'Você é um assistente de vendas profissional. Qualifique leads com critério.';\n\n// Seleciona provider\nconst provider = configMap[`${prefix}ai_provider`] || configMap['ai_provider'] || 'openai';\n\n// Seleciona modelo e parâmetros\nlet model, temperature, max_tokens;\n\nif (provider === 'openai') {\n  model = configMap[`${prefix}openai_model`] || configMap['openai_model'] || 'gpt-4o-mini';\n  temperature = parseFloat(configMap[`${prefix}openai_temperature`] || configMap['openai_temperature'] || '0.7');\n  max_tokens = parseInt(configMap[`${prefix}openai_max_tokens`] || configMap['openai_max_tokens'] || '1024');\n} else if (provider === 'claude') {\n  model = configMap[`${prefix}claude_model`] || configMap['claude_model'] || 'claude-haiku-4-5';\n  temperature = parseFloat(configMap[`${prefix}claude_temperature`] || configMap['claude_temperature'] || '0.7');\n  max_tokens = parseInt(configMap[`${prefix}claude_max_tokens`] || configMap['claude_max_tokens'] || '1024');\n} else if (provider === 'google') {\n  model = configMap[`${prefix}google_model`] || configMap['google_model'] || 'gemini-2.0-flash';\n  temperature = parseFloat(configMap[`${prefix}google_temperature`] || configMap['google_temperature'] || '0.7');\n  max_tokens = parseInt(configMap[`${prefix}google_max_tokens`] || configMap['google_max_tokens'] || '1024');\n} else {\n  model = 'gpt-4o-mini';\n  temperature = 0.7;\n  max_tokens = 1024;\n}\n\n// Append tonalidade\nif (configMap[`${prefix}tonalidade`] || configMap['tonalidade']) {\n  sistema_prompt += `\\n\\nTONALIDADE: ${configMap[`${prefix}tonalidade`] || configMap['tonalidade']}`;\n}\n\n// Append critérios\nif (configMap[`${prefix}criterios_qualificacao`] || configMap['criterios_qualificacao']) {\n  sistema_prompt += `\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n${configMap[`${prefix}criterios_qualificacao`] || configMap['criterios_qualificacao']}`;\n}\n\n// Append instruções comunicação\nif (configMap[`${prefix}instrucoes_comunicacao`] || configMap['instrucoes_comunicacao']) {\n  sistema_prompt += `\\n\\nINSTRUÇÕES DE COMUNICAÇÃO:\\n${configMap[`${prefix}instrucoes_comunicacao`] || configMap['instrucoes_comunicacao']}`;\n}\n\nreturn [{\n  json: {\n    final_system_prompt: sistema_prompt,\n    ai_provider: provider,\n    ai_model: model,\n    ai_temperature: temperature,\n    ai_max_tokens: max_tokens,\n    msg_qualificado: configMap[`${prefix}msg_qualificado`] || configMap['msg_qualificado'] || 'Parabéns! Você foi qualificado.',\n    msg_desqualificado: configMap[`${prefix}msg_desqualificado`] || configMap['msg_desqualificado'] || 'Obrigado pelo contato.',\n    responder_em_audio: configMap[`${prefix}responder_em_audio`] || configMap['responder_em_audio'] || 'false',\n    numero_destino: configMap[`${prefix}numero_destino`] || configMap['numero_destino'] || '',\n    grupo_destino: configMap[`${prefix}grupo_destino`] || configMap['grupo_destino'] || '',\n    notif_destino: configMap['notif_destino'] || 'numero'\n  }\n}];"
-      },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000008",
-      "name": "Build System Prompt",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1720, 300]
+      "position": [2420, 340]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/message_history?lead_id=eq.{{ $('Detect Agent Type').item.json.lead_id }}&user_id=eq.{{ $('Detect Agent Type').item.json.user_id }}&order=created_at.desc&limit=10&select=conteudo,sender",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/message_history?lead_id=eq.{{ $('Merge Lead Data').first().json.lead_id }}&user_id=eq.{{ $('Merge Lead Data').first().json.user_id }}&order=created_at.desc&limit=10&select=conteudo,sender",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" }
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" }
           ]
         },
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000009",
-      "name": "Load Conversation History",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000013",
+      "name": "Load History",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1930, 300]
+      "position": [2420, 520]
     },
     {
       "parameters": {
-        "jsCode": "// Monta array de mensagens para a LLM\nconst historyRaw = $('Load Conversation History').first().json;\nconst history = Array.isArray(historyRaw) ? historyRaw : [];\nconst promptData = $('Build System Prompt').first().json;\nconst userMessage = $('Parse Message').first().json.text;\nconst agentData = $('Detect Agent Type').first().json;\n\n// Monta messages array\nconst messages = [{ role: 'system', content: promptData.final_system_prompt }];\n\n// Adiciona histórico (invertido para ordem cronológica)\nconst historyReversed = [...history].reverse();\nfor (const msg of historyReversed) {\n  messages.push({\n    role: msg.sender === 'assistant' ? 'assistant' : 'user',\n    content: msg.conteudo\n  });\n}\n\n// Adiciona mensagem atual\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{\n  json: {\n    provider: promptData.ai_provider,\n    model: promptData.ai_model,\n    temperature: promptData.ai_temperature,\n    max_tokens: promptData.ai_max_tokens,\n    messages,\n    user_id: agentData.user_id\n  }\n}];"
+        "jsCode": "// ========================================================\n// BUILD SYSTEM PROMPT — Monta prompt + seleciona provider/modelo\n// Lê configs do agente_config com prefixo por tipo de agente\n// ========================================================\nconst configRaw = $('Busca Configs SDR').first().json;\nconst configs = Array.isArray(configRaw) ? configRaw : [];\nconst configMap = {};\nconfigs.forEach(item => {\n  if (item.chave && item.valor !== undefined) configMap[item.chave] = item.valor;\n});\n\nconst agentData = $('Merge Lead Data').first().json;\nconst agent_type = agentData.agent_type;\nconst agent_index = agentData.agent_index;\n\n// Prefixo por tipo de agente\nconst prefix = agent_type === 'principal' ? '' \n  : agent_type === 'prospec' ? 'prospec_' \n  : agent_type === 'objecao' ? 'ob_' \n  : `ae${agent_index}_`;\n\n// Helper: busca config com fallback (prefixo → sem prefixo → default)\nfunction cfg(key, fallback) {\n  return configMap[`${prefix}${key}`] || configMap[key] || fallback || '';\n}\n\n// ---- PROMPT ----\nlet sistema_prompt = cfg('sistema_prompt', 'Você é um assistente de vendas profissional. Qualifique leads com base nos critérios definidos. Seja educado, persuasivo e objetivo.');\n\n// Append objetivo\nconst objetivo = cfg('objetivo');\nif (objetivo) sistema_prompt = `OBJETIVO: ${objetivo}\\n\\n${sistema_prompt}`;\n\n// Append tonalidade\nconst tonalidade = cfg('tonalidade');\nif (tonalidade) sistema_prompt += `\\n\\nTONALIDADE: ${tonalidade}`;\n\n// Append critérios de qualificação\nconst criterios = cfg('criterios_qualificacao');\nif (criterios) sistema_prompt += `\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n${criterios}`;\n\n// Append instruções de comunicação\nconst instrucoes = cfg('instrucoes_comunicacao');\nif (instrucoes) sistema_prompt += `\\n\\nINSTRUÇÕES DE COMUNICAÇÃO:\\n${instrucoes}`;\n\n// Instruções especiais para tags\nsistema_prompt += '\\n\\nTAGS ESPECIAIS (use quando apropriado):';\nsistema_prompt += '\\n- [LEAD_QUALIFICADO] — quando o lead atende todos os critérios de qualificação';\nsistema_prompt += '\\n- [LEAD_DESQUALIFICADO] — quando o lead não tem perfil adequado';\nsistema_prompt += '\\n- [INICIAR_PAGAMENTO] — quando o lead quer efetuar pagamento';\nsistema_prompt += '\\n\\nIMPORTANTE: Envie mensagens curtas e naturais, como num WhatsApp real. Máximo 3 parágrafos.';\n\n// ---- PROVIDER / MODELO ----\nconst provider = cfg('ai_provider', 'openai');\nlet model, temperature, max_tokens;\n\nif (provider === 'openai') {\n  model = cfg('openai_model', 'gpt-4o-mini');\n  temperature = parseFloat(cfg('openai_temperature', '0.7'));\n  max_tokens = parseInt(cfg('openai_max_tokens', '1024'));\n} else if (provider === 'claude') {\n  model = cfg('claude_model', 'claude-haiku-4-5');\n  temperature = parseFloat(cfg('claude_temperature', '0.7'));\n  max_tokens = parseInt(cfg('claude_max_tokens', '1024'));\n} else if (provider === 'google') {\n  model = cfg('google_model', 'gemini-2.0-flash');\n  temperature = parseFloat(cfg('google_temperature', '0.7'));\n  max_tokens = parseInt(cfg('google_max_tokens', '1024'));\n} else {\n  model = 'gpt-4o-mini';\n  temperature = 0.7;\n  max_tokens = 1024;\n}\n\n// ---- HISTÓRICO ----\nconst historyRaw = $('Load History').first().json;\nconst history = Array.isArray(historyRaw) ? historyRaw : [];\nconst userMessage = $('Parse Message').first().json.text;\n\n// Monta messages array para LLM\nconst messages = [{ role: 'system', content: sistema_prompt }];\n\n// Histórico em ordem cronológica (API retorna desc, invertemos)\nconst historyAsc = [...history].reverse();\nfor (const msg of historyAsc) {\n  messages.push({\n    role: msg.sender === 'assistant' ? 'assistant' : 'user',\n    content: msg.conteudo\n  });\n}\n\n// Mensagem atual\nmessages.push({ role: 'user', content: userMessage });\n\nreturn [{\n  json: {\n    provider,\n    model,\n    temperature,\n    max_tokens,\n    messages,\n    user_id: agentData.user_id,\n    msg_qualificado: cfg('msg_qualificado', 'Parabéns! Você foi qualificado. Em breve entraremos em contato.'),\n    msg_desqualificado: cfg('msg_desqualificado', 'Obrigado pelo contato! Infelizmente não temos uma solução adequada neste momento.'),\n    responder_em_audio: cfg('responder_em_audio', 'false'),\n    numero_destino: cfg('numero_destino'),\n    grupo_destino: cfg('grupo_destino'),\n    notif_destino: configMap['notif_destino'] || 'numero'\n  }\n}];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000010",
-      "name": "Prepare LLM Request",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000014",
+      "name": "Build Prompt + History",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2140, 300]
+      "position": [2640, 340]
     },
     {
       "parameters": {
@@ -154,7 +249,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_JWT }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },
@@ -165,45 +260,45 @@
           "timeout": 60000
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000011",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000015",
       "name": "LLM Call",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2350, 300]
+      "position": [2860, 340]
     },
     {
       "parameters": {
-        "jsCode": "// Processa resposta da LLM e detecta qualificação + objeções + pagamento\nconst llmResponse = $('LLM Call').first().json;\nconst response_text = llmResponse.content || llmResponse.choices?.[0]?.message?.content || '';\nconst promptData = $('Build System Prompt').first().json;\n\n// Detecta qualificação\nconst has_qualificado = response_text.includes('[LEAD_QUALIFICADO]');\nconst has_desqualificado = response_text.includes('[LEAD_DESQUALIFICADO]');\n\n// Detecta objeções na mensagem do USUÁRIO\nconst userText = ($('Parse Message').first().json.text || '').toLowerCase();\nconst objection_keywords = ['não posso', 'muito caro', 'não sei', 'concorrente', 'depois', 'não tenho', 'sem interesse'];\nlet has_objection = false;\nlet objection_type = '';\nfor (const keyword of objection_keywords) {\n  if (userText.includes(keyword)) {\n    has_objection = true;\n    if (keyword.includes('caro') || keyword.includes('não tenho')) objection_type = 'preco';\n    else if (keyword.includes('depois')) objection_type = 'timing';\n    else if (keyword.includes('concorrente')) objection_type = 'concorrente';\n    else if (keyword.includes('sem interesse')) objection_type = 'interesse';\n    else objection_type = 'outro';\n    break;\n  }\n}\n\n// Detecta intenção de pagamento\nconst payment_keywords = ['quero pagar', 'como pago', 'vou fechar', 'quero comprar', 'boleto', 'pix', 'cartão', 'parcelas', '[INICIAR_PAGAMENTO]'];\nlet payment_intent = false;\nfor (const keyword of payment_keywords) {\n  if (response_text.toLowerCase().includes(keyword.toLowerCase()) || userText.includes(keyword.toLowerCase())) {\n    payment_intent = true;\n    break;\n  }\n}\n\n// Limpa tags internas da resposta antes de enviar\nlet clean_response = response_text\n  .replace('[LEAD_QUALIFICADO]', '')\n  .replace('[LEAD_DESQUALIFICADO]', '')\n  .replace('[INICIAR_PAGAMENTO]', '')\n  .trim();\n\n// Se qualificado/desqualificado, adiciona mensagem configurada\nif (has_qualificado && promptData.msg_qualificado) {\n  clean_response += '\\n\\n' + promptData.msg_qualificado;\n}\nif (has_desqualificado && promptData.msg_desqualificado) {\n  clean_response += '\\n\\n' + promptData.msg_desqualificado;\n}\n\nreturn [{\n  json: {\n    response_text: clean_response,\n    qualified: has_qualificado,\n    disqualified: has_desqualificado,\n    has_objection,\n    objection_type,\n    payment_intent,\n    responder_em_audio: promptData.responder_em_audio === 'true',\n    tokens_used: llmResponse.deducted_tokens || llmResponse.usage?.total_tokens || 0\n  }\n}];"
+        "jsCode": "// ========================================================\n// PROCESS RESPONSE — Processa resposta da LLM\n// Detecta qualificação, objeções, pagamento\n// Limpa tags internas antes de enviar ao lead\n// ========================================================\nconst llmResponse = $('LLM Call').first().json;\nconst response_text = llmResponse.content || llmResponse.choices?.[0]?.message?.content || '';\nconst promptData = $('Build Prompt + History').first().json;\nconst userText = ($('Parse Message').first().json.text || '').toLowerCase();\nconst agentData = $('Merge Lead Data').first().json;\n\n// ---- DETECTA QUALIFICAÇÃO ----\nconst has_qualificado = response_text.includes('[LEAD_QUALIFICADO]');\nconst has_desqualificado = response_text.includes('[LEAD_DESQUALIFICADO]');\nconst has_pagamento = response_text.includes('[INICIAR_PAGAMENTO]');\n\n// ---- DETECTA OBJEÇÕES (na mensagem do usuário) ----\nconst objection_keywords = ['não posso', 'muito caro', 'não sei', 'concorrente', 'depois', 'não tenho', 'sem interesse', 'tá caro', 'está caro', 'acho caro'];\nlet has_objection = false;\nlet objection_type = '';\nfor (const keyword of objection_keywords) {\n  if (userText.includes(keyword)) {\n    has_objection = true;\n    if (keyword.includes('caro') || keyword.includes('não tenho')) objection_type = 'preco';\n    else if (keyword.includes('depois')) objection_type = 'timing';\n    else if (keyword.includes('concorrente')) objection_type = 'concorrente';\n    else if (keyword.includes('sem interesse')) objection_type = 'interesse';\n    else objection_type = 'outro';\n    break;\n  }\n}\n\n// ---- LIMPA TAGS DA RESPOSTA ----\nlet clean_response = response_text\n  .replace(/\\[LEAD_QUALIFICADO\\]/g, '')\n  .replace(/\\[LEAD_DESQUALIFICADO\\]/g, '')\n  .replace(/\\[INICIAR_PAGAMENTO\\]/g, '')\n  .trim();\n\n// ---- CALCULA NOVO STAGE ----\nlet new_stage = agentData.stage;\nif (has_qualificado) new_stage = 'qualificado';\nelse if (has_desqualificado) new_stage = 'nao_qualificado';\nelse if (agentData.stage === 'novo_contato') new_stage = 'em_atendimento';\n\nreturn [{\n  json: {\n    response_text: clean_response,\n    qualified: has_qualificado,\n    disqualified: has_desqualificado,\n    payment_intent: has_pagamento,\n    has_objection,\n    objection_type,\n    new_stage,\n    responder_em_audio: promptData.responder_em_audio === 'true',\n    tokens_used: llmResponse.deducted_tokens || llmResponse.usage?.total_tokens || 0,\n    msg_qualificado: promptData.msg_qualificado,\n    msg_desqualificado: promptData.msg_desqualificado,\n    numero_destino: promptData.numero_destino,\n    grupo_destino: promptData.grupo_destino,\n    notif_destino: promptData.notif_destino\n  }\n}];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000012",
-      "name": "Process LLM Response",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000016",
+      "name": "Process Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2560, 300]
+      "position": [3080, 340]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/functions/v1/evo-proxy",
+        "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $('Merge Lead Data').first().json.evo_instance }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_JWT }}" },
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ action: $json.responder_em_audio ? 'send-audio' : 'send-text', number: $('Parse Message').first().json.phone, text: $json.response_text, user_id: $('Detect Agent Type').first().json.user_id }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Parse Message').first().json.phone, text: $json.response_text }) }}",
         "options": {
-          "timeout": 30000
+          "timeout": 15000
         }
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000013",
-      "name": "Send WhatsApp Response",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000017",
+      "name": "Send WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2770, 300]
+      "position": [3300, 340]
     },
     {
       "parameters": {
@@ -212,70 +307,97 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" },
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "return=minimal" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ user_id: $('Detect Agent Type').first().json.user_id, lead_id: $('Detect Agent Type').first().json.lead_id, numero_whatsapp: $('Parse Message').first().json.phone, sender: 'assistant', conteudo: $('Process LLM Response').first().json.response_text, tokens_usados: $('Process LLM Response').first().json.tokens_used }) }}",
+        "jsonBody": "={{ JSON.stringify([{ user_id: $('Merge Lead Data').first().json.user_id, lead_id: $('Merge Lead Data').first().json.lead_id, numero_whatsapp: $('Parse Message').first().json.phone, sender: 'user', conteudo: $('Parse Message').first().json.text, tokens_usados: 0 }, { user_id: $('Merge Lead Data').first().json.user_id, lead_id: $('Merge Lead Data').first().json.lead_id, numero_whatsapp: $('Parse Message').first().json.phone, sender: 'assistant', conteudo: $('Process Response').first().json.response_text, tokens_usados: $('Process Response').first().json.tokens_used }]) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000014",
-      "name": "Save Response Log",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000018",
+      "name": "Save Messages",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2980, 200]
+      "position": [3520, 240]
     },
     {
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/leads?id=eq.{{ $('Detect Agent Type').first().json.lead_id }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/leads?id=eq.{{ $('Merge Lead Data').first().json.lead_id }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" },
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}" },
             { "name": "Content-Type", "value": "application/json" },
             { "name": "Prefer", "value": "return=minimal" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ updated_at: new Date().toISOString(), ultima_pergunta: $('Parse Message').first().json.text, stage: $('Process LLM Response').first().json.qualified ? 'qualificado' : $('Process LLM Response').first().json.disqualified ? 'nao_qualificado' : undefined }) }}",
+        "jsonBody": "={{ JSON.stringify({ updated_at: new Date().toISOString(), ultima_pergunta: $('Parse Message').first().json.text, stage: $('Process Response').first().json.new_stage, aguardando_resposta: false }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000015",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000019",
       "name": "Update Lead",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2980, 400]
+      "position": [3520, 440]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-notify",
+              "leftValue": "={{ $('Process Response').first().json.qualified }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000020",
+      "name": "Lead Qualified?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3520, 640]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/message_history",
+        "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $('Merge Lead Data').first().json.evo_instance }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "return=minimal" }
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ user_id: $('Detect Agent Type').first().json.user_id, lead_id: $('Detect Agent Type').first().json.lead_id, numero_whatsapp: $('Parse Message').first().json.phone, sender: 'user', conteudo: $('Parse Message').first().json.text, tokens_usados: 0 }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Process Response').first().json.numero_destino, text: '🎯 LEAD QUALIFICADO!\\n\\nNúmero: ' + $('Parse Message').first().json.phone + '\\nNome: ' + ($('Merge Lead Data').first().json.lead_nome || $('Parse Message').first().json.phone) + '\\nÚltima mensagem: ' + $('Parse Message').first().json.text }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000016",
-      "name": "Save User Message",
+      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000021",
+      "name": "Notify Supervisor",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1930, 500]
+      "position": [3740, 580]
     }
   ],
   "connections": {
@@ -286,68 +408,100 @@
     },
     "Parse Message": {
       "main": [
-        [{ "node": "Lookup Session", "type": "main", "index": 0 }]
+        [{ "node": "Find User by Instance", "type": "main", "index": 0 }]
       ]
     },
-    "Lookup Session": {
-      "main": [
-        [{ "node": "Process Session", "type": "main", "index": 0 }]
-      ]
-    },
-    "Process Session": {
+    "Find User by Instance": {
       "main": [
         [{ "node": "Validate User", "type": "main", "index": 0 }]
       ]
     },
     "Validate User": {
       "main": [
-        [{ "node": "Detect Agent Type", "type": "main", "index": 0 }]
+        [{ "node": "User Valid?", "type": "main", "index": 0 }]
       ]
     },
-    "Detect Agent Type": {
+    "User Valid?": {
       "main": [
-        [{ "node": "Busca Configs SDR", "type": "main", "index": 0 }]
+        [
+          { "node": "Get Subscription", "type": "main", "index": 0 },
+          { "node": "Find Lead", "type": "main", "index": 0 }
+        ],
+        []
+      ]
+    },
+    "Get Subscription": {
+      "main": [
+        [{ "node": "Process Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Find Lead": {
+      "main": [
+        [{ "node": "Process Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Process Lead": {
+      "main": [
+        [{ "node": "New Lead?", "type": "main", "index": 0 }]
+      ]
+    },
+    "New Lead?": {
+      "main": [
+        [{ "node": "Create Lead", "type": "main", "index": 0 }],
+        [{ "node": "Merge Lead Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Lead": {
+      "main": [
+        [{ "node": "Merge Lead Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Merge Lead Data": {
+      "main": [
+        [
+          { "node": "Busca Configs SDR", "type": "main", "index": 0 },
+          { "node": "Load History", "type": "main", "index": 0 }
+        ]
       ]
     },
     "Busca Configs SDR": {
       "main": [
-        [{ "node": "Build System Prompt", "type": "main", "index": 0 }]
+        [{ "node": "Build Prompt + History", "type": "main", "index": 0 }]
       ]
     },
-    "Build System Prompt": {
+    "Load History": {
       "main": [
-        [
-          { "node": "Load Conversation History", "type": "main", "index": 0 },
-          { "node": "Save User Message", "type": "main", "index": 0 }
-        ]
+        [{ "node": "Build Prompt + History", "type": "main", "index": 0 }]
       ]
     },
-    "Load Conversation History": {
-      "main": [
-        [{ "node": "Prepare LLM Request", "type": "main", "index": 0 }]
-      ]
-    },
-    "Prepare LLM Request": {
+    "Build Prompt + History": {
       "main": [
         [{ "node": "LLM Call", "type": "main", "index": 0 }]
       ]
     },
     "LLM Call": {
       "main": [
-        [{ "node": "Process LLM Response", "type": "main", "index": 0 }]
+        [{ "node": "Process Response", "type": "main", "index": 0 }]
       ]
     },
-    "Process LLM Response": {
+    "Process Response": {
       "main": [
-        [{ "node": "Send WhatsApp Response", "type": "main", "index": 0 }]
+        [{ "node": "Send WhatsApp", "type": "main", "index": 0 }]
       ]
     },
-    "Send WhatsApp Response": {
+    "Send WhatsApp": {
       "main": [
         [
-          { "node": "Save Response Log", "type": "main", "index": 0 },
-          { "node": "Update Lead", "type": "main", "index": 0 }
+          { "node": "Save Messages", "type": "main", "index": 0 },
+          { "node": "Update Lead", "type": "main", "index": 0 },
+          { "node": "Lead Qualified?", "type": "main", "index": 0 }
         ]
+      ]
+    },
+    "Lead Qualified?": {
+      "main": [
+        [{ "node": "Notify Supervisor", "type": "main", "index": 0 }],
+        []
       ]
     }
   },
@@ -362,6 +516,6 @@
   "tags": [
     { "name": "SDR" },
     { "name": "WhatsApp" },
-    { "name": "Multi-Agente" }
+    { "name": "Production" }
   ]
 }
