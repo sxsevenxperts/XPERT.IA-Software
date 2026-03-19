@@ -2623,6 +2623,74 @@
       </div>
     </div>
 
+    <!-- MODAL: FEEDBACK DE LEAD -->
+    <div class="modal-backdrop" id="modal-feedback-lead" onclick="if(event.target===this)closeFeedbackModal()" style="display:none;">
+      <div class="modal-box" style="width:520px;">
+        <div class="modal-header">
+          <h2>📊 Feedback do Lead</h2>
+          <button onclick="closeFeedbackModal()" style="background:none;border:none;color:#6e7681;cursor:pointer;font-size:20px;">✕</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto;">
+
+          <!-- Resultado da Venda -->
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">🎯 Lead virou cliente?</label>
+            <div style="display:flex;gap:8px;">
+              <button onclick="setFeedbackResult(true)" id="feedback-vendido-sim" style="flex:1;padding:10px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:500;">
+                ✓ Sim, virou cliente
+              </button>
+              <button onclick="setFeedbackResult(false)" id="feedback-vendido-nao" style="flex:1;padding:10px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:500;">
+                ✗ Não, desistiu
+              </button>
+            </div>
+          </div>
+
+          <!-- Motivo de Desistência (se não virou cliente) -->
+          <div id="feedback-motivo-section" style="display:none;">
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">Por quê?</label>
+            <select id="feedback-motivo" style="width:100%;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;">
+              <option value="">Selecione um motivo...</option>
+              <option value="orçamento">💰 Sem orçamento / Preço muito alto</option>
+              <option value="timing">⏰ Timing errado / Não é o momento</option>
+              <option value="concorrência">🏆 Escolheu concorrência</option>
+              <option value="nao_decision">👤 Não é tomador de decisão</option>
+              <option value="outro">📝 Outro motivo</option>
+            </select>
+          </div>
+
+          <!-- Valor da Venda (se virou cliente) -->
+          <div id="feedback-valor-section" style="display:none;">
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">💵 Quanto foi o valor?</label>
+            <input type="number" id="feedback-valor" placeholder="Ex: 5000" min="0" step="100" style="width:100%;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          </div>
+
+          <!-- Nota para o SDR -->
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">⭐ Qual sua nota para o agente SDR? (1-5)</label>
+            <div style="display:flex;gap:8px;justify-content:center;">
+              <button onclick="setFeedbackNota(1)" class="feedback-nota-btn" data-nota="1" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">1</button>
+              <button onclick="setFeedbackNota(2)" class="feedback-nota-btn" data-nota="2" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">2</button>
+              <button onclick="setFeedbackNota(3)" class="feedback-nota-btn" data-nota="3" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">3</button>
+              <button onclick="setFeedbackNota(4)" class="feedback-nota-btn" data-nota="4" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">4</button>
+              <button onclick="setFeedbackNota(5)" class="feedback-nota-btn" data-nota="5" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">5</button>
+            </div>
+          </div>
+
+          <!-- Sugestões -->
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">💡 Sugestões para melhorar?</label>
+            <textarea id="feedback-sugestoes" placeholder="Deixe suas sugestões aqui..." style="width:100%;height:100px;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;" />
+          </div>
+
+          <!-- Botões -->
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button onclick="submitFeedback()" style="flex:1;padding:10px;background:#22c55e;border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;">✓ Enviar Feedback</button>
+            <button onclick="closeFeedbackModal()" style="flex:1;padding:10px;background:#30363d;border:none;color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL CRM: NOVO LEAD MANUAL -->
     <div class="modal-backdrop" id="modal-novo-lead" onclick="if(event.target===this)closeNewLeadModal()">
       <div class="modal-box" style="width:500px;">
@@ -7737,6 +7805,13 @@
     await db.from('leads').update({ stage, atualizado_em: new Date().toISOString() }).eq('id', leadId);
     const l = crmLeads.find(x => String(x.id) === String(leadId));
     if (l) l.stage = stage;
+
+    // Trigger feedback modal if lead reaches terminal stage
+    if ((stage === 'convertido' || stage === 'perdido') && !document.getElementById('modal-feedback-lead').classList.contains('open')) {
+      setTimeout(() => {
+        openFeedbackModal(leadId);
+      }, 500);
+    }
   }
 
   // ---- Column Drag-to-Reorder ----
@@ -7925,6 +8000,97 @@
     await db.from('leads').update({ notas: document.getElementById('crm-notas').value, atualizado_em: new Date().toISOString() }).eq('id', id);
     st.textContent = 'Salvo!'; st.style.color = '#16a34a';
     setTimeout(() => st.textContent = '', 2500);
+  }
+
+  // ---- Feedback de Lead ----
+  let feedbackState = {
+    leadId: null,
+    vendido: null,
+    motivo: '',
+    valor: null,
+    nota: null,
+    sugestoes: ''
+  };
+
+  function openFeedbackModal(leadId) {
+    feedbackState.leadId = leadId;
+    feedbackState.vendido = null;
+    feedbackState.motivo = '';
+    feedbackState.valor = null;
+    feedbackState.nota = null;
+    feedbackState.sugestoes = '';
+
+    // Reset UI
+    document.getElementById('feedback-motivo-section').style.display = 'none';
+    document.getElementById('feedback-valor-section').style.display = 'none';
+    document.querySelectorAll('.feedback-nota-btn').forEach(b => b.style.borderColor = '#30363d');
+    document.getElementById('feedback-motivo').value = '';
+    document.getElementById('feedback-valor').value = '';
+    document.getElementById('feedback-sugestoes').value = '';
+    document.getElementById('feedback-vendido-sim').style.borderColor = '#30363d';
+    document.getElementById('feedback-vendido-nao').style.borderColor = '#30363d';
+
+    document.getElementById('modal-feedback-lead').style.display = 'flex';
+  }
+
+  function closeFeedbackModal() {
+    document.getElementById('modal-feedback-lead').style.display = 'none';
+    feedbackState = { leadId: null, vendido: null, motivo: '', valor: null, nota: null, sugestoes: '' };
+  }
+
+  function setFeedbackResult(vendido) {
+    feedbackState.vendido = vendido;
+    document.getElementById('feedback-vendido-sim').style.borderColor = vendido ? '#22c55e' : '#30363d';
+    document.getElementById('feedback-vendido-nao').style.borderColor = !vendido ? '#ef4444' : '#30363d';
+    document.getElementById('feedback-motivo-section').style.display = vendido ? 'none' : 'block';
+    document.getElementById('feedback-valor-section').style.display = vendido ? 'block' : 'none';
+  }
+
+  function setFeedbackNota(nota) {
+    feedbackState.nota = nota;
+    document.querySelectorAll('.feedback-nota-btn').forEach(b => {
+      b.style.borderColor = parseInt(b.dataset.nota) === nota ? '#22c55e' : '#30363d';
+    });
+  }
+
+  async function submitFeedback() {
+    if (!feedbackState.leadId || feedbackState.vendido === null || feedbackState.nota === null) {
+      alert('Por favor, preencha os campos obrigatórios');
+      return;
+    }
+
+    try {
+      feedbackState.motivo = document.getElementById('feedback-motivo').value || null;
+      feedbackState.valor = feedbackState.vendido ? parseFloat(document.getElementById('feedback-valor').value) || null : null;
+      feedbackState.sugestoes = document.getElementById('feedback-sugestoes').value || null;
+
+      // Salvar no Supabase
+      const { data, error } = await db.from('lead_feedback').upsert({
+        user_id: currentUser.id,
+        lead_id: feedbackState.leadId,
+        vendido: feedbackState.vendido,
+        motivo_desistencia: feedbackState.vendido ? null : feedbackState.motivo,
+        valor_venda: feedbackState.valor,
+        nota_sdr: feedbackState.nota,
+        sugestoes: feedbackState.sugestoes,
+        atualizado_em: new Date().toISOString()
+      }, { onConflict: 'user_id,lead_id' });
+
+      if (error) throw error;
+
+      alert('✅ Feedback enviado com sucesso!');
+      closeFeedbackModal();
+
+      // Re-renderizar o card para mostrar que feedback foi coletado
+      const lead = crmLeads.find(l => l.id === feedbackState.leadId);
+      if (lead) {
+        const card = document.querySelector(`.crm-card[data-lead-id="${feedbackState.leadId}"]`);
+        if (card) card.outerHTML = renderCard(lead);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar feedback:', error);
+      alert('Erro ao enviar feedback: ' + error.message);
+    }
   }
 
   // ---- Tarefas ----
