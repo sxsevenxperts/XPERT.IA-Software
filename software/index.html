@@ -2147,6 +2147,22 @@
         </div>
       </div>
 
+      <!-- AGENTE DE PROSPECÇÃO GROUP -->
+      <div class="nav-group membro-hidden" id="nav-group-prospecao">
+        <div class="nav-group-header" onclick="toggleNavGroup(this)">
+          <span class="chevron">▼</span>
+          <span class="icon" style="font-size:14px;"><i data-lucide="search"></i></span>
+          <span>Agente de Prospecção</span>
+        </div>
+        <div class="nav-group-items">
+          <div class="nav-subitem" onclick="navigateToAgentTab('prospec', 'modelo', this)">Modelo de IA</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('prospec', 'prompt', this)">Prompt</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('prospec', 'comunicacao', this)">Comunicação</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('prospec', 'qualificacao', this)">Qualificação</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('prospec', 'base', this)">Base de Conhecimento</div>
+        </div>
+      </div>
+
       <!-- AGENTE DE OBJEÇÃO GROUP -->
       <div class="nav-group membro-hidden" id="nav-group-objecao" style="display:none;">
         <div class="nav-group-header" onclick="toggleNavGroup(this)">
@@ -2692,6 +2708,16 @@
 
       <!-- TAB: Prompt -->
       <div id="principal-tab-prompt" style="display:none;">
+        <div class="card">
+          <h3>Identidade do Agente</h3>
+          <div class="field-group"><label>Nome do Agente <span style="color:var(--text3);font-weight:400;">(exibido na sidebar)</span></label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="cfg-nome_agente" placeholder="Ex: SDR Principal, Agente de Vendas..." style="flex:1;" oninput="previewAgentName('principal', this.value)" />
+              <button class="btn-save" onclick="saveAgentName('principal')" style="padding:10px 16px;white-space:nowrap;">Salvar Nome</button>
+            </div>
+            <span class="save-status" id="save-nome-principal"></span>
+          </div>
+        </div>
         <div class="card">
           <h3>Objetivo</h3>
           <div class="field-group"><label>Qual é o objetivo do agente?</label>
@@ -3508,6 +3534,15 @@
 
       <!-- Tab Prompt -->
       <div id="ob-tab-prompt">
+        <div class="card"><h3>Identidade do Agente</h3>
+          <div class="field-group"><label>Nome do Agente <span style="color:var(--text3);font-weight:400;">(exibido na sidebar)</span></label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="cfg-ob_nome_agente" placeholder="Ex: Agente de Objeção, Reversão de Objeções..." style="flex:1;" oninput="previewAgentName('ob', this.value)" />
+              <button class="btn-save" onclick="saveAgentName('ob')" style="padding:10px 16px;white-space:nowrap;">Salvar Nome</button>
+            </div>
+            <span class="save-status" id="save-nome-ob"></span>
+          </div>
+        </div>
         <div class="card"><h3>Objetivo</h3>
           <div class="field-group"><label>Qual é o objetivo deste agente?</label>
             <textarea id="cfg-ob_objetivo" placeholder="Ex: Identificar e reverter objeções de compra com empatia e argumentos sólidos."></textarea></div></div>
@@ -3605,6 +3640,277 @@
         </div>
         <div class="card"><h3>Documentos nesta base</h3>
           <div id="ob-pdf-list"><p class="loading">Carregando...</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTE DE PROSPECÇÃO -->
+    <div class="page" id="page-agente-prospecao">
+      <div class="page-header"><h1>Agente de Prospecção</h1><p>Configuração completa e independente do agente de prospecção de leads</p></div>
+      <div class="agente-cfg-tabs">
+        <button class="agente-cfg-tab active" onclick="switchAgenteTab('prospec','modelo',this)">Modelo de IA</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('prospec','prompt',this)">Prompt</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('prospec','comunicacao',this)">Comunicação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('prospec','qualificacao',this)">Qualificação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('prospec','base',this)">Base de Conhecimento</button>
+      </div>
+
+      <!-- Tab Modelo -->
+      <div id="prospec-tab-modelo">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Modelo de IA</h3>
+          <p style="font-size:13px;color:var(--text2);margin:6px 0 16px;">Escolha o provedor ativo e configure as chaves. O n8n lê essas configurações para decidir qual API chamar.</p>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="ai-provider-btn active" id="btn-provider-prospec-openai" onclick="switchAiProvider('prospec-openai')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.28a5.76 5.76 0 00-.5-4.73 5.82 5.82 0 00-6.27-2.8A5.77 5.77 0 0011.19 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.83 5.77 5.77 0 00.5 4.73 5.82 5.82 0 006.27 2.8A5.77 5.77 0 0012.81 24a5.83 5.83 0 005.57-4.04 5.77 5.77 0 003.85-2.8 5.82 5.82 0 00-.95-6.88zM12.81 22.4a4.3 4.3 0 01-2.77-1c.04-.02.1-.05.14-.08l4.6-2.66a.74.74 0 00.37-.65v-6.5l1.95 1.12a.07.07 0 01.04.05v5.38a4.33 4.33 0 01-4.33 4.34zm-9.3-3.98a4.3 4.3 0 01-.52-2.9c.03.02.09.06.14.08l4.6 2.66a.74.74 0 00.74 0l5.62-3.24v2.24a.07.07 0 01-.03.06L9.4 20.01a4.33 4.33 0 01-5.9-1.59zm-1.21-9.5A4.3 4.3 0 014.6 6.8l-.01.16v5.32a.74.74 0 00.37.65l5.62 3.25-1.95 1.12a.07.07 0 01-.07 0L4.1 14.63a4.33 4.33 0 01-.8-5.71zm16.04 3.72l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.47 2.58a4.32 4.32 0 01-.67 7.8v-.17V12.3a.74.74 0 00-.2-.66zm1.94-2.92a6.8 6.8 0 00-.14-.08l-4.6-2.65a.74.74 0 00-.74 0L9.18 10.2V7.96a.07.07 0 01.03-.06l4.47-2.58a4.32 4.32 0 016.6 4.4zm-12.21 4l-1.95-1.12a.07.07 0 01-.04-.05V7.19a4.32 4.32 0 017.08-3.32l-.14.08-4.6 2.66a.74.74 0 00-.37.65l-.01 6.49zm1.06-2.28l2.5-1.45 2.5 1.44v2.88l-2.5 1.45-2.5-1.44V11.44z"/></svg>
+            OpenAI
+          </button>
+          <button class="ai-provider-btn" id="btn-provider-prospec-claude" onclick="switchAiProvider('prospec-claude')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.95 3h14.1L24 12l-4.95 9H4.95L0 12z"/></svg>
+            Claude (Anthropic)
+          </button>
+          <button class="ai-provider-btn" id="btn-provider-prospec-google" onclick="switchAiProvider('prospec-google')" style="background:rgba(66,133,244,.12);border-color:rgba(66,133,244,.3);color:#93c5fd;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Google (Gemini)
+          </button>
+        </div>
+        <div id="ai-config-prospec-openai">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin:0;"><label>Chave de API OpenAI</label>
+                <input type="password" id="cfg-prospec_openai_api_key" placeholder="sk-..." autocomplete="new-password" /></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field-group" style="margin:0;"><label>Temperature <span style="color:var(--text3);font-weight:400;">(0–2)</span></label>
+                  <input type="number" id="cfg-prospec_openai_temperature" value="0.7" min="0" max="2" step="0.1" /></div>
+                <div class="field-group" style="margin:0;"><label>Max tokens</label>
+                  <input type="number" id="cfg-prospec_openai_max_tokens" value="1024" min="64" max="4096" step="64" /></div>
+              </div>
+              <div class="ai-model-info" id="prospec-openai-model-info" style="background:rgba(16,163,127,.08);border:1px solid rgba(16,163,127,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#6ee7b7;margin:0;">
+                💰 <strong>gpt-4o-mini:</strong> ~$0.15/M input + $0.60/M output — custo ~R$4 por 5M tokens · margem ~<strong>92%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo <span style="color:var(--text3);font-weight:400;">(clique para selecionar)</span></label>
+              <select id="cfg-prospec_openai_model" style="display:none;">
+                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+                <option value="o4-mini">o4-mini</option>
+                <option value="gpt-4o">gpt-4o</option>
+              </select>
+              <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead><tr style="background:var(--bg-card2);position:sticky;top:0;z-index:1;">
+                    <th style="text-align:left;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Modelo</th>
+                    <th style="text-align:right;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Multiplicador</th>
+                  </tr></thead>
+                  <tbody id="prospec-openai-model-rows">
+                    <tr class="ai-model-row" data-provider="openai" data-model="gpt-4o-mini" onclick="selectAiModel('prospec-openai','gpt-4o-mini')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(16,163,127,.1);">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gpt-4o-mini</code> <span style="font-size:10px;color:var(--text3);font-style:italic;">base</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#6ee7b7;">1.0×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="openai" data-model="gpt-4o" onclick="selectAiModel('prospec-openai','gpt-4o')" style="cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gpt-4o</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#f87171;">8.0×</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="ai-config-prospec-claude" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin:0;"><label>Chave de API Anthropic</label>
+                <input type="password" id="cfg-prospec_claude_api_key" placeholder="sk-ant-..." autocomplete="new-password" /></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field-group" style="margin:0;"><label>Temperature <span style="color:var(--text3);font-weight:400;">(0–1)</span></label>
+                  <input type="number" id="cfg-prospec_claude_temperature" value="0.7" min="0" max="1" step="0.1" /></div>
+                <div class="field-group" style="margin:0;"><label>Max tokens</label>
+                  <input type="number" id="cfg-prospec_claude_max_tokens" value="1024" min="64" max="8192" step="64" /></div>
+              </div>
+              <div class="ai-model-info" id="prospec-claude-model-info" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#a5b4fc;margin:0;">
+                <strong>claude-haiku-4-5:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo</label>
+              <select id="cfg-prospec_claude_model" style="display:none;">
+                <option value="claude-haiku-4-5" selected>claude-haiku-4-5</option>
+                <option value="claude-3.5-sonnet">claude-3.5-sonnet</option>
+                <option value="claude-opus-4-6">claude-opus-4-6</option>
+              </select>
+              <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead><tr style="background:var(--bg-card2);position:sticky;top:0;z-index:1;">
+                    <th style="text-align:left;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Modelo</th>
+                    <th style="text-align:right;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Multiplicador</th>
+                  </tr></thead>
+                  <tbody id="prospec-claude-model-rows">
+                    <tr class="ai-model-row ai-model-selected" data-provider="claude" data-model="claude-haiku-4-5" onclick="selectAiModel('prospec-claude','claude-haiku-4-5')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(99,102,241,.1);">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">claude-haiku-4-5</code> <span style="font-size:10px;color:var(--text3);font-style:italic;">base</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#a5b4fc;">1.0×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="claude" data-model="claude-3.5-sonnet" onclick="selectAiModel('prospec-claude','claude-3.5-sonnet')" style="cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">claude-3.5-sonnet</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#fb923c;">3.5×</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="ai-config-prospec-google" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin:0;"><label>Chave de API Google</label>
+                <input type="password" id="cfg-prospec_google_api_key" placeholder="AIzaSy..." autocomplete="new-password" /></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field-group" style="margin:0;"><label>Temperature <span style="color:var(--text3);font-weight:400;">(0–2)</span></label>
+                  <input type="number" id="cfg-prospec_google_temperature" value="0.7" min="0" max="2" step="0.1" /></div>
+                <div class="field-group" style="margin:0;"><label>Max tokens</label>
+                  <input type="number" id="cfg-prospec_google_max_tokens" value="1024" min="64" max="4096" step="64" /></div>
+              </div>
+              <div class="ai-model-info" id="prospec-google-model-info" style="background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#93c5fd;margin:0;">
+                <strong>gemini-2.0-flash:</strong> ~$0.075/M input + $0.30/M output — custo ~R$2.50 por 5M tokens · margem ~<strong>94%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo</label>
+              <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead><tr style="background:var(--bg-card2);position:sticky;top:0;z-index:1;">
+                    <th style="text-align:left;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Modelo</th>
+                    <th style="text-align:right;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Multiplicador</th>
+                  </tr></thead>
+                  <tbody id="prospec-google-model-rows">
+                    <tr class="ai-model-row" data-provider="google" data-model="gemini-2.0-flash" onclick="selectAiModel('prospec-google','gemini-2.0-flash')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(66,133,244,.1);">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gemini-2.0-flash</code> <span style="font-size:10px;color:var(--text3);font-style:italic;">base</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#93c5fd;">1.0×</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['prospec_openai_api_key','prospec_openai_temperature','prospec_openai_max_tokens','prospec_openai_model','prospec_claude_api_key','prospec_claude_temperature','prospec_claude_max_tokens','prospec_claude_model','prospec_google_api_key','prospec_google_temperature','prospec_google_max_tokens'],'prospec-modelo')">Salvar</button>
+          <span class="save-status" id="save-prospec-modelo"></span>
+        </div>
+      </div>
+
+      <!-- Tab Prompt -->
+      <div id="prospec-tab-prompt" style="display:none;">
+        <div class="card"><h3>Identidade do Agente</h3>
+          <div class="field-group"><label>Nome do Agente <span style="color:var(--text3);font-weight:400;">(exibido na sidebar)</span></label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="cfg-prospec_nome_agente" placeholder="Ex: Agente de Prospecção, Hunter, SDR..." style="flex:1;" oninput="previewAgentName('prospec', this.value)" />
+              <button class="btn-save" onclick="saveAgentName('prospec')" style="padding:10px 16px;white-space:nowrap;">Salvar Nome</button>
+            </div>
+            <span class="save-status" id="save-nome-prospec"></span>
+          </div>
+        </div>
+        <div class="card"><h3>Objetivo</h3>
+          <div class="field-group"><label>Qual é o objetivo deste agente?</label>
+            <textarea id="cfg-prospec_objetivo" placeholder="Ex: Prospectar leads qualificados, despertar interesse e agendar reunião com consultor."></textarea></div></div>
+        <div class="card"><h3>Prompt Principal</h3>
+          <div class="field-group"><label>Instruções detalhadas do agente</label>
+            <textarea id="cfg-prospec_sistema_prompt" style="min-height:200px;" placeholder="Você é um especialista em prospecção de leads..."></textarea></div></div>
+        <div class="card"><h3>Instrução de Execução</h3>
+          <div class="field-group"><label>Como este agente deve conduzir a execução?</label>
+            <textarea id="cfg-prospec_instrucoes_execucao" placeholder="Ex: Inicie com uma pergunta de qualificação. Máximo 3 mensagens antes de propor reunião."></textarea></div></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['prospec_objetivo','prospec_sistema_prompt','prospec_instrucoes_execucao'],'prospec-prompt')">Salvar</button>
+          <span class="save-status" id="save-prospec-prompt"></span>
+        </div>
+      </div>
+
+      <!-- Tab Comunicação -->
+      <div id="prospec-tab-comunicacao" style="display:none;">
+        <div class="card"><h3>Tonalidade de Voz</h3>
+          <div class="field-group"><label>Como o agente deve falar?</label>
+            <textarea id="cfg-prospec_tonalidade" placeholder="Ex: Consultivo, curioso e confiante. Faz perguntas inteligentes."></textarea></div></div>
+        <div class="card"><h3>Regras de Comunicação</h3>
+          <div class="field-group"><label>Instruções específicas de como conduzir a conversa</label>
+            <textarea id="cfg-prospec_instrucoes_comunicacao" placeholder="Ex: Sempre começa com uma pergunta aberta. Nunca force a venda. Foca em entender o problema."></textarea></div></div>
+        <div class="card"><h3>Mensagens de Encerramento</h3>
+          <div class="field-group"><label>Mensagem quando lead é qualificado (avança no funil)</label>
+            <textarea id="cfg-prospec_msg_qualificado" placeholder="Ex: Perfeito! Vou conectar você ao nosso consultor agora para dar continuidade."></textarea></div>
+          <div class="field-group"><label>Mensagem quando lead não qualificado (desistência)</label>
+            <textarea id="cfg-prospec_msg_desqualificado" placeholder="Ex: Entendo! Fico à disposição caso queira retomar no futuro."></textarea></div></div>
+        <div class="card"><h3>Resposta em Áudio</h3>
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <div class="toggle-label">Responder em áudio no WhatsApp</div>
+              <div class="toggle-desc">Quando ativado, o agente envia a resposta como mensagem de voz.</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="cfg-prospec_responder_em_audio"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['prospec_tonalidade','prospec_instrucoes_comunicacao','prospec_msg_qualificado','prospec_msg_desqualificado','prospec_responder_em_audio'],'prospec-comunicacao')">Salvar</button>
+          <span class="save-status" id="save-prospec-comunicacao"></span>
+        </div>
+      </div>
+
+      <!-- Tab Qualificação -->
+      <div id="prospec-tab-qualificacao" style="display:none;">
+        <div class="card"><h3>Critérios de Qualificação</h3>
+          <div class="field-group"><label>Critérios · um por linha</label>
+            <textarea id="cfg-prospec_criterios_qualificacao" style="min-height:140px;resize:vertical;" placeholder="1. Lead demonstra interesse genuíno&#10;2. Possui orçamento disponível&#10;3. É tomador de decisão&#10;4. Tem urgência ou timeline definida"></textarea></div></div>
+        <div class="card"><h3>Roteamento de Notificações</h3>
+          <div class="field-group"><label>Número do Responsável (DDI+DDD+número)</label>
+            <input type="tel" id="cfg-prospec_numero_destino" placeholder="5511999999999" /></div>
+          <div class="field-group"><label>Grupo WhatsApp (JID · opcional)</label>
+            <input type="text" id="cfg-prospec_grupo_destino" placeholder="120363XXXXXXXXXX@g.us" style="font-family:monospace;" /></div></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['prospec_criterios_qualificacao','prospec_numero_destino','prospec_grupo_destino'],'prospec-qualificacao')">Salvar</button>
+          <span class="save-status" id="save-prospec-qualificacao"></span>
+        </div>
+      </div>
+
+      <!-- Tab Base de Conhecimento -->
+      <div id="prospec-tab-base" style="display:none;">
+        <div class="card">
+          <h3>Busca na Web em Tempo Real</h3>
+          <div class="toggle-row" style="padding:0;">
+            <div class="toggle-info">
+              <div class="toggle-label">Permitir busca na web</div>
+              <div class="toggle-desc">O agente pode pesquisar na internet durante a conversa.</div>
+            </div>
+            <label class="toggle-switch"><input type="checkbox" id="cfg-prospec_web_search" onchange="saveConfigs(['prospec_web_search'],'prospec-base')"><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="card"><h3>Links de Referência</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">URLs que este agente vai priorizar ao buscar informações.</p>
+          <div id="prospec-web-urls-list" style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="field-group" style="margin:0;flex:2;min-width:200px;"><label>URL</label>
+              <input type="url" id="prospec-web-url-input" placeholder="https://..." /></div>
+            <div class="field-group" style="margin:0;flex:1;min-width:140px;"><label>Descrição</label>
+              <input type="text" id="prospec-web-url-desc" placeholder="Ex: Página de produto" maxlength="60" /></div>
+            <button class="btn-save" onclick="addAgenteWebUrl('prospec')" style="padding:10px 18px;align-self:flex-end;">Adicionar</button>
+          </div>
+          <span class="save-status" id="prospec-web-urls-status" style="margin-top:8px;display:block;"></span>
+        </div>
+        <div class="card"><h3>Enviar PDF para este Agente</h3>
+          <div class="field-group"><label>Nome do documento</label>
+            <input type="text" id="prospec-pdf-nome" placeholder="Ex: Catálogo de produtos e soluções" /></div>
+          <div class="field-group"><label>Arquivo</label>
+            <div class="upload-area" onclick="document.getElementById('prospec-pdf-file').click()">
+              <div style="font-size:24px;opacity:.4">↑</div>
+              <p id="prospec-pdf-filename">Clique para selecionar um PDF</p>
+              <input type="file" id="prospec-pdf-file" accept=".pdf" onchange="this.previousElementSibling.textContent=this.files[0]?.name||'Clique para selecionar um PDF'" />
+            </div></div>
+          <button class="upload-btn" id="prospec-btn-upload-pdf" onclick="uploadPDFForAgente('prospec')">Enviar para o agente</button>
+          <span class="save-status" id="prospec-upload-status"></span>
+        </div>
+        <div class="card"><h3>Documentos nesta base</h3>
+          <div id="prospec-pdf-list"><p class="loading">Carregando...</p></div>
         </div>
       </div>
     </div>
@@ -6579,6 +6885,7 @@
     }
 
     loadConfigs(); loadAddonNavigation(); loadStats(); loadOverviewLeads(); loadPDFList();
+    loadAgentNames(); // aplica nomes personalizados dos agentes na sidebar
     loadCredits(); // verifica saldo e dispara alerta se necessário
     setTimeout(checkTaskReminder, 3000); // popup de tarefas após token alert
     checkWAStatus();
@@ -7173,6 +7480,15 @@
 
       <!-- Tab Prompt -->
       <div id="${p}-tab-prompt">
+        <div class="card"><h3>Identidade do Agente</h3>
+          <div class="field-group"><label>Nome do Agente <span style="color:var(--text3);font-weight:400;">(exibido na sidebar)</span></label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="cfg-${p}_nome_agente" placeholder="Ex: Agente de Vendas, Consultor IA..." style="flex:1;" oninput="previewAgentName('${p}', this.value)" />
+              <button class="btn-save" onclick="saveAgentName('${p}')" style="padding:10px 16px;white-space:nowrap;">Salvar Nome</button>
+            </div>
+            <span class="save-status" id="save-nome-${p}"></span>
+          </div>
+        </div>
         <div class="card"><h3>Número WhatsApp</h3>
           <div class="field-group"><label>Qual número este agente usará? (deixe em branco para usar o padrão)</label>
             <input type="tel" id="cfg-${p}_numero_whatsapp" placeholder="Seleción de número ou deixe em branco" /></div></div>
@@ -7422,6 +7738,8 @@
 
     if (agentType === 'ob') {
       agentIndex = 0;
+    } else if (agentType === 'prospec') {
+      agentIndex = 0;
     } else if (agentType.startsWith('ae')) {
       agentIndex = parseInt(agentType.substring(2));
     }
@@ -7429,6 +7747,7 @@
     // Determinar agentType para checkSubscription
     let checkType = agentType === 'principal' ? 'main'
                   : agentType === 'ob' ? 'objecao'
+                  : agentType === 'prospec' ? 'main'
                   : 'extra';
 
     // Verificar subscription
@@ -7444,6 +7763,8 @@
       pageName = 'page-agente';
     } else if (agentType === 'ob') {
       pageName = 'page-agente-objecao';
+    } else if (agentType === 'prospec') {
+      pageName = 'page-agente-prospecao';
     } else if (agentType.startsWith('ae')) {
       const idx = parseInt(agentType.substring(2));
       pageName = `page-agente-extra-${idx}`;
@@ -9417,6 +9738,81 @@
       if (el) el.value = valor;
     });
   }
+
+  // ── Editar nome dos agentes ──────────────────────────────────────────
+  function previewAgentName(agentType, name) {
+    // Atualiza o label na sidebar em tempo real enquanto digita
+    const sidebarMap = {
+      'principal': '.nav-group-header span:not(.chevron):not(.icon)',
+      'ob': '#nav-group-objecao .nav-group-header span:not(.chevron):not(.icon):not(.lock-icon)',
+      'prospec': '#nav-group-prospecao .nav-group-header span:not(.chevron):not(.icon)',
+    };
+    if (agentType.startsWith('ae')) {
+      const groupEl = document.getElementById(`nav-group-extra-${agentType.substring(2)}`);
+      if (groupEl) {
+        const spanEl = groupEl.querySelector('.nav-group-header span:not(.chevron):not(.icon)');
+        if (spanEl) spanEl.textContent = name || `Agente Extra IA ${agentType.substring(2)}`;
+      }
+      return;
+    }
+    if (agentType === 'principal') {
+      const headers = document.querySelectorAll('.nav-group-header');
+      for (const h of headers) {
+        if (h.closest('#nav-group-objecao') || h.closest('#nav-group-prospecao')) continue;
+        if (!h.closest('[id^="nav-group-extra"]')) {
+          const span = h.querySelector('span:not(.chevron):not(.icon)');
+          if (span) { span.textContent = name || 'Agente Principal'; break; }
+        }
+      }
+      return;
+    }
+    const sel = sidebarMap[agentType];
+    if (sel) {
+      const el = document.querySelector(sel);
+      const defaults = { ob: 'Agente de Objeção', prospec: 'Agente de Prospecção' };
+      if (el) el.textContent = name || defaults[agentType] || agentType;
+    }
+  }
+
+  async function saveAgentName(agentType) {
+    const inputId = agentType === 'principal' ? 'cfg-nome_agente' : `cfg-${agentType}_nome_agente`;
+    const input = document.getElementById(inputId);
+    const statusId = `save-nome-${agentType}`;
+    if (!input) return;
+    const name = input.value.trim();
+    const statusEl = document.getElementById(statusId);
+    if (statusEl) { statusEl.textContent = 'Salvando...'; statusEl.style.color = 'var(--text3)'; }
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) throw new Error('Não autenticado');
+      const effectiveId = _effectiveUserId || user.id;
+      const key = agentType === 'principal' ? 'nome_agente' : `${agentType}_nome_agente`;
+      await db.from('agente_config').upsert({ user_id: effectiveId, chave: key, valor: name, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id,chave' });
+      previewAgentName(agentType, name);
+      if (statusEl) { statusEl.textContent = '✓ Salvo'; statusEl.style.color = '#4ade80'; setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 2000); }
+    } catch (e) {
+      if (statusEl) { statusEl.textContent = '✗ Erro: ' + e.message; statusEl.style.color = '#f87171'; }
+    }
+  }
+
+  async function loadAgentNames() {
+    // Carrega e aplica os nomes personalizados dos agentes
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      const effectiveId = _effectiveUserId || user.id;
+      const { data } = await db.from('agente_config').select('chave,valor').eq('user_id', effectiveId).like('chave', '%nome_agente%');
+      if (!data) return;
+      data.forEach(({ chave, valor }) => {
+        if (!valor) return;
+        let agentType = chave === 'nome_agente' ? 'principal' : chave.replace('_nome_agente', '');
+        previewAgentName(agentType, valor);
+        const inputEl = document.getElementById(agentType === 'principal' ? 'cfg-nome_agente' : `cfg-${agentType}_nome_agente`);
+        if (inputEl) inputEl.value = valor;
+      });
+    } catch (e) { console.warn('loadAgentNames:', e); }
+  }
+  // ─────────────────────────────────────────────────────────────────────
 
   async function saveConfigs(keys, statusPage) {
     // Determina o statusId baseado nas chaves ou página
