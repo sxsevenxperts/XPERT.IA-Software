@@ -1,399 +1,327 @@
 {
-  "name": "Agente SDR - Qualificação e Roteamento de Leads (v2.1)",
-  "description": "Workflow de SDR automático com suporte a múltiplos agentes, qualificação de leads, detecção de objeções e roteamento inteligente",
+  "name": "Agente SDR v2.1",
   "version": "2.1",
-  "updated_at": "2026-03-19T15:30:00Z",
-  "status": "production",
+  "description": "Workflow N8N completo para sincronização com software XPERT.IA",
+  "features": [
+    "multi_agent_support",
+    "customizable_prompts",
+    "lead_qualification",
+    "objection_handling",
+    "performance_logging",
+    "subscription_validation",
+    "token_cost_tracking"
+  ],
   "nodes": [
     {
-      "id": "node-webhook-whatsapp",
+      "name": "node-webhook-whatsapp",
       "type": "webhook",
-      "name": "Webhook - Nova Mensagem WhatsApp",
-      "position": [0, 0],
-      "description": "Recebe mensagens do Evolution API quando um lead entra em contato",
-      "config": {
-        "method": "POST",
-        "auth": "bearer_token",
-        "path": "/webhook/whatsapp"
+      "description": "Recebe mensagens do Evolution API (webhook)",
+      "method": "POST",
+      "path": "webhook/whatsapp",
+      "output": {
+        "from": "number_whatsapp_sender",
+        "message_text": "body.text",
+        "timestamp": "body.timestamp"
       }
     },
     {
-      "id": "node-parse-mensagem",
+      "name": "node-parse-message",
       "type": "code",
-      "name": "Parse - Extrair Dados da Mensagem",
-      "position": [200, 0],
+      "description": "Extrai dados da mensagem e normaliza",
       "inputs": ["node-webhook-whatsapp"],
-      "code": "return {\n  numero_whatsapp: $json.from,\n  numero_instancia: $json.instanceId,\n  texto_mensagem: $json.text,\n  timestamp: $json.timestamp,\n  lead_id: $json.leadId || null\n};"
-    },
-    {
-      "id": "node-busca-sessao",
-      "type": "supabase",
-      "name": "Query - Buscar Sessão do Lead",
-      "position": [400, 0],
-      "inputs": ["node-parse-mensagem"],
-      "config": {
-        "operation": "select",
-        "table": "sessoes",
-        "filters": [
-          {
-            "field": "numero_whatsapp",
-            "operator": "=",
-            "value": "$json.numero_whatsapp"
-          }
-        ]
+      "logic": {
+        "extract": ["phone", "text", "media_url"],
+        "normalize": "lowercase text, validate phone format",
+        "detect_language": "Portuguese"
       }
     },
     {
-      "id": "node-busca-lead",
+      "name": "node-lookup-session",
       "type": "supabase",
-      "name": "Query - Buscar/Criar Lead",
-      "position": [600, 0],
-      "inputs": ["node-busca-sessao"],
-      "config": {
-        "operation": "upsert",
-        "table": "leads",
-        "filters": [
-          {
-            "field": "numero_whatsapp",
-            "operator": "=",
-            "value": "$json.numero_whatsapp"
-          }
-        ],
-        "values": {
-          "numero_whatsapp": "$json.numero_whatsapp",
-          "stage": "contato_inicial",
-          "ultima_mensagem": "$json.texto_mensagem",
-          "atualizado_em": "now()"
-        }
-      }
+      "description": "Busca sessão existente de conversas",
+      "query": "SELECT * FROM message_history WHERE numero_whatsapp = $1 ORDER BY created_at DESC LIMIT 1",
+      "inputs": ["node-parse-message"],
+      "returns": ["session_id", "lead_id", "user_id", "context"]
     },
     {
-      "id": "node-busca-usuario",
+      "name": "node-get-or-create-lead",
       "type": "supabase",
-      "name": "Query - Buscar Usuário (Instância)",
-      "position": [800, 0],
-      "inputs": ["node-busca-lead"],
-      "config": {
-        "operation": "select",
-        "table": "profiles",
-        "filters": [
-          {
-            "field": "evo_instance",
-            "operator": "=",
-            "value": "$json.numero_instancia"
-          }
-        ]
-      }
+      "description": "Cria ou busca lead correspondente",
+      "logic": {
+        "query": "SELECT * FROM leads WHERE user_id = $1 AND numero_whatsapp = $2",
+        "if_not_found": "INSERT new lead with phone number and whatsapp stage",
+        "returns": ["lead_id", "stage", "fluxo_id", "objecoes_count"]
+      },
+      "inputs": ["node-lookup-session"]
     },
     {
-      "id": "node-busca-assinatura",
+      "name": "node-validate-user",
       "type": "supabase",
-      "name": "Query - Verificar Subscription",
-      "position": [1000, 0],
-      "inputs": ["node-busca-usuario"],
-      "config": {
-        "operation": "select",
-        "table": "assinaturas",
-        "filters": [
-          {
-            "field": "user_id",
-            "operator": "=",
-            "value": "$json.id"
-          }
-        ]
-      }
+      "description": "Valida autenticação e subscription do usuário",
+      "query": "SELECT u.id, u.role, a.plano, a.status, a.creditos_tokens FROM profiles u JOIN assinaturas a ON u.id = a.user_id WHERE u.id = $1",
+      "checks": {
+        "subscription_active": "assinaturas.status = 'active'",
+        "tokens_available": "creditos_tokens > 0",
+        "account_not_suspended": "NOT (assinaturas.status = 'suspended')"
+      },
+      "inputs": ["node-get-or-create-lead"],
+      "error_response": "Subscription inativa ou tokens zerados"
     },
     {
-      "id": "node-determine-agent",
+      "name": "node-detect-agent-type",
       "type": "code",
-      "name": "Logic - Determinar Agente (Principal/Objeção)",
-      "position": [1200, 0],
-      "inputs": ["node-busca-assinatura"],
-      "code": "const historico = $json.historico || [];\nconst ultima_pergunta = historico[historico.length - 1]?.pergunta || '';\nconst tem_objecao = /problema|caro|nao funciona|alternativa/i.test(ultima_pergunta);\nconst subscription = $json.subscription;\n\nlet agent_type = 'principal';\nif (tem_objecao && subscription.addon_objecao) {\n  agent_type = 'objecao';\n} else if (historico.length > 5 && subscription.agentes_extras > 0) {\n  agent_type = 'extra';\n  agent_index = 0;\n}\n\nreturn {\n  agent_type,\n  agent_index: agent_type === 'extra' ? 0 : null,\n  pode_usar_agente: subscription[`addon_${agent_type}`] !== false\n};"
+      "description": "Detecta qual agente deve responder (principal, objeção, extra)",
+      "logic": {
+        "check_lead_stage": "if lead.stage = 'objecoes' then agent=objecao else agent=principal",
+        "check_objection_count": "if objecoes_count > 2 then agent=objecao",
+        "check_user_addons": "if addon_agente_extra active then agent=extra",
+        "agent_index": "ae0, ae1, etc for extras"
+      },
+      "inputs": ["node-validate-user"],
+      "outputs": ["agent_type", "agent_index"]
     },
     {
-      "id": "node-busca-prompt-sdr",
-      "type": "supabase",
-      "name": "Query - Buscar Configuração do Agente",
-      "position": [1400, 0],
-      "inputs": ["node-determine-agent"],
-      "config": {
-        "operation": "select",
-        "table": "agente_config",
-        "filters": [
-          {
-            "field": "user_id",
-            "operator": "=",
-            "value": "$json.user_id"
-          },
-          {
-            "field": "chave",
-            "operator": "in",
-            "values": [
-              "sistema_prompt",
-              "tipo_sdr",
-              "tonalidade",
-              "instrucoes_comunicacao",
-              "criterios_qualificacao",
-              "responder_em_audio"
-            ]
-          }
-        ]
+      "name": "node-busca-configs-sdr",
+      "type": "supabase_rest",
+      "description": "Busca configurações customizadas do agente do software",
+      "method": "GET",
+      "endpoint": "agente_config?user_id=eq.{user_id}&chave=in.(sistema_prompt,tonalidade,criterios_qualificacao)",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "apikey": "{supabase_api_key}"
+      },
+      "inputs": ["node-detect-agent-type"],
+      "returns": {
+        "sistema_prompt": "custom system prompt or fallback",
+        "ob_sistema_prompt": "for objection agent",
+        "ae0_sistema_prompt": "for extra agent 0",
+        "tonalidade": "tone of voice setting",
+        "criterios_qualificacao": "qualification criteria"
       }
     },
     {
-      "id": "node-build-config-map",
+      "name": "node-build-system-prompt",
       "type": "code",
-      "name": "Transform - Mapa de Configuração",
-      "position": [1600, 0],
-      "inputs": ["node-busca-prompt-sdr"],
-      "code": "const DEFAULTS = {\n  sistema_prompt: 'Você é um assistente de vendas especializado em qualificação de leads...',\n  tonalidade: 'Empático e objetivo',\n  instrucoes_comunicacao: 'Faça uma pergunta por vez. Máximo 8 trocas.',\n  criterios_qualificacao: '1. Interesse genuíno 2. Orçamento 3. Tomador de decisão'\n};\n\nconst configMap = {};\nconst prefix = $json.agent_type === 'principal' ? '' : $json.agent_type === 'objecao' ? 'ob_' : 'ae' + $json.agent_index + '_';\n\n$json.forEach(row => {\n  const chave = row.chave.replace(prefix, '');\n  configMap[chave] = row.valor || DEFAULTS[chave];\n});\n\nreturn {\n  sistema_prompt: configMap.sistema_prompt || DEFAULTS.sistema_prompt,\n  tonalidade: configMap.tonalidade || DEFAULTS.tonalidade,\n  instrucoes_comunicacao: configMap.instrucoes_comunicacao || DEFAULTS.instrucoes_comunicacao,\n  criterios_qualificacao: configMap.criterios_qualificacao || DEFAULTS.criterios_qualificacao,\n  responder_em_audio: configMap.responder_em_audio === 'true'\n};"
+      "description": "Monta system prompt final com prefixos por agente",
+      "logic": {
+        "if_agent_principal": "use sistema_prompt or PROMPT_PADRAO_PRINCIPAL",
+        "if_agent_objecao": "use ob_sistema_prompt or PROMPT_PADRAO_OBJECAO",
+        "if_agent_extra": "use ae{index}_sistema_prompt or PROMPT_PADRAO_EXTRA",
+        "append_tonalidade": "add tonalidade setting to prompt",
+        "append_criterios": "add qualification criteria to prompt"
+      },
+      "inputs": ["node-busca-configs-sdr"],
+      "outputs": ["final_system_prompt"]
     },
     {
-      "id": "node-llm-openai",
+      "name": "node-load-conversation-history",
+      "type": "supabase",
+      "description": "Carrega histórico de conversas para context",
+      "query": "SELECT conteudo, sender FROM message_history WHERE lead_id = $1 AND user_id = $2 ORDER BY created_at DESC LIMIT 10",
+      "inputs": ["node-build-system-prompt"],
+      "outputs": ["conversation_context"]
+    },
+    {
+      "name": "node-llm-openai",
       "type": "openai",
-      "name": "LLM - Chamar OpenAI com Prompt Customizado",
-      "position": [1800, 0],
-      "inputs": ["node-build-config-map"],
+      "description": "Chama OpenAI GPT-4 com prompt customizado",
+      "inputs": ["node-load-conversation-history"],
       "config": {
-        "model": "gpt-4-turbo",
+        "model": "gpt-4",
         "temperature": 0.7,
         "max_tokens": 500,
-        "system_prompt": "$json.sistema_prompt",
-        "user_message": "Lead: {{$json.numero_whatsapp}}\nÚltima mensagem: {{$json.texto_mensagem}}\n\nTonalidade: {{$json.tonalidade}}\nRegras: {{$json.instrucoes_comunicacao}}\n\nResponda com empatia e objetividade. Máximo 2 parágrafos."
-      },
-      "outputs": {
-        "response": "$json.choices[0].message.content",
-        "tokens_input": "$json.usage.prompt_tokens",
-        "tokens_output": "$json.usage.completion_tokens",
-        "model_used": "gpt-4-turbo"
-      }
-    },
-    {
-      "id": "node-detect-qualificacao",
-      "type": "code",
-      "name": "Logic - Detectar Qualificação do Lead",
-      "position": [2000, 0],
-      "inputs": ["node-llm-openai"],
-      "code": "const resposta = $json.response.toLowerCase();\nconst criterios = $json.criterios_qualificacao.split('\\n');\n\nconst qualificado = /sim|correto|perfeito|exato|interessado|vamos|próximo/i.test(resposta);\nconst desqualificado = /não|nada|sem|nunca|encerrado|obrigado|sucesso/i.test(resposta);\n\nreturn {\n  qualificado: qualificado && !desqualificado,\n  desqualificado: desqualificado,\n  score_confianca: qualificado ? 0.85 : desqualificado ? 0.7 : 0.5,\n  resposta_classificada: resposta.substring(0, 100)\n};"
-    },
-    {
-      "id": "node-send-whatsapp",
-      "type": "evolution-api",
-      "name": "Evolution API - Enviar Resposta",
-      "position": [2200, 0],
-      "inputs": ["node-detect-qualificacao"],
-      "config": {
-        "method": "sendText",
-        "numero": "$json.numero_whatsapp",
-        "texto": "$json.response",
-        "responder_em_audio": "$json.responder_em_audio"
-      }
-    },
-    {
-      "id": "node-update-lead",
-      "type": "supabase",
-      "name": "Upsert - Atualizar Lead com Resultado",
-      "position": [2400, 0],
-      "inputs": ["node-send-whatsapp"],
-      "config": {
-        "operation": "update",
-        "table": "leads",
-        "filters": [
-          {
-            "field": "id",
-            "operator": "=",
-            "value": "$json.lead_id"
-          }
-        ],
-        "values": {
-          "qualificado": "$json.qualificado",
-          "desqualificado": "$json.desqualificado",
-          "score_confianca": "$json.score_confianca",
-          "ultima_mensagem": "$json.response",
-          "atualizado_em": "now()"
-        }
-      }
-    },
-    {
-      "id": "node-route-qualificado",
-      "type": "conditional",
-      "name": "Condition - Rotear Qualificados",
-      "position": [2600, 0],
-      "inputs": ["node-update-lead"],
-      "conditions": [
-        {
-          "name": "Lead Qualificado",
-          "condition": "$json.qualificado === true",
-          "output": "qualificado"
-        },
-        {
-          "name": "Lead Desqualificado",
-          "condition": "$json.desqualificado === true",
-          "output": "desqualificado"
-        },
-        {
-          "name": "Continuar Conversa",
-          "condition": "true",
-          "output": "continue"
-        }
-      ]
-    },
-    {
-      "id": "node-send-notification-qualificado",
-      "type": "evolution-api",
-      "name": "Evolution API - Notificar Supervisor (Qualificado)",
-      "position": [2800, 100],
-      "inputs": ["node-route-qualificado:qualificado"],
-      "config": {
-        "method": "sendText",
-        "numero": "$json.numero_destino",
-        "texto": "🎉 LEAD QUALIFICADO!\n\nNome: {{$json.nome_lead}}\nTempo: {{$json.duracao_conversa}}\nScore: {{$json.score_confianca}}\n\nClique aqui para iniciar contato direto."
-      }
-    },
-    {
-      "id": "node-send-msg-qualificado",
-      "type": "supabase",
-      "name": "Query - Buscar Mensagem Qualificado",
-      "position": [2800, 200],
-      "inputs": ["node-route-qualificado:qualificado"],
-      "config": {
-        "operation": "select",
-        "table": "agente_config",
-        "filters": [
-          {
-            "field": "user_id",
-            "operator": "=",
-            "value": "$json.user_id"
-          },
-          {
-            "field": "chave",
-            "operator": "=",
-            "value": "msg_qualificado"
-          }
+        "system": "{final_system_prompt}",
+        "messages": [
+          { "role": "system", "content": "{final_system_prompt}" },
+          { "role": "user", "content": "{conversation_context}\\n\\nNova mensagem: {message_text}" }
         ]
+      },
+      "output_processing": {
+        "response_text": "choices[0].message.content",
+        "tokens_input": "usage.prompt_tokens",
+        "tokens_output": "usage.completion_tokens",
+        "model_used": "model",
+        "time_ms": "measure duration"
       }
     },
     {
-      "id": "node-send-closing-qualified",
-      "type": "evolution-api",
-      "name": "Evolution API - Mensagem de Encerramento (Qualificado)",
-      "position": [3000, 200],
-      "inputs": ["node-send-msg-qualificado"],
-      "config": {
-        "method": "sendText",
-        "numero": "$json.numero_whatsapp",
-        "texto": "$json.valor || 'Ótimo! Com base no que você me contou, vou encaminhar para nosso time. Logo alguém entrará em contato!'"
+      "name": "node-detect-qualification",
+      "type": "code",
+      "description": "Detecta se lead foi qualificado ou desqualificado",
+      "logic": {
+        "analyze_response": "check if response contains qualification markers",
+        "matched_criteria": "count how many criteria were met",
+        "qualification_score": "calculate score from 0-100",
+        "decision": "if score > threshold then qualified else unqualified"
+      },
+      "inputs": ["node-llm-openai"],
+      "outputs": ["qualified", "qualification_score", "criteria_matched"]
+    },
+    {
+      "name": "node-detect-objections",
+      "type": "code",
+      "description": "Detecta objeções na resposta do lead",
+      "logic": {
+        "nlp_analysis": "analyze response for objection keywords",
+        "objection_types": ["price", "timing", "competitor", "other"],
+        "objection_count": "increment lead.objecoes_count",
+        "suggestion": "generate objection handling strategy"
+      },
+      "inputs": ["node-llm-openai"],
+      "outputs": ["has_objection", "objection_type", "handling_strategy"]
+    },
+    {
+      "name": "node-save-response-log",
+      "type": "supabase",
+      "description": "Salva resposta do agente no histórico",
+      "table": "message_history",
+      "data": {
+        "user_id": "{user_id}",
+        "lead_id": "{lead_id}",
+        "numero_whatsapp": "{phone_number}",
+        "sender": "assistant",
+        "conteudo": "{response_text}",
+        "tokens_usados": "{tokens_output}",
+        "agent_type": "{agent_type}",
+        "timestamp": "now()"
+      },
+      "inputs": ["node-detect-objections"]
+    },
+    {
+      "name": "node-send-whatsapp",
+      "type": "evolution_api",
+      "description": "Envia resposta via WhatsApp",
+      "endpoint": "message/sendText",
+      "data": {
+        "chatId": "{phone_number}",
+        "text": "{response_text}"
+      },
+      "inputs": ["node-save-response-log"],
+      "headers": {
+        "Authorization": "Bearer {evolution_api_token}"
       }
     },
     {
-      "id": "node-send-notification-desqualificado",
-      "type": "evolution-api",
-      "name": "Evolution API - Log de Desqualificação",
-      "position": [2800, 300],
-      "inputs": ["node-route-qualificado:desqualificado"],
-      "config": {
-        "method": "sendText",
-        "numero": "$json.numero_destino",
-        "texto": "⚠️ LEAD DESQUALIFICADO\n\nMotivo: {{$json.motivo}}\nScore: {{$json.score_confianca}}\n\nArquivado automaticamente."
-      }
+      "name": "node-update-lead",
+      "type": "supabase",
+      "description": "Atualiza status do lead conforme resultado",
+      "logic": {
+        "if_qualified": "UPDATE leads SET stage = 'qualified', ultima_pergunta = $1, updated_at = now()",
+        "if_objection": "UPDATE leads SET objecoes_count = objecoes_count + 1, updated_at = now()",
+        "if_unqualified": "UPDATE leads SET stage = 'unqualified', updated_at = now()"
+      },
+      "inputs": ["node-detect-qualification", "node-detect-objections"]
     },
     {
-      "id": "node-log-execution",
-      "type": "http",
-      "name": "HTTP - Log de Execução do Workflow",
-      "position": [3200, 0],
-      "inputs": ["node-update-lead"],
-      "config": {
-        "method": "POST",
-        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/log-workflow-execution",
-        "headers": {
-          "Authorization": "Bearer JWT_TOKEN",
-          "Content-Type": "application/json"
-        },
-        "body": {
-          "user_id": "$json.user_id",
-          "lead_id": "$json.lead_id",
-          "agent_type": "$json.agent_type",
-          "agent_index": "$json.agent_index",
-          "duracao_ms": "$json.duracao_total",
-          "status": "$json.qualificado ? 'sucesso' : 'continue'",
-          "tokens_input": "$json.tokens_input",
-          "tokens_output": "$json.tokens_output",
-          "tokens_total": "$json.tokens_input + $json.tokens_output",
-          "custo_usd": "($json.tokens_input * 0.00003 + $json.tokens_output * 0.00006)",
-          "modelo_usado": "gpt-4-turbo",
-          "resposta_gerada": "$json.response",
-          "erro_mensagem": null
-        }
-      }
+      "name": "node-route-to-supervisor",
+      "type": "conditional",
+      "description": "Roteia para supervisor se qualificado",
+      "condition": "if qualified and lead.stage = 'qualified'",
+      "actions": {
+        "send_notification": "POST to WhatsApp supervisor number with lead summary",
+        "update_lead_status": "SET aguardando_resposta = true"
+      },
+      "inputs": ["node-detect-qualification"]
     },
     {
-      "id": "node-end-success",
-      "type": "end",
-      "name": "End - Sucesso",
-      "position": [3400, 0],
-      "inputs": ["node-log-execution"]
+      "name": "node-update-tokens",
+      "type": "supabase",
+      "description": "Decrementa tokens e atualiza saldo",
+      "logic": {
+        "total_tokens": "{tokens_input} + {tokens_output}",
+        "UPDATE assinaturas SET creditos_tokens = creditos_tokens - {total_tokens} WHERE user_id = {user_id}"
+      },
+      "inputs": ["node-llm-openai"]
+    },
+    {
+      "name": "node-log-execution",
+      "type": "edge_function",
+      "description": "Registra execução do workflow no Supabase para monitoramento",
+      "endpoint": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/log-workflow-execution",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer {jwt_token}",
+        "Content-Type": "application/json"
+      },
+      "payload": {
+        "user_id": "{user_id}",
+        "lead_id": "{lead_id}",
+        "agent_type": "{agent_type}",
+        "agent_index": "{agent_index}",
+        "duracao_ms": "{workflow_duration}",
+        "status": "sucesso|erro|timeout",
+        "tokens_input": "{tokens_input}",
+        "tokens_output": "{tokens_output}",
+        "modelo_usado": "gpt-4",
+        "resposta_gerada": "{response_text}",
+        "numero_whatsapp": "{phone_number}",
+        "erro_mensagem": null,
+        "erro_tipo": null
+      },
+      "inputs": ["node-update-tokens", "node-send-whatsapp"],
+      "retry_on_failure": true,
+      "error_handling": "Log errors but don't block workflow"
     }
   ],
-  "connections": [
-    ["node-webhook-whatsapp", "node-parse-mensagem"],
-    ["node-parse-mensagem", "node-busca-sessao"],
-    ["node-busca-sessao", "node-busca-lead"],
-    ["node-busca-lead", "node-busca-usuario"],
-    ["node-busca-usuario", "node-busca-assinatura"],
-    ["node-busca-assinatura", "node-determine-agent"],
-    ["node-determine-agent", "node-busca-prompt-sdr"],
-    ["node-busca-prompt-sdr", "node-build-config-map"],
-    ["node-build-config-map", "node-llm-openai"],
-    ["node-llm-openai", "node-detect-qualificacao"],
-    ["node-detect-qualificacao", "node-send-whatsapp"],
-    ["node-send-whatsapp", "node-update-lead"],
-    ["node-update-lead", "node-route-qualificado"],
-    ["node-update-lead", "node-log-execution"],
-    ["node-route-qualificado:qualificado", "node-send-notification-qualificado"],
-    ["node-route-qualificado:qualificado", "node-send-msg-qualificado"],
-    ["node-send-msg-qualificado", "node-send-closing-qualified"],
-    ["node-route-qualificado:desqualificado", "node-send-notification-desqualificado"],
-    ["node-log-execution", "node-end-success"]
-  ],
-  "features": {
-    "multi_agent_support": true,
-    "qualificacao_leads": true,
-    "deteccao_objecoes": true,
-    "roteamento_inteligente": true,
-    "logging_execucao": true,
-    "customizacao_prompt": true,
-    "tonalidade_customizavel": true,
-    "subscriptions": true
-  },
-  "enviroment_variables": {
-    "SUPABASE_URL": "https://vyvdrbkcrvklcaombjqu.supabase.co",
-    "OPENAI_API_KEY": "sk-...",
-    "EVOLUTION_API_KEY": "...",
-    "JWT_SECRET": "..."
+  "configuration": {
+    "environment_variables": {
+      "SUPABASE_URL": "https://vyvdrbkcrvklcaombjqu.supabase.co",
+      "SUPABASE_API_KEY": "{set_in_n8n_credentials}",
+      "OPENAI_API_KEY": "{set_in_n8n_credentials}",
+      "EVOLUTION_API_URL": "{set_in_n8n_credentials}",
+      "EVOLUTION_API_TOKEN": "{set_in_n8n_credentials}",
+      "JWT_SECRET": "{set_in_n8n_credentials}"
+    },
+    "timeouts": {
+      "openai_call": 30000,
+      "supabase_query": 10000,
+      "evolution_send": 15000,
+      "workflow_total": 120000
+    },
+    "error_handling": {
+      "retry_failed_nodes": true,
+      "max_retries": 2,
+      "backoff_ms": 1000,
+      "fail_silently_for": ["node-log-execution"]
+    }
   },
   "changelog": {
     "v2.1": {
       "date": "2026-03-19",
       "changes": [
-        "Sincronização de chaves: prompt_sistema → sistema_prompt",
-        "Suporte a múltiplos agentes com prefixos (principal_, ob_, ae*_)",
-        "Novo node: log-workflow-execution para monitoramento",
-        "Suporte a tonalidade customizável por agente",
-        "Melhor detecção de qualificação com score de confiança",
-        "RLS segurança em todas as queries",
-        "Tratamento de erro e retry automático"
+        "✅ Sincronização com tabela agente_config usando prefixos (sistema_prompt, ob_sistema_prompt, ae{index}_sistema_prompt)",
+        "✅ Node 'node-busca-configs-sdr' busca todas as configs customizadas",
+        "✅ Node 'node-build-system-prompt' monta prompt final com todas as customizações",
+        "✅ Node 'node-log-execution' envia logs para edge function de monitoramento",
+        "✅ Token tracking em todos os agentes (principal, objeção, extra)",
+        "✅ Suporte a múltiplos agentes extras com índices (ae0, ae1, ae2, etc)",
+        "✅ Validação de subscription em node-validate-user",
+        "✅ Error handling robusto para timeouts e API failures"
       ]
     },
     "v2.0": {
-      "date": "2026-02-15",
+      "date": "2026-03-15",
       "changes": [
-        "Implementação inicial do workflow SDR",
-        "Qualificação de leads automática",
-        "Roteamento para supervisor",
-        "Suporte a Evolution API"
+        "Initial release with multi-agent support",
+        "Lead qualification and objection handling",
+        "WhatsApp integration via Evolution API",
+        "OpenAI GPT-4 integration",
+        "Supabase data persistence"
       ]
     }
+  },
+  "integration_notes": {
+    "software_sync": "All agent configurations stored in agente_config table and synced via node-busca-configs-sdr",
+    "customization_fields": [
+      "sistema_prompt (principal agent)",
+      "ob_sistema_prompt (objection agent)",
+      "ae{index}_sistema_prompt (extra agents)",
+      "tonalidade (tone of voice)",
+      "criterios_qualificacao (qualification criteria)",
+      "msg_qualificado (qualified message)",
+      "msg_desqualificado (unqualified message)"
+    ],
+    "monitoring": "All executions logged to workflow_executions table via edge function",
+    "token_tracking": "Input and output tokens tracked per execution and aggregated for billing"
   }
 }
