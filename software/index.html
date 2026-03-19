@@ -2061,11 +2061,8 @@
   .tab-v-nav { flex:0 0 200px; width:200px; min-height:300px; display:flex; flex-direction:column; gap:1px; border-right:1px solid var(--border); padding:4px 0 20px; }
   .tab-v-content { flex:1; overflow-x:auto; padding-left:24px; min-width:0; }
 
-  /* agente-cfg-tabs vertical */
-  .tab-v-nav.agente-cfg-tabs { border-bottom:none !important; margin-bottom:0 !important; padding-bottom:20px; }
-  .tab-v-nav .agente-cfg-tab { text-align:left; border-bottom:none !important; border-left:3px solid transparent; border-radius:0 8px 8px 0; padding:10px 14px !important; margin-bottom:0 !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .tab-v-nav .agente-cfg-tab:hover { background:rgba(255,255,255,.04); color:var(--text1); }
-  .tab-v-nav .agente-cfg-tab.active { border-left-color:var(--lime) !important; border-bottom-color:transparent !important; background:rgba(163,230,53,.1); color:var(--lime) !important; }
+  /* agente-cfg-tabs: escondido — navegação já está na sidebar */
+  .agente-cfg-tabs { display:none !important; }
 
   /* billing-tabs vertical */
   .tab-v-nav.billing-tabs { background:transparent !important; border-radius:0 !important; padding:4px 0 20px; margin-bottom:0 !important; }
@@ -15479,13 +15476,9 @@
       }
     }
 
-    // 1. agente-cfg-tabs (Principal, Objeção, Prospecção, Extras)
-    document.querySelectorAll('.agente-cfg-tabs:not(.tab-v-nav)').forEach(nav => {
-      nav.classList.add('tab-v-nav');
-      wrapVertical(nav, el => el.id && /-tab-/.test(el.id));
-    });
+    // agente-cfg-tabs: escondido via CSS — navegação feita pela sidebar
 
-    // 2. billing-tabs (Assinatura / Marketplace)
+    // 1. billing-tabs (Assinatura / Marketplace)
     document.querySelectorAll('.billing-tabs:not(.tab-v-nav)').forEach(nav => {
       nav.classList.add('tab-v-nav');
       wrapVertical(nav, el => el.classList.contains('billing-tab-pane'));
