@@ -272,6 +272,21 @@
     .nav-item .badge-dot { width: 8px; height: 8px; border-radius: 50%; margin-left: auto; }
     .badge-dot.online { background: #22c55e; }
     .badge-dot.offline { background: #ef4444; }
+
+    /* HIERARCHICAL NAV - Groups & Sub-items */
+    .nav-group { margin-bottom: 8px; }
+    .nav-group-header { display: flex; align-items: center; gap: 8px; padding: 12px 24px; cursor: pointer; border-radius: 6px; font-weight: 500; user-select: none; transition: background-color 0.2s; color: rgba(255,255,255,0.6); font-size: 14px; }
+    .nav-group-header:hover { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-group-header .chevron { transition: transform 0.2s; display: inline-block; font-size: 14px; }
+    .nav-group-header.collapsed .chevron { transform: rotate(-90deg); }
+    .nav-group-items { display: flex; flex-direction: column; gap: 0; padding-left: 24px; max-height: 1000px; overflow: hidden; transition: max-height 0.3s ease; }
+    .nav-group-items.collapsed { max-height: 0; padding: 0; }
+    .nav-subitem { padding: 10px 24px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: background-color 0.2s; display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.6); border-left: 3px solid transparent; }
+    .nav-subitem:hover:not(.disabled) { color: #fff; background: rgba(255,255,255,0.05); }
+    .nav-subitem.disabled { opacity: 0.5; cursor: not-allowed; color: #999; }
+    .nav-subitem.active { color: #a3e635; border-left-color: #a3e635; background: rgba(163,230,53,0.08); }
+    .nav-subitem .lock-icon { font-size: 12px; margin-left: auto; }
+
     .sidebar-bottom { margin-top: auto; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
     .btn-logout { width: 100%; padding: 10px; background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
     .btn-logout:hover { background: rgba(239,68,68,0.25); }
@@ -1472,27 +1487,49 @@
         <span class="icon"><i data-lucide="users"></i></span> Equipe
       </div>
       <div class="nav-section membro-hidden">Configuração</div>
-      <div class="nav-item membro-hidden" onclick="showPage('agente', this)">
-        <span class="icon"><i data-lucide="bot"></i></span> Agente & Prompt
+
+      <!-- AGENTE PRINCIPAL GROUP -->
+      <div class="nav-group membro-hidden">
+        <div class="nav-group-header" onclick="toggleNavGroup(this)">
+          <span class="chevron">▼</span>
+          <span class="icon" style="font-size:14px;"><i data-lucide="bot"></i></span>
+          <span>Agente Principal</span>
+        </div>
+        <div class="nav-group-items">
+          <div class="nav-subitem active" onclick="navigateToAgentTab('principal', 'modelo', this)">Modelo de IA</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('principal', 'prompt', this)">Prompt</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('principal', 'comunicacao', this)">Comunicação</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('principal', 'qualificacao', this)">Qualificação</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('principal', 'base', this)">Base de Conhecimento</div>
+        </div>
       </div>
-      <div class="nav-item membro-hidden addon-objecao-nav" id="nav-agente-objecao" onclick="showPage('agente-objecao', this)" style="display:none;">
-        <span class="icon"><i data-lucide="shield"></i></span> Agente de Objeção
+
+      <!-- AGENTE DE OBJEÇÃO GROUP -->
+      <div class="nav-group membro-hidden" id="nav-group-objecao" style="display:none;">
+        <div class="nav-group-header" onclick="toggleNavGroup(this)">
+          <span class="chevron">▼</span>
+          <span class="icon" style="font-size:14px;"><i data-lucide="shield"></i></span>
+          <span>Agente de Objeção</span>
+          <span class="lock-icon" id="lock-objecao" style="display:none;">🔒</span>
+        </div>
+        <div class="nav-group-items">
+          <div class="nav-subitem" onclick="navigateToAgentTab('ob', 'modelo', this)">Modelo de IA</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('ob', 'prompt', this)">Prompt</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('ob', 'comunicacao', this)">Comunicação</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('ob', 'qualificacao', this)">Qualificação</div>
+          <div class="nav-subitem" onclick="navigateToAgentTab('ob', 'base', this)">Base de Conhecimento</div>
+        </div>
       </div>
+
+      <!-- AGENTES EXTRAS GROUPS (dinâmico) -->
       <div id="nav-agentes-extras-container"></div>
+
+      <!-- OUTROS ITENS DE CONFIGURAÇÃO -->
       <div class="nav-item membro-hidden" id="nav-numeros-extras" onclick="showPage('numeros-extras', this)" style="display:none;">
         <span class="icon"><i data-lucide="phone"></i></span> Números Extras
       </div>
       <div class="nav-item membro-hidden" onclick="showPage('workflows', this)">
         <span class="icon"><i data-lucide="git-branch"></i></span> Workflows
-      </div>
-      <div class="nav-item membro-hidden" onclick="showPage('comunicacao', this)">
-        <span class="icon"><i data-lucide="message-square"></i></span> Comunicação
-      </div>
-      <div class="nav-item membro-hidden" onclick="showPage('qualificacao', this)">
-        <span class="icon"><i data-lucide="filter"></i></span> Qualificação
-      </div>
-      <div class="nav-item membro-hidden" onclick="showPage('pdfs', this)">
-        <span class="icon"><i data-lucide="book-open"></i></span> Base de Conhecimento
       </div>
       <div class="nav-section">Resultados</div>
       <div class="nav-item membro-hidden" onclick="showPage('analytics', this)">
@@ -5045,6 +5082,7 @@
     setTimeout(checkTaskReminder, 3000); // popup de tarefas após token alert
     checkWAStatus();
     waStatusInterval = setInterval(checkWAStatus, 15000);
+    initializeNavHierarchy(); // Inicializa navegação hierárquica no sidebar
   }
 
   // =====================
@@ -5087,8 +5125,9 @@
 
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
-    el.classList.add('active');
+    if (el) el.classList.add('active');
     if (name === 'leads') loadLeads();
     if (name === 'agente') { loadAiConfig(); loadWebAgente(); checkGCalStatus(); loadAgentes(); }
     if (name === 'crm') { loadCRM(); setTimeout(checkReminders, 500); }
@@ -5851,6 +5890,163 @@
         tabContainer.insertBefore(notice, tabContainer.firstChild);
       }
     }
+  }
+
+  // ============ HIERARCHICAL NAV FUNCTIONS ============
+
+  function toggleNavGroup(headerEl) {
+    const group = headerEl.parentElement;
+    const items = group.querySelector('.nav-group-items');
+    const chevron = headerEl.querySelector('.chevron');
+
+    if (!group.classList.contains('collapsed')) {
+      group.classList.add('collapsed');
+      items.classList.add('collapsed');
+      chevron.style.transform = 'rotate(-90deg)';
+    } else {
+      group.classList.remove('collapsed');
+      items.classList.remove('collapsed');
+      chevron.style.transform = 'rotate(0deg)';
+    }
+
+    // Persist in localStorage
+    const groupName = headerEl.textContent.trim().replace(/[^a-zA-Z0-9]/g, '-');
+    localStorage.setItem(`nav-group-${groupName}-collapsed`, group.classList.contains('collapsed'));
+  }
+
+  async function navigateToAgentTab(agentType, tab, subitemEl) {
+    // Mapear tipo para prefix e índice
+    let prefix = agentType;
+    let agentIndex = 0;
+
+    if (agentType === 'ob') {
+      agentIndex = 0;
+    } else if (agentType.startsWith('ae')) {
+      agentIndex = parseInt(agentType.substring(2));
+    }
+
+    // Determinar agentType para checkSubscription
+    let checkType = agentType === 'principal' ? 'main'
+                  : agentType === 'ob' ? 'objecao'
+                  : 'extra';
+
+    // Verificar subscription
+    const { canEdit, reason } = await checkSubscriptionForAgent(checkType, agentIndex);
+    if (!canEdit) {
+      showModal('🔒 Acesso Bloqueado', reason || 'Você não tem permissão para acessar esta configuração');
+      return;
+    }
+
+    // Mapear agente para página
+    let pageName;
+    if (agentType === 'principal') {
+      pageName = 'page-agente';
+    } else if (agentType === 'ob') {
+      pageName = 'page-agente-objecao';
+    } else if (agentType.startsWith('ae')) {
+      const idx = parseInt(agentType.substring(2));
+      pageName = `page-agente-extra-${idx}`;
+    }
+
+    // Navegar para página
+    showPage(pageName, subitemEl);
+
+    // Mudar aba dentro da página após um pequeno delay
+    setTimeout(() => {
+      switchAgenteTab(prefix, tab);
+    }, 100);
+
+    // Marcar como active no sidebar
+    document.querySelectorAll('.nav-subitem.active').forEach(el => {
+      el.classList.remove('active');
+    });
+    subitemEl.classList.add('active');
+  }
+
+  async function initializeNavHierarchy() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const { data: assinatura } = await db.from('assinaturas')
+      .select('addon_objecao,agentes_extras')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    // Mostrar/esconder Agente de Objeção
+    const objecaoGroup = document.getElementById('nav-group-objecao');
+    if (objecaoGroup) {
+      objecaoGroup.style.display = 'block'; // sempre mostra
+
+      const hasObjecaoAddon = assinatura?.addon_objecao === true;
+      const lockObjecao = document.getElementById('lock-objecao');
+
+      // Marcar com lock se sem addon
+      if (lockObjecao) {
+        lockObjecao.style.display = hasObjecaoAddon ? 'none' : 'inline';
+      }
+
+      // Desabilitar sub-items se sem addon
+      if (!hasObjecaoAddon) {
+        objecaoGroup.querySelectorAll('.nav-subitem').forEach(el => {
+          el.classList.add('disabled');
+        });
+      } else {
+        objecaoGroup.querySelectorAll('.nav-subitem').forEach(el => {
+          el.classList.remove('disabled');
+        });
+      }
+    }
+
+    // Dinâmico: Agentes Extras
+    const agentesExtrasCount = assinatura?.agentes_extras || 0;
+    const extrasContainer = document.getElementById('nav-agentes-extras-container');
+    if (extrasContainer) {
+      extrasContainer.innerHTML = ''; // Limpar container
+
+      for (let i = 0; i < agentesExtrasCount; i++) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'nav-group membro-hidden';
+        groupDiv.id = `nav-group-extra-${i}`;
+
+        groupDiv.innerHTML = `
+          <div class="nav-group-header" onclick="toggleNavGroup(this)">
+            <span class="chevron">▼</span>
+            <span class="icon" style="font-size:14px;"><i data-lucide="settings"></i></span>
+            <span>Agente Extra #${i + 1}</span>
+          </div>
+          <div class="nav-group-items">
+            <div class="nav-subitem" onclick="navigateToAgentTab('ae${i}', 'modelo', this)">Modelo de IA</div>
+            <div class="nav-subitem" onclick="navigateToAgentTab('ae${i}', 'prompt', this)">Prompt</div>
+            <div class="nav-subitem" onclick="navigateToAgentTab('ae${i}', 'comunicacao', this)">Comunicação</div>
+            <div class="nav-subitem" onclick="navigateToAgentTab('ae${i}', 'qualificacao', this)">Qualificação</div>
+            <div class="nav-subitem" onclick="navigateToAgentTab('ae${i}', 'base', this)">Base de Conhecimento</div>
+          </div>
+        `;
+
+        extrasContainer.appendChild(groupDiv);
+      }
+
+      // Atualizar Lucide icons para elementos recém criados
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    // Restaurar estado de collapse do localStorage
+    document.querySelectorAll('.nav-group').forEach(group => {
+      const headerEl = group.querySelector('.nav-group-header');
+      if (headerEl) {
+        const groupName = headerEl.textContent.trim().replace(/[^a-zA-Z0-9]/g, '-');
+        const wasCollapsed = localStorage.getItem(`nav-group-${groupName}-collapsed`);
+        if (wasCollapsed === 'true') {
+          group.classList.add('collapsed');
+          const items = group.querySelector('.nav-group-items');
+          if (items) items.classList.add('collapsed');
+          const chevron = headerEl.querySelector('.chevron');
+          if (chevron) chevron.style.transform = 'rotate(-90deg)';
+        }
+      }
+    });
   }
 
   async function addAgenteWebUrl(prefix) {
