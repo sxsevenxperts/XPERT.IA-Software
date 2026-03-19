@@ -1518,6 +1518,16 @@
       <div class="nav-item membro-hidden" onclick="showPage('perfil', this)">
         <span class="icon"><i data-lucide="user"></i></span> Perfil
       </div>
+      <div class="nav-section membro-hidden">Integrações</div>
+      <div class="nav-item membro-hidden" onclick="showPage('email', this)">
+        <span class="icon"><i data-lucide="mail"></i></span> Email
+      </div>
+      <div class="nav-item membro-hidden" onclick="showPage('sheets', this)">
+        <span class="icon"><i data-lucide="sheet"></i></span> Google Sheets
+      </div>
+      <div class="nav-item membro-hidden" onclick="showPage('pagamentos', this)">
+        <span class="icon"><i data-lucide="credit-card"></i></span> Pagamentos
+      </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
       <div class="nav-item admin-only" onclick="showPage('monitoramento', this)">
         <span class="icon"><i data-lucide="activity"></i></span> Monitoramento
@@ -4540,6 +4550,135 @@
       </div>
     </div>
 
+    <!-- EMAIL -->
+    <div class="page membro-hidden" id="page-email">
+      <div class="page-header">
+        <h1>📧 Email - Follow-up Automático</h1>
+        <p>Conecte Gmail ou Outlook para enviar emails automáticos aos seus leads</p>
+      </div>
+      <div style="display:grid;gap:20px;max-width:600px;">
+        <div id="email-status" style="padding:16px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+          <div style="text-align:center;color:var(--text2);">Conectando...</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="connectEmail('gmail')" style="flex:1;min-width:150px;" class="btn-primary">Conectar Gmail</button>
+          <button onclick="connectEmail('outlook')" style="flex:1;min-width:150px;" class="btn-primary">Conectar Outlook</button>
+          <button onclick="disconnectEmail()" style="flex:1;min-width:150px;display:none;" id="btn-email-disconnect" class="btn-danger">Desconectar</button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:20px;">
+          <h3>Templates de Email</h3>
+          <textarea id="email-template" placeholder="Seu template aqui (use {nome}, {data}, {valor})..." style="width:100%;height:120px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:monospace;"></textarea>
+          <button onclick="saveEmailTemplate()" style="margin-top:12px;" class="btn-primary">Salvar Template</button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:20px;">
+          <h3>Enviar Teste</h3>
+          <input type="email" id="email-test-recipient" placeholder="seu@email.com" style="width:100%;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);margin-bottom:12px;" />
+          <button onclick="sendTestEmail()" class="btn-primary">Enviar Email de Teste</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOOGLE SHEETS -->
+    <div class="page membro-hidden" id="page-sheets">
+      <div class="page-header">
+        <h1>📊 Google Sheets - Exportar Dados</h1>
+        <p>Conecte Google Sheets para exportar leads, conversas e métricas automaticamente</p>
+      </div>
+      <div style="display:grid;gap:20px;max-width:600px;">
+        <div id="sheets-status" style="padding:16px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+          <div style="text-align:center;color:var(--text2);">Conectando...</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button onclick="connectSheets()" style="flex:1;min-width:200px;" class="btn-primary">Conectar Google Sheets</button>
+          <button onclick="disconnectSheets()" style="flex:1;min-width:200px;display:none;" id="btn-sheets-disconnect" class="btn-danger">Desconectar</button>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:20px;">
+          <h3>Configurações de Exportação</h3>
+          <label style="display:block;margin-bottom:8px;">Planilha Padrão:</label>
+          <select id="sheets-default-id" style="width:100%;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);margin-bottom:16px;">
+            <option value="">Criar nova...</option>
+          </select>
+          <label style="display:block;margin-bottom:8px;font-weight:600;">O que exportar:</label>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label><input type="checkbox" id="export-leads-daily" checked /> Leads diários (automático)</label>
+            <label><input type="checkbox" id="export-conversations" /> Histórico de conversas</label>
+            <label><input type="checkbox" id="export-metrics" /> Métricas (diárias)</label>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:20px;">
+          <h3>Exportação Manual</h3>
+          <button onclick="exportLeadsNow()" class="btn-primary">Exportar Leads Agora</button>
+          <button onclick="exportConversationsNow()" class="btn-primary" style="margin-top:8px;">Exportar Conversas</button>
+          <button onclick="exportMetricsNow()" class="btn-primary" style="margin-top:8px;">Exportar Métricas</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGAMENTOS -->
+    <div class="page membro-hidden" id="page-pagamentos">
+      <div class="page-header">
+        <h1>💳 Gerenciar Pagamentos</h1>
+        <p>Cobre seus clientes com múltiplas gateways de pagamento (Asaas, Stripe, Mercado Pago, InfinitePay)</p>
+      </div>
+      <div style="display:grid;gap:20px;">
+        <!-- Cards das Provedoras -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+          <div style="padding:20px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+            <h3 style="margin-top:0;">💰 Asaas</h3>
+            <div id="asaas-status" style="font-size:13px;margin-bottom:12px;color:var(--text2);">—</div>
+            <button onclick="connectPaymentProvider('asaas')" id="btn-asaas-connect" class="btn-primary">Conectar Asaas</button>
+            <button onclick="disconnectPaymentProvider('asaas')" id="btn-asaas-disconnect" class="btn-danger" style="display:none;">Desconectar</button>
+          </div>
+          <div style="padding:20px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+            <h3 style="margin-top:0;">🔵 Stripe</h3>
+            <div id="stripe-status" style="font-size:13px;margin-bottom:12px;color:var(--text2);">—</div>
+            <button onclick="connectPaymentProvider('stripe')" id="btn-stripe-connect" class="btn-primary">Conectar Stripe</button>
+            <button onclick="disconnectPaymentProvider('stripe')" id="btn-stripe-disconnect" class="btn-danger" style="display:none;">Desconectar</button>
+          </div>
+          <div style="padding:20px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+            <h3 style="margin-top:0;">🔷 Mercado Pago</h3>
+            <div id="mercadopago-status" style="font-size:13px;margin-bottom:12px;color:var(--text2);">—</div>
+            <button onclick="connectPaymentProvider('mercadopago')" id="btn-mercadopago-connect" class="btn-primary">Conectar</button>
+            <button onclick="disconnectPaymentProvider('mercadopago')" id="btn-mercadopago-disconnect" class="btn-danger" style="display:none;">Desconectar</button>
+          </div>
+          <div style="padding:20px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+            <h3 style="margin-top:0;">♾️ InfinitePay</h3>
+            <div id="infinitepay-status" style="font-size:13px;margin-bottom:12px;color:var(--text2);">—</div>
+            <button onclick="connectPaymentProvider('infinitepay')" id="btn-infinitepay-connect" class="btn-primary">Conectar</button>
+            <button onclick="disconnectPaymentProvider('infinitepay')" id="btn-infinitepay-disconnect" class="btn-danger" style="display:none;">Desconectar</button>
+          </div>
+        </div>
+
+        <!-- Criar Nova Fatura -->
+        <div style="padding:20px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+          <h3>➕ Criar Nova Fatura</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <input type="text" id="invoice-customer-name" placeholder="Nome do cliente" style="padding:10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text);" />
+            <input type="email" id="invoice-customer-email" placeholder="Email" style="padding:10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text);" />
+            <input type="number" id="invoice-amount" placeholder="Valor (R$)" min="0" step="0.01" style="padding:10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text);" />
+            <input type="date" id="invoice-due-date" style="padding:10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text);" />
+            <textarea id="invoice-description" placeholder="Descrição" style="grid-column:1/3;padding:10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text);"></textarea>
+            <select id="invoice-provider" style="grid-column:1/3;padding:10px;background:var(--bg-card2);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+              <option value="">Selecione a provedora</option>
+              <option value="asaas">Asaas</option>
+              <option value="stripe">Stripe</option>
+              <option value="mercadopago">Mercado Pago</option>
+              <option value="infinitepay">InfinitePay</option>
+            </select>
+            <button onclick="createInvoice()" style="grid-column:1/3;" class="btn-primary">Criar Fatura (Gera Link de Pagamento)</button>
+          </div>
+        </div>
+
+        <!-- Lista de Faturas -->
+        <div style="padding:20px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border);">
+          <h3>📋 Faturas Recentes</h3>
+          <div id="invoices-list" style="max-height:400px;overflow-y:auto;">
+            <div style="text-align:center;color:var(--text2);padding:20px;">Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -5096,6 +5235,9 @@
     if (name === 'conta') loadPageConta();
     if (name === 'integracoes') loadIntegracoes();
     if (name === 'perfil') loadConfiguracoes();
+    if (name === 'email') loadEmailStatus();
+    if (name === 'sheets') loadSheetsStatus();
+    if (name === 'pagamentos') loadPaymentStatus();
     if (name === 'agenda') loadAgendaPage();
     if (name === 'agente-objecao') loadAgenteConfigs('ob');
     if (name?.startsWith('agente-extra-')) {
@@ -12892,6 +13034,390 @@
   }
 
   // =====================
+  // EMAIL, SHEETS, PAGAMENTOS
+  // =====================
+
+  async function loadEmailStatus() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      const response = await callFunction('email-proxy', 'status');
+      const statusEl = document.getElementById('email-status');
+
+      if (response.connected) {
+        statusEl.innerHTML = `✅ Conectado: ${response.email || 'Gmail/Outlook'}`;
+        statusEl.style.color = '#16a34a';
+        document.getElementById('btn-email-disconnect').style.display = 'inline-block';
+      } else {
+        statusEl.innerHTML = '❌ Não conectado';
+        statusEl.style.color = '#f85149';
+        document.getElementById('btn-email-disconnect').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error loading email status:', error);
+    }
+  }
+
+  async function connectEmail(provider) {
+    try {
+      const response = await callFunction('email-proxy', 'auth-url', { provider });
+      if (response.url) {
+        window.open(response.url, '_blank', 'width=500,height=650');
+        setTimeout(() => loadEmailStatus(), 2000);
+      }
+    } catch (error) {
+      showToast('Erro ao conectar: ' + error.message, 'error');
+    }
+  }
+
+  async function disconnectEmail() {
+    if (!confirm('Desconectar email?')) return;
+    try {
+      await callFunction('email-proxy', 'disconnect');
+      await loadEmailStatus();
+      showToast('Email desconectado', 'success');
+    } catch (error) {
+      showToast('Erro ao desconectar: ' + error.message, 'error');
+    }
+  }
+
+  async function saveEmailTemplate() {
+    const name = prompt('Nome do template:');
+    const content = document.getElementById('email-template').value;
+    if (!name || !content) return;
+
+    try {
+      await callFunction('email-proxy', 'save-template', { name, content });
+      showToast('Template salvo!', 'success');
+    } catch (error) {
+      showToast('Erro ao salvar: ' + error.message, 'error');
+    }
+  }
+
+  async function sendTestEmail() {
+    const recipient = document.getElementById('email-test-recipient').value;
+    if (!recipient) {
+      showToast('Informe um email', 'error');
+      return;
+    }
+
+    try {
+      await callFunction('email-proxy', 'send', {
+        to: recipient,
+        subject: 'Email de Teste - XPERT.IA',
+        body: '<p>Este é um email de teste do XPERT.IA. Se você recebeu, a conexão está funcionando!</p>'
+      });
+      showToast('Email enviado!', 'success');
+    } catch (error) {
+      showToast('Erro ao enviar: ' + error.message, 'error');
+    }
+  }
+
+  async function loadSheetsStatus() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      const response = await callFunction('sheets-proxy', 'status');
+      const statusEl = document.getElementById('sheets-status');
+
+      if (response.connected) {
+        statusEl.innerHTML = `✅ Conectado: ${response.email || 'Google Sheets'}`;
+        statusEl.style.color = '#16a34a';
+        document.getElementById('btn-sheets-disconnect').style.display = 'inline-block';
+      } else {
+        statusEl.innerHTML = '❌ Não conectado';
+        statusEl.style.color = '#f85149';
+        document.getElementById('btn-sheets-disconnect').style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error loading sheets status:', error);
+    }
+  }
+
+  async function connectSheets() {
+    try {
+      const response = await callFunction('sheets-proxy', 'auth-url');
+      if (response.url) {
+        window.open(response.url, '_blank', 'width=500,height=650');
+        setTimeout(() => loadSheetsStatus(), 2000);
+      }
+    } catch (error) {
+      showToast('Erro ao conectar: ' + error.message, 'error');
+    }
+  }
+
+  async function disconnectSheets() {
+    if (!confirm('Desconectar Google Sheets?')) return;
+    try {
+      await callFunction('sheets-proxy', 'disconnect');
+      await loadSheetsStatus();
+      showToast('Google Sheets desconectado', 'success');
+    } catch (error) {
+      showToast('Erro ao desconectar: ' + error.message, 'error');
+    }
+  }
+
+  async function exportLeadsNow() {
+    showToast('Exportando leads...', 'info');
+    try {
+      const { data: leads } = await db.from('leads')
+        .select('id,nome,numero_whatsapp,email,stage,resumo,atualizado_em')
+        .eq('user_id', currentUser.id);
+
+      if (!leads || leads.length === 0) {
+        showToast('Nenhum lead para exportar', 'warning');
+        return;
+      }
+
+      const values = leads.map(l => [
+        l.nome || '',
+        l.numero_whatsapp || l.email || '',
+        l.email || '',
+        l.stage || '',
+        new Date(l.atualizado_em).toLocaleDateString('pt-BR')
+      ]);
+
+      const response = await callFunction('sheets-proxy', 'append-multiple', {
+        spreadsheet_id: 'default',
+        range: 'Leads!A:E',
+        values
+      });
+
+      showToast(`${leads.length} leads exportados!`, 'success');
+    } catch (error) {
+      showToast('Erro ao exportar: ' + error.message, 'error');
+    }
+  }
+
+  async function exportConversationsNow() {
+    showToast('Exportando conversas...', 'info');
+    try {
+      const { data: sessions } = await db.from('sessoes')
+        .select('numero_whatsapp,historico,criado_em')
+        .eq('user_id', currentUser.id)
+        .limit(100);
+
+      if (!sessions || sessions.length === 0) {
+        showToast('Nenhuma conversa para exportar', 'warning');
+        return;
+      }
+
+      const values = sessions.map(s => [
+        s.numero_whatsapp,
+        s.criado_em ? new Date(s.criado_em).toLocaleDateString('pt-BR') : '',
+        s.historico ? s.historico.substring(0, 500) : ''
+      ]);
+
+      await callFunction('sheets-proxy', 'append-multiple', {
+        spreadsheet_id: 'default',
+        range: 'Conversas!A:C',
+        values
+      });
+
+      showToast(`${sessions.length} conversas exportadas!`, 'success');
+    } catch (error) {
+      showToast('Erro ao exportar: ' + error.message, 'error');
+    }
+  }
+
+  async function exportMetricsNow() {
+    showToast('Exportando métricas...', 'info');
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: leads } = await db.from('leads')
+        .select('stage,atualizado_em')
+        .eq('user_id', currentUser.id)
+        .gte('atualizado_em', today);
+
+      const metrics = {
+        'Novo': leads?.filter(l => l.stage === 'novo').length || 0,
+        'Qualificado': leads?.filter(l => l.stage === 'qualificado').length || 0,
+        'Convertido': leads?.filter(l => l.stage === 'convertido').length || 0,
+        'Perdido': leads?.filter(l => l.stage === 'perdido').length || 0
+      };
+
+      const values = [
+        ['Data', 'Métrica', 'Valor'],
+        [today, 'Novo', metrics['Novo']],
+        [today, 'Qualificado', metrics['Qualificado']],
+        [today, 'Convertido', metrics['Convertido']],
+        [today, 'Perdido', metrics['Perdido']]
+      ];
+
+      await callFunction('sheets-proxy', 'append-multiple', {
+        spreadsheet_id: 'default',
+        range: 'Métricas!A:C',
+        values
+      });
+
+      showToast('Métricas exportadas!', 'success');
+    } catch (error) {
+      showToast('Erro ao exportar: ' + error.message, 'error');
+    }
+  }
+
+  async function loadPaymentStatus() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const providers = ['asaas', 'stripe', 'mercadopago', 'infinitepay'];
+
+    for (const provider of providers) {
+      try {
+        const response = await callFunction('payments-proxy', 'status', { provider });
+        const statusEl = document.getElementById(`${provider}-status`);
+        const btnConnect = document.getElementById(`btn-${provider}-connect`);
+        const btnDisconnect = document.getElementById(`btn-${provider}-disconnect`);
+
+        if (response.connected) {
+          statusEl.innerHTML = `✅ Conectado`;
+          statusEl.style.color = '#16a34a';
+          btnConnect.style.display = 'none';
+          btnDisconnect.style.display = 'inline-block';
+        } else {
+          statusEl.innerHTML = '❌ Não conectado';
+          statusEl.style.color = '#f85149';
+          btnConnect.style.display = 'inline-block';
+          btnDisconnect.style.display = 'none';
+        }
+      } catch (error) {
+        console.error(`Error loading ${provider} status:`, error);
+      }
+    }
+  }
+
+  async function connectPaymentProvider(provider) {
+    const apiKey = prompt(`Cole sua chave de API ${provider.toUpperCase()}:`);
+    if (!apiKey) return;
+
+    try {
+      // Salvar API key na agente_config
+      const { data: { user } } = await db.auth.getUser();
+      await db.from('agente_config').upsert({
+        user_id: user.id,
+        chave: `payment_${provider}_api_key`,
+        valor: apiKey
+      });
+
+      await db.from('agente_config').upsert({
+        user_id: user.id,
+        chave: `payment_provider_${provider}`,
+        valor: '1'
+      });
+
+      showToast(`${provider} conectado!`, 'success');
+      await loadPaymentStatus();
+    } catch (error) {
+      showToast('Erro ao conectar: ' + error.message, 'error');
+    }
+  }
+
+  async function disconnectPaymentProvider(provider) {
+    if (!confirm(`Desconectar ${provider}?`)) return;
+    try {
+      await callFunction('payments-proxy', 'disconnect', { provider });
+      showToast(`${provider} desconectado`, 'success');
+      await loadPaymentStatus();
+    } catch (error) {
+      showToast('Erro ao desconectar: ' + error.message, 'error');
+    }
+  }
+
+  async function createInvoice() {
+    const name = document.getElementById('invoice-customer-name').value;
+    const email = document.getElementById('invoice-customer-email').value;
+    const amount = document.getElementById('invoice-amount').value;
+    const dueDate = document.getElementById('invoice-due-date').value;
+    const description = document.getElementById('invoice-description').value;
+    const provider = document.getElementById('invoice-provider').value;
+
+    if (!name || !email || !amount || !dueDate || !provider) {
+      showToast('Preencha todos os campos', 'error');
+      return;
+    }
+
+    try {
+      const response = await callFunction('payments-proxy', 'create-invoice', {
+        customer_name: name,
+        customer_email: email,
+        amount: parseFloat(amount),
+        due_date: dueDate,
+        description: description || 'Fatura do XPERT.IA'
+      });
+
+      showToast('Fatura criada! Link de pagamento gerado.', 'success');
+
+      // Limpar formulário
+      document.getElementById('invoice-customer-name').value = '';
+      document.getElementById('invoice-customer-email').value = '';
+      document.getElementById('invoice-amount').value = '';
+      document.getElementById('invoice-due-date').value = '';
+      document.getElementById('invoice-description').value = '';
+      document.getElementById('invoice-provider').value = '';
+
+      // Recarregar lista
+      loadPaymentInvoices(provider);
+    } catch (error) {
+      showToast('Erro ao criar fatura: ' + error.message, 'error');
+    }
+  }
+
+  async function loadPaymentInvoices(provider = 'asaas') {
+    try {
+      const response = await callFunction('payments-proxy', 'list-invoices', { provider });
+      const list = document.getElementById('invoices-list');
+
+      if (!response.invoices || response.invoices.length === 0) {
+        list.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">Nenhuma fatura</div>';
+        return;
+      }
+
+      const html = response.invoices.map(inv => `
+        <div style="padding:12px;background:var(--bg-card2);border-radius:6px;margin-bottom:8px;border-left:4px solid ${
+          inv.status === 'paid' ? '#16a34a' : inv.status === 'pending' ? '#ea580c' : '#f85149'
+        };">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:600;">${inv.customer_name}</div>
+              <div style="font-size:12px;color:var(--text2);">R$ ${inv.amount?.toFixed(2) || '0.00'} • ${inv.status}</div>
+            </div>
+            <div style="text-align:right;font-size:12px;">
+              <div>${new Date(inv.due_date).toLocaleDateString('pt-BR')}</div>
+              <button onclick="copyToClipboard('${inv.invoice_id}')" style="background:none;border:none;color:var(--lime);cursor:pointer;text-decoration:underline;">Copiar ID</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      list.innerHTML = html;
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+    }
+  }
+
+  function callFunction(fnName, action, body = {}) {
+    return new Promise(async (resolve, reject) => {
+      const { data: { session } } = await db.auth.getSession();
+      const token = session?.access_token;
+
+      fetch(`${SUPABASE_URL}/functions/v1/${fnName}?action=${action}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) reject(new Error(data.error));
+        else resolve(data);
+      })
+      .catch(reject);
+    });
+  }
 
 </script>
 </body>
