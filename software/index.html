@@ -1719,16 +1719,26 @@
 
     <!-- AGENTE -->
     <div class="page" id="page-agente">
-      <div class="page-header"><h1>Agente & Prompt</h1><p>Configure as instruções e personalidade do agente</p></div>
+      <div class="page-header"><h1>Agente Principal</h1><p>Configure as instruções, modelos de IA e integrações</p></div>
 
-      <!-- ── Modelo de IA ─────────────────────────────────────────────── -->
-      <div class="card" style="margin-bottom:0;">
-        <h3>Modelo de IA</h3>
-        <p style="font-size:13px;color:var(--text2);margin:6px 0 16px;">Escolha o provedor ativo e configure as chaves. O n8n lê essas configurações para decidir qual API chamar.</p>
+      <!-- TAB NAVIGATION -->
+      <div class="agente-cfg-tabs">
+        <button class="agente-cfg-tab active" onclick="switchAgenteTab('principal','modelo',this)">Modelo de IA</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('principal','prompt',this)">Prompt</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('principal','comunicacao',this)">Comunicação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('principal','qualificacao',this)">Qualificação</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('principal','base',this)">Base de Conhecimento</button>
+      </div>
 
-        <!-- Provider selector -->
-        <div style="display:flex;gap:8px;margin-bottom:16px;">
-          <button class="ai-provider-btn active" id="btn-provider-openai" onclick="switchAiProvider('openai')">
+      <!-- TAB: Modelo de IA -->
+      <div id="principal-tab-modelo">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Modelo de IA</h3>
+          <p style="font-size:13px;color:var(--text2);margin:6px 0 16px;">Escolha o provedor ativo e configure as chaves. O n8n lê essas configurações para decidir qual API chamar.</p>
+
+          <!-- Provider selector -->
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="ai-provider-btn active" id="btn-provider-openai" onclick="switchAiProvider('openai')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.28a5.76 5.76 0 00-.5-4.73 5.82 5.82 0 00-6.27-2.8A5.77 5.77 0 0011.19 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.83 5.77 5.77 0 00.5 4.73 5.82 5.82 0 006.27 2.8A5.77 5.77 0 0012.81 24a5.83 5.83 0 005.57-4.04 5.77 5.77 0 003.85-2.8 5.82 5.82 0 00-.95-6.88zM12.81 22.4a4.3 4.3 0 01-2.77-1c.04-.02.1-.05.14-.08l4.6-2.66a.74.74 0 00.37-.65v-6.5l1.95 1.12a.07.07 0 01.04.05v5.38a4.33 4.33 0 01-4.33 4.34zm-9.3-3.98a4.3 4.3 0 01-.52-2.9c.03.02.09.06.14.08l4.6 2.66a.74.74 0 00.74 0l5.62-3.24v2.24a.07.07 0 01-.03.06L9.4 20.01a4.33 4.33 0 01-5.9-1.59zm-1.21-9.5A4.3 4.3 0 014.6 6.8l-.01.16v5.32a.74.74 0 00.37.65l5.62 3.25-1.95 1.12a.07.07 0 01-.07 0L4.1 14.63a4.33 4.33 0 01-.8-5.71zm16.04 3.72l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.47 2.58a4.32 4.32 0 01-.67 7.8v-.17V12.3a.74.74 0 00-.2-.66zm1.94-2.92a6.8 6.8 0 00-.14-.08l-4.6-2.65a.74.74 0 00-.74 0L9.18 10.2V7.96a.07.07 0 01.03-.06l4.47-2.58a4.32 4.32 0 016.6 4.4zm-12.21 4l-1.95-1.12a.07.07 0 01-.04-.05V7.19a4.32 4.32 0 017.08-3.32l-.14.08-4.6 2.66a.74.74 0 00-.37.65l-.01 6.49zm1.06-2.28l2.5-1.45 2.5 1.44v2.88l-2.5 1.45-2.5-1.44V11.44z"/></svg>
             OpenAI
           </button>
@@ -1986,74 +1996,85 @@
           </div>
         </div>
 
-        <div style="display:flex;gap:12px;align-items:center;margin-top:16px;">
-          <button class="btn-save" onclick="saveAiConfig()">Salvar configuração</button>
-          <span class="save-status" id="save-ai-config"></span>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:16px;">
+            <button class="btn-save" onclick="saveAiConfig()">Salvar configuração</button>
+            <span class="save-status" id="save-ai-config"></span>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Objetivo</h3>
-        <div class="field-group"><label>Qual é o objetivo do agente?</label>
-          <textarea id="cfg-objetivo" placeholder="Ex: Qualificar leads interessados em nossos produtos/serviços e encaminhar ao responsável comercial."></textarea></div>
-      </div>
-      <div class="card">
-        <h3>Prompt Principal</h3>
-        <div class="field-group"><label>Instruções detalhadas do agente</label>
-          <textarea id="cfg-prompt_sistema" style="min-height:200px" placeholder="Você é um assistente de vendas especializado em qualificar leads para nossa empresa..."></textarea></div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <button class="btn-save" onclick="saveConfigs(['objetivo','prompt_sistema'])">Salvar</button>
-        <button class="btn-secondary" onclick="restaurarPadrao()">Restaurar Padrão</button>
-        <span class="save-status" id="save-agente"></span>
-      </div>
-
-      <!-- Busca na Web -->
-      <div class="card" style="margin-top:20px;">
-        <h3>Busca na Web em Tempo Real</h3>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:18px;">Quando ativada, o agente pode pesquisar na internet durante a conversa — útil para tirar dúvidas sobre leis, tabelas do governo, notícias recentes etc.</p>
-        <div class="toggle-row" style="padding:0;">
-          <div class="toggle-info">
-            <div class="toggle-label" id="web-search-label">Busca na web desativada</div>
-            <div class="toggle-desc">O agente vai consultar apenas a Base de Conhecimento interna</div>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="web-search-enabled" onchange="saveWebSearchEnabled(this)">
-            <span class="toggle-slider"></span>
-          </label>
+      <!-- TAB: Prompt -->
+      <div id="principal-tab-prompt" style="display:none;">
+        <div class="card">
+          <h3>Objetivo</h3>
+          <div class="field-group"><label>Qual é o objetivo do agente?</label>
+            <textarea id="cfg-objetivo" placeholder="Ex: Qualificar leads interessados em nossos produtos/serviços e encaminhar ao responsável comercial."></textarea></div>
+        </div>
+        <div class="card">
+          <h3>Prompt Principal</h3>
+          <div class="field-group"><label>Instruções detalhadas do agente</label>
+            <textarea id="cfg-prompt_sistema" style="min-height:200px" placeholder="Você é um assistente de vendas especializado em qualificar leads para nossa empresa..."></textarea></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['objetivo','prompt_sistema'],'principal-prompt')">Salvar</button>
+          <button class="btn-secondary" onclick="restaurarPadrao()">Restaurar Padrão</button>
+          <span class="save-status" id="save-principal-prompt"></span>
         </div>
       </div>
 
-      <!-- Links de Referência -->
-      <div class="card" style="margin-top:0;">
-        <h3>Links de Referência do Agente</h3>
-        <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">URLs que o agente vai priorizar ao buscar informações. Pode ser o site da sua empresa, catálogo de serviços, tabelas de preços, portfólio etc. Adicione quantos quiser.</p>
-        <div id="web-urls-list" style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px;"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-          <div class="field-group" style="margin:0;flex:2;min-width:200px;">
-            <label>URL</label>
-            <input type="url" id="web-url-input" placeholder="https://www.suaempresa.com.br/servicos" />
+      <!-- TAB: Comunicação -->
+      <div id="principal-tab-comunicacao" style="display:none;">
+        <div class="card">
+          <h3>Busca na Web em Tempo Real</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:18px;">Quando ativada, o agente pode pesquisar na internet durante a conversa — útil para tirar dúvidas sobre leis, tabelas do governo, notícias recentes etc.</p>
+          <div class="toggle-row" style="padding:0;">
+            <div class="toggle-info">
+              <div class="toggle-label" id="web-search-label">Busca na web desativada</div>
+              <div class="toggle-desc">O agente vai consultar apenas a Base de Conhecimento interna</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="web-search-enabled" onchange="saveWebSearchEnabled(this)">
+              <span class="toggle-slider"></span>
+            </label>
           </div>
-          <div class="field-group" style="margin:0;flex:1;min-width:140px;">
-            <label>Descrição</label>
-            <input type="text" id="web-url-desc" placeholder="Ex: Catálogo de serviços, Site oficial" maxlength="60" />
-          </div>
-          <button class="btn-save" onclick="addWebUrl()" style="padding:10px 18px;white-space:nowrap;align-self:flex-end;">Adicionar</button>
         </div>
-        <span class="save-status" id="web-urls-status" style="margin-top:8px;display:block;"></span>
       </div>
-      <!-- Agentes Extras -->
-      <div class="card" style="margin-top:0;" id="card-agentes-extras">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <div>
-            <h3 style="margin:0;">Agentes Extras</h3>
-            <p style="font-size:13px;color:var(--text2);margin-top:4px;">Configure agentes com funções específicas — cada um pode usar o mesmo número ou um número diferente.</p>
+
+      <!-- TAB: Qualificação -->
+      <div id="principal-tab-qualificacao" style="display:none;">
+        <div class="card">
+          <h3>Links de Referência do Agente</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">URLs que o agente vai priorizar ao buscar informações. Pode ser o site da sua empresa, catálogo de serviços, tabelas de preços, portfólio etc. Adicione quantos quiser.</p>
+          <div id="web-urls-list" style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px;"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="field-group" style="margin:0;flex:2;min-width:200px;">
+              <label>URL</label>
+              <input type="url" id="web-url-input" placeholder="https://www.suaempresa.com.br/servicos" />
+            </div>
+            <div class="field-group" style="margin:0;flex:1;min-width:140px;">
+              <label>Descrição</label>
+              <input type="text" id="web-url-desc" placeholder="Ex: Catálogo de serviços, Site oficial" maxlength="60" />
+            </div>
+            <button class="btn-save" onclick="addWebUrl()" style="padding:10px 18px;white-space:nowrap;align-self:flex-end;">Adicionar</button>
           </div>
-          <button class="btn-save" style="padding:8px 16px;" onclick="openAgenteModal()">+ Adicionar Agente</button>
+          <span class="save-status" id="web-urls-status" style="margin-top:8px;display:block;"></span>
         </div>
-        <div class="agente-quota-info" id="agente-quota-info">Carregando quota...</div>
-        <div id="agentes-list">
-          <div style="text-align:center;padding:32px;color:var(--text3);font-size:14px;">Nenhum agente extra configurado</div>
+      </div>
+
+      <!-- TAB: Base de Conhecimento -->
+      <div id="principal-tab-base" style="display:none;">
+        <div class="card" id="card-agentes-extras">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h3 style="margin:0;">Agentes Extras</h3>
+              <p style="font-size:13px;color:var(--text2);margin-top:4px;">Configure agentes com funções específicas — cada um pode usar o mesmo número ou um número diferente.</p>
+            </div>
+            <button class="btn-save" style="padding:8px 16px;" onclick="openAgenteModal()">+ Adicionar Agente</button>
+          </div>
+          <div class="agente-quota-info" id="agente-quota-info">Carregando quota...</div>
+          <div id="agentes-list">
+            <div style="text-align:center;padding:32px;color:var(--text3);font-size:14px;">Nenhum agente extra configurado</div>
+          </div>
         </div>
       </div>
     </div>
@@ -5742,9 +5763,56 @@
     }
   }
 
+  async function checkSubscriptionForAgent(agentType, agentIndex = 0) {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return { canEdit: false, reason: 'Usuário não autenticado' };
+
+    // Agente principal sempre é editável
+    if (agentType === 'main') return { canEdit: true, reason: null };
+
+    // Verificar subscription para addons
+    const { data: assinatura } = await db.from('assinaturas')
+      .select('addon_objecao,agentes_extras')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (agentType === 'objecao') {
+      const canEdit = assinatura?.addon_objecao === true;
+      return {
+        canEdit,
+        reason: canEdit ? null : '🔒 Edição bloqueada — Addon Agente de Objeção não ativo'
+      };
+    }
+
+    if (agentType === 'extra') {
+      const limit = assinatura?.agentes_extras || 0;
+      const canEdit = limit > agentIndex;
+      return {
+        canEdit,
+        reason: canEdit ? null : `🔒 Edição bloqueada — Limite de Agentes Extras atingido`
+      };
+    }
+
+    return { canEdit: false, reason: 'Tipo de agente desconhecido' };
+  }
+
   async function loadAgenteConfigs(prefix) {
     const { data: { user } } = await db.auth.getUser();
     if (!user) return;
+
+    // Determinar tipo de agente e índice
+    let agentType = 'main';
+    let agentIndex = 0;
+    if (prefix === 'ob') {
+      agentType = 'objecao';
+    } else if (prefix.startsWith('ae')) {
+      agentType = 'extra';
+      agentIndex = parseInt(prefix.slice(2));
+    }
+
+    // Verificar subscription
+    const { canEdit, reason } = await checkSubscriptionForAgent(agentType, agentIndex);
+
     const { data: configs } = await db.from('agente_config')
       .select('chave,valor')
       .eq('user_id', user.id)
@@ -5755,7 +5823,34 @@
       if (!el) return;
       if (el.type === 'checkbox') el.checked = row.valor === 'true';
       else el.value = row.valor;
+
+      // Desabilitar input se sem subscription
+      if (!canEdit) {
+        el.disabled = true;
+        el.style.opacity = '0.6';
+        el.style.cursor = 'not-allowed';
+      }
     });
+
+    // Desabilitar botões Save se sem subscription
+    if (!canEdit) {
+      const saveButtons = document.querySelectorAll(`button[onclick*="saveConfigs"][onclick*="'${prefix}"]`);
+      saveButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.title = reason;
+      });
+
+      // Mostrar aviso de bloqueio
+      const tabContainer = document.querySelector(`#${prefix}-tab-prompt`)?.parentElement;
+      if (tabContainer && !tabContainer.querySelector('.subscription-lock-notice')) {
+        const notice = document.createElement('div');
+        notice.className = 'subscription-lock-notice';
+        notice.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;padding:12px;border-radius:6px;color:#92400e;margin-bottom:16px;display:block;';
+        notice.innerHTML = `<strong>${reason}</strong>`;
+        tabContainer.insertBefore(notice, tabContainer.firstChild);
+      }
+    }
   }
 
   async function addAgenteWebUrl(prefix) {
