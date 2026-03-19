@@ -7827,8 +7827,8 @@
     if (statusPage) {
       statusId = 'save-' + statusPage;
     } else {
-      statusId = keys.includes('sistema_prompt') ? 'save-agente'
-        : keys.includes('tonalidade') ? 'save-comunicacao' : 'save-qualificacao';
+      statusId = keys.some(k => k.includes('sistema_prompt')) ? 'save-agente'
+        : keys.some(k => k.includes('tonalidade')) ? 'save-comunicacao' : 'save-qualificacao';
     }
     
     const statusEl = document.getElementById(statusId);
