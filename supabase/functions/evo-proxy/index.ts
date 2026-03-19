@@ -57,6 +57,25 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
+    // Suporte a instâncias extras (números extras de WhatsApp)
+    const extraParam = url.searchParams.get("extra");
+    if (extraParam !== null) {
+      const extraNum = parseInt(extraParam);
+      if (isNaN(extraNum) || extraNum < 1) {
+        return json({ error: "Parâmetro extra inválido" }, 400, cors);
+      }
+      // Valida que o usuário tem esse número extra na assinatura
+      const { data: sub } = await adminDb
+        .from("assinaturas")
+        .select("numeros_extras")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!sub || extraNum > (sub.numeros_extras || 0)) {
+        return json({ error: "Número extra não autorizado" }, 403, cors);
+      }
+      instance = `${instance}-extra-${extraNum}`;
+    }
+
     switch (action) {
       // Verifica status da instância (conectada ou não)
       case "status": {
@@ -64,9 +83,19 @@ Deno.serve(async (req) => {
         return json(res, 200, cors);
       }
 
-      // Gera QR Code para conectar o WhatsApp
+      // Gera QR Code para conectar o WhatsApp (auto-cria instância se não existir)
       case "connect": {
-        const res = await evoFetch(`/instance/connect/${instance}`, "GET");
+        // Tenta conectar; se 404 (instância não existe), cria primeiro
+        let res = await evoFetch(`/instance/connect/${instance}`, "GET");
+        if (res?.status === 404 || res?.error?.toLowerCase?.().includes("not found") || res?.response?.message?.toLowerCase?.().includes("not found")) {
+          // Auto-cria a instância
+          await evoFetch(`/instance/create`, "POST", {
+            instanceName: instance,
+            qrcode: true,
+            integration: "WHATSAPP-BAILEYS",
+          });
+          res = await evoFetch(`/instance/connect/${instance}`, "GET");
+        }
         return json(res, 200, cors);
       }
 

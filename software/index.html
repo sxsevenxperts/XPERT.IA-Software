@@ -1592,7 +1592,7 @@
             <button class="btn-wa-disconnect" id="btn-desconectar" onclick="disconnectWA()" style="display:none;">⏹ Desconectar</button>
           </div>
           <div style="margin-top:20px;padding:16px;background:#1c2128;border-radius:10px;font-size:13px;color:#8b949e;">
-            <div style="font-weight:700;margin-bottom:8px;color:#e6edf3;">📋 Informações da Instância</div>
+            <div style="font-weight:700;margin-bottom:8px;color:#e6edf3;">Informações da Instância</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <div><strong>Instância:</strong> <code id="wa-instance-display" style="background:#1a3a00;color:#a3e635;padding:2px 6px;border-radius:4px;">—</code></div>
               <div><strong>Servidor:</strong> <code style="background:#1a3a00;color:#a3e635;padding:2px 6px;border-radius:4px;font-size:11px;">Proxy Seguro (evo-proxy)</code></div>
@@ -1646,7 +1646,7 @@
             <h3>Conversas Ativas</h3>
             <span id="conv-count" style="font-size:12px;color:#6e7681;">0</span>
           </div>
-          <input class="chat-search" type="text" placeholder="🔍 Buscar número..." id="chat-search" oninput="filterConversations(this.value)" />
+          <input class="chat-search" type="text" placeholder="Buscar número..." id="chat-search" oninput="filterConversations(this.value)" />
           <div class="conv-list" id="conv-list">
             <div class="empty-state" style="padding:32px 16px;">
               <div style="font-size:32px;margin-bottom:8px;">—</div>
@@ -1670,12 +1670,12 @@
               </div>
               <div class="chat-header-actions">
                 <span id="chat-status-badge" class="badge badge-yellow" style="font-size:12px;"></span>
-                <button id="btn-toggle-agente" class="btn-secondary" style="padding:7px 14px;font-size:12px;" onclick="toggleAgente()">⏸ Pausar Agente</button>
+                <button id="btn-toggle-agente" class="btn-secondary" style="padding:7px 14px;font-size:12px;" onclick="toggleAgente()">Pausar Agente</button>
                 <button class="btn-secondary" style="padding:7px 14px;font-size:12px;" onclick="clearSession()">Reiniciar</button>
               </div>
             </div>
             <div id="agente-pausado-banner" style="display:none;background:#fef9c3;border-bottom:1px solid #fef08a;padding:8px 20px;font-size:13px;font-weight:600;color:#92400e;">
-              ⏸ Agente pausado para esta conversa — você está no controle. <button onclick="toggleAgente()" style="margin-left:12px;padding:4px 12px;background:#ca8a04;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">▶ Reativar Agente</button>
+              ⏸ Agente pausado para esta conversa — você está no controle. <button onclick="toggleAgente()" style="margin-left:12px;padding:4px 12px;background:#ca8a04;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">Reativar Agente</button>
             </div>
             <div class="messages-area" id="messages-area"></div>
             
@@ -1699,7 +1699,7 @@
               <input type="file" id="chat-file-input" style="display:none"
                 accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip"
                 onchange="handleFileSelect(this)" />
-              <button class="btn-attach" onclick="document.getElementById('chat-file-input').click()" title="Enviar arquivo ou foto">📎</button>
+              <button class="btn-attach" onclick="document.getElementById('chat-file-input').click()" title="Enviar arquivo ou foto">Anexar</button>
               <textarea class="chat-input" id="chat-input" placeholder="Digite uma mensagem para enviar direto ao WhatsApp..." rows="1"
                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendManualMessage();}"
                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';updateCostPreview();"></textarea>
@@ -1717,7 +1717,7 @@
 
       <!-- ── Modelo de IA ─────────────────────────────────────────────── -->
       <div class="card" style="margin-bottom:0;">
-        <h3>🧠 Modelo de IA</h3>
+        <h3>Modelo de IA</h3>
         <p style="font-size:13px;color:var(--text2);margin:6px 0 16px;">Escolha o provedor ativo e configure as chaves. O n8n lê essas configurações para decidir qual API chamar.</p>
 
         <!-- Provider selector -->
@@ -1850,7 +1850,7 @@
                 </div>
               </div>
               <div class="ai-model-info" id="claude-model-info" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#a5b4fc;margin:0;">
-                💜 <strong>claude-haiku-4-5:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>
+                <strong>claude-haiku-4-5:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>
               </div>
             </div>
             <!-- Direita: tabela de seleção -->
@@ -1925,7 +1925,7 @@
               </div>
               <a href="https://aistudio.google.com/app/apikey" target="_blank" style="display:block;padding:8px 12px;background:rgba(66,133,244,.12);border:1px solid rgba(66,133,244,.3);border-radius:6px;color:#93c5fd;font-size:12px;text-align:center;text-decoration:none;">🔑 Obter chave gratuita — AI Studio →</a>
               <div class="ai-model-info" id="google-model-info" style="background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#93c5fd;margin:0;">
-                🆓 <strong>gemini-2.0-flash:</strong> gratuito no AI Studio (rate limit: 15 req/min, 1M tokens/dia) — custo ~R$0 · margem estimada <strong>~100%</strong>
+                <strong>gemini-2.0-flash:</strong> gratuito no AI Studio (rate limit: 15 req/min, 1M tokens/dia) — custo ~R$0 · margem estimada <strong>~100%</strong>
               </div>
             </div>
             <!-- Coluna direita: tabela de seleção de modelo -->
@@ -1950,17 +1950,17 @@
                   <tbody id="gemini-model-rows">
                     <tr class="gemini-ref-row" data-model="gemini-2.0-flash-lite" onclick="selectGeminiModel('gemini-2.0-flash-lite')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
                       <td style="padding:8px 12px;"><code style="background:var(--bg-card2);padding:2px 6px;border-radius:4px;font-size:11px;">gemini-2.0-flash-lite</code></td>
-                      <td style="padding:8px;text-align:center;"><span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">🆓 Grátis</span></td>
+                      <td style="padding:8px;text-align:center;"><span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">Grátis</span></td>
                       <td style="padding:8px 12px;text-align:right;font-weight:800;color:#4ade80;">0.1×</td>
                     </tr>
                     <tr class="gemini-ref-row gemini-model-selected" data-model="gemini-2.0-flash" onclick="selectGeminiModel('gemini-2.0-flash')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(66,133,244,.1);">
                       <td style="padding:8px 12px;"><code style="background:var(--bg-card2);padding:2px 6px;border-radius:4px;font-size:11px;">gemini-2.0-flash</code> <span style="color:#4ade80;font-size:10px;">⭐</span></td>
-                      <td style="padding:8px;text-align:center;"><span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">🆓 Grátis</span></td>
+                      <td style="padding:8px;text-align:center;"><span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">Grátis</span></td>
                       <td style="padding:8px 12px;text-align:right;font-weight:800;color:#4ade80;">0.2×</td>
                     </tr>
                     <tr class="gemini-ref-row" data-model="gemini-1.5-flash" onclick="selectGeminiModel('gemini-1.5-flash')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
                       <td style="padding:8px 12px;"><code style="background:var(--bg-card2);padding:2px 6px;border-radius:4px;font-size:11px;">gemini-1.5-flash</code></td>
-                      <td style="padding:8px;text-align:center;"><span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">🆓 Grátis</span></td>
+                      <td style="padding:8px;text-align:center;"><span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">Grátis</span></td>
                       <td style="padding:8px 12px;text-align:right;font-weight:800;color:#4ade80;">0.2×</td>
                     </tr>
                     <tr class="gemini-ref-row" data-model="gemini-1.5-pro" onclick="selectGeminiModel('gemini-1.5-pro')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
@@ -1970,7 +1970,7 @@
                     </tr>
                     <tr class="gemini-ref-row" data-model="gemini-2.5-pro-exp-03-25" onclick="selectGeminiModel('gemini-2.5-pro-exp-03-25')" style="cursor:pointer;transition:background .15s;">
                       <td style="padding:8px 12px;"><code style="background:var(--bg-card2);padding:2px 6px;border-radius:4px;font-size:11px;">gemini-2.5-pro-exp</code></td>
-                      <td style="padding:8px;text-align:center;"><span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">🧪 Beta</span></td>
+                      <td style="padding:8px;text-align:center;"><span style="background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;">Beta</span></td>
                       <td style="padding:8px 12px;text-align:right;font-weight:800;color:#c084fc;">5.0×</td>
                     </tr>
                   </tbody>
@@ -2004,7 +2004,7 @@
 
       <!-- Busca na Web -->
       <div class="card" style="margin-top:20px;">
-        <h3>🔍 Busca na Web em Tempo Real</h3>
+        <h3>Busca na Web em Tempo Real</h3>
         <p style="font-size:13px;color:var(--text2);margin-bottom:18px;">Quando ativada, o agente pode pesquisar na internet durante a conversa — útil para tirar dúvidas sobre leis, tabelas do governo, notícias recentes etc.</p>
         <div class="toggle-row" style="padding:0;">
           <div class="toggle-info">
@@ -2020,7 +2020,7 @@
 
       <!-- Links de Referência -->
       <div class="card" style="margin-top:0;">
-        <h3>🔗 Links de Referência do Agente</h3>
+        <h3>Links de Referência do Agente</h3>
         <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">URLs que o agente vai priorizar ao buscar informações. Pode ser o site da sua empresa, catálogo de serviços, tabelas de preços, portfólio etc. Adicione quantos quiser.</p>
         <div id="web-urls-list" style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px;"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
@@ -2040,7 +2040,7 @@
       <div class="card" style="margin-top:0;" id="card-agentes-extras">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <div>
-            <h3 style="margin:0;">🤖 Agentes Extras</h3>
+            <h3 style="margin:0;">Agentes Extras</h3>
             <p style="font-size:13px;color:var(--text2);margin-top:4px;">Configure agentes com funções específicas — cada um pode usar o mesmo número ou um número diferente.</p>
           </div>
           <button class="btn-save" style="padding:8px 16px;" onclick="openAgenteModal()">+ Adicionar Agente</button>
@@ -2056,7 +2056,7 @@
     <div class="modal-backdrop" id="agente-modal" onclick="if(event.target===this)closeAgenteModal()">
       <div class="modal-box" style="max-width:520px;">
         <div class="modal-header">
-          <h3 id="agente-modal-title">➕ Novo Agente</h3>
+          <h3 id="agente-modal-title">Novo Agente</h3>
           <button class="modal-close" onclick="closeAgenteModal()">✕</button>
         </div>
         <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
@@ -2068,10 +2068,10 @@
             <label>Função</label>
             <select id="agente-funcao">
               <option value="vendas">💰 Vendas — qualifica e converte leads</option>
-              <option value="suporte">🛠️ Suporte — atende dúvidas pós-venda</option>
-              <option value="qualificacao">🎯 Qualificação — filtra e classifica leads</option>
-              <option value="objecao">🛡️ Objeção — lida com objeções de compra</option>
-              <option value="followup">🔁 Follow-up — reativa leads inativos</option>
+              <option value="suporte">Suporte — atende dúvidas pós-venda</option>
+              <option value="qualificacao">Qualificação — filtra e classifica leads</option>
+              <option value="objecao">Objeção — lida com objeções de compra</option>
+              <option value="followup">Follow-up — reativa leads inativos</option>
             </select>
           </div>
           <div class="field-group" style="margin:0;">
@@ -2174,12 +2174,12 @@
             <div class="field-group" style="margin:0;"><label>Data de aniversário</label><input type="date" id="crm-aniversario" /></div>
             <div class="field-group" style="margin:0;"><label>Estágio no CRM</label>
               <select id="crm-stage">
-                <option value="novo_contato">🆕 Novo Contato</option>
-                <option value="em_atendimento">💬 Em Atendimento</option>
+                <option value="novo_contato">Novo Contato</option>
+                <option value="em_atendimento">Em Atendimento</option>
                 <option value="qualificado">Qualificado</option>
-                <option value="nao_qualificado">❌ Não Qualificado</option>
-                <option value="convertido">🎉 Convertido</option>
-                <option value="perdido">🚪 Perdido</option>
+                <option value="nao_qualificado">Não Qualificado</option>
+                <option value="convertido">Convertido</option>
+                <option value="perdido">Perdido</option>
               </select>
             </div>
             <div class="field-group" style="margin:0;"><label>Funil / Fluxo</label>
@@ -2200,7 +2200,7 @@
           <div style="display:flex;gap:8px;align-items:flex-end;border-top:1px solid #f1f5f9;padding-top:14px;margin-top:4px;flex-wrap:wrap;">
             <div class="field-group" style="flex:2;min-width:160px;margin:0;"><label>Nova tarefa</label><input type="text" id="nova-tarefa-desc" placeholder="Ex: Ligar para confirmar proposta" /></div>
             <div class="field-group" style="margin:0;min-width:120px;"><label>Vencimento</label><input type="date" id="nova-tarefa-data" /></div>
-            <div class="field-group" style="margin:0;min-width:140px;"><label>👤 Atribuir para</label>
+            <div class="field-group" style="margin:0;min-width:140px;"><label>Atribuir para</label>
               <select id="nova-tarefa-atribuido" style="font-size:12px;">
                 <option value="">— Eu mesmo —</option>
               </select>
@@ -2219,7 +2219,7 @@
         <!-- TAB CONVERSA -->
         <div class="crm-tab-content" id="crm-tab-conversa">
           <div style="background:#1c2128;border-radius:10px;padding:16px;margin-bottom:16px;font-size:13px;color:#8b949e;line-height:1.6;">
-            <strong>💬 Entrar na conversa</strong> abre o Bate-Papo com este lead e <strong>pausa o agente automaticamente</strong>. Você assume o controle diretamente. Quando quiser que o agente retome, clique em "▶️ Retomar agente" no Bate-Papo — ele saberá exatamente onde parou e continuará o atendimento.
+            <strong>Entrar na conversa</strong> abre o Bate-Papo com este lead e <strong>pausa o agente automaticamente</strong>. Você assume o controle diretamente. Quando quiser que o agente retome, clique em "▶️ Retomar agente" no Bate-Papo — ele saberá exatamente onde parou e continuará o atendimento.
           </div>
           <button class="btn-entrar-conversa" onclick="entrarNaConversa()">
             Entrar na conversa (pausa o agente)
@@ -2289,7 +2289,7 @@
     <div class="page" id="page-historico-leads">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 style="font-size:20px;font-weight:800;color:#e6edf3;margin:0 0 4px;letter-spacing:-.3px;">📊 Histórico de Leads</h1>
+          <h1 style="font-size:20px;font-weight:800;color:#e6edf3;margin:0 0 4px;letter-spacing:-.3px;">Histórico de Leads</h1>
           <p style="font-size:13px;color:#6e7681;margin:0;">Resumo de contatos finalizados — convertidos e perdidos</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
@@ -2297,7 +2297,7 @@
           <span style="color:#6e7681;">até</span>
           <input type="date" id="hist-date-to" style="padding:8px 12px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;border-radius:6px;font-size:13px;" />
           <button class="btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="loadHistorico()">Filtrar</button>
-          <button class="btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="exportHistoricoCSV()">📥 Exportar</button>
+          <button class="btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="exportHistoricoCSV()">Exportar</button>
         </div>
       </div>
 
@@ -2347,7 +2347,7 @@
       <!-- Google Calendar Integration -->
       <div class="card" style="margin-top:20px;" id="card-gcal-integration">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-          <div style="width:38px;height:38px;border-radius:8px;background:rgba(26,115,232,.12);border:1px solid rgba(26,115,232,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📅</div>
+          <div style="width:38px;height:38px;border-radius:8px;background:rgba(26,115,232,.12);border:1px solid rgba(26,115,232,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"></div>
           <div>
             <h3 style="margin:0;font-size:15px;">Google Calendar</h3>
             <p style="margin:2px 0 0;font-size:12px;color:#8b949e;">Permite ao agente agendar eventos diretamente na sua agenda Google</p>
@@ -2357,13 +2357,13 @@
           </div>
         </div>
         <div id="gcal-connected-info" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(26,115,232,.06);border:1px solid rgba(26,115,232,.2);border-radius:8px;font-size:13px;color:#93c5fd;">
-          ✅ Conta conectada: <strong id="gcal-email-label"></strong>
+          Conta conectada: <strong id="gcal-email-label"></strong>
         </div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn-save" id="btn-gcal-connect" onclick="connectGCal()" style="background:rgba(26,115,232,.8);">🔗 Conectar com Google</button>
+          <button class="btn-save" id="btn-gcal-connect" onclick="connectGCal()" style="background:rgba(26,115,232,.8);">Conectar com Google</button>
           <button class="btn-secondary" id="btn-gcal-disconnect" onclick="disconnectGCal()" style="display:none;color:#fca5a5;border-color:rgba(239,68,68,.3);">Desconectar</button>
         </div>
-        <p style="margin:12px 0 0;font-size:11px;color:#6e7681;">Para usar o bloco <strong>📅 Agendar no Google Agenda</strong> no Designer de Fluxos, conecte sua conta aqui primeiro. O agente criará eventos automaticamente quando o lead confirmar agendamento.</p>
+        <p style="margin:12px 0 0;font-size:11px;color:#6e7681;">Para usar o bloco <strong>Agendar no Google Agenda</strong> no Designer de Fluxos, conecte sua conta aqui primeiro. O agente criará eventos automaticamente quando o lead confirmar agendamento.</p>
       </div>
     </div>
 
@@ -2416,7 +2416,7 @@
 
         <!-- Quando notificar -->
         <div style="display:flex;align-items:center;gap:10px;background:rgba(74,222,128,.07);border:1px solid rgba(74,222,128,.18);border-radius:9px;padding:10px 14px;margin-bottom:18px;">
-          <span style="font-size:16px;">🕐</span>
+          <span style="font-size:16px;"></span>
           <div>
             <span style="font-size:13px;font-weight:700;color:#e6edf3;">Quando enviar: </span>
             <span style="font-size:13px;color:#4ade80;font-weight:600;">somente quando o lead for qualificado</span>
@@ -2430,21 +2430,21 @@
             <label class="notif-opt" id="notif-opt-numero">
               <input type="radio" name="notif_destino" value="numero" onchange="saveNotifDestino(this)" style="accent-color:#a3e635;flex-shrink:0;">
               <div>
-                <div class="notif-opt-title">📱 Apenas número do responsável</div>
+                <div class="notif-opt-title">Apenas número do responsável</div>
                 <div class="notif-opt-desc">Somente o número configurado abaixo recebe o relatório</div>
               </div>
             </label>
             <label class="notif-opt" id="notif-opt-grupo">
               <input type="radio" name="notif_destino" value="grupo" onchange="saveNotifDestino(this)" style="accent-color:#a3e635;flex-shrink:0;">
               <div>
-                <div class="notif-opt-title">👥 Apenas grupo WhatsApp</div>
+                <div class="notif-opt-title">Apenas grupo WhatsApp</div>
                 <div class="notif-opt-desc">Somente o grupo recebe (se o lead for membro)</div>
               </div>
             </label>
             <label class="notif-opt" id="notif-opt-ambos">
               <input type="radio" name="notif_destino" value="ambos" onchange="saveNotifDestino(this)" style="accent-color:#a3e635;flex-shrink:0;" checked>
               <div>
-                <div class="notif-opt-title">✅ Ambos <span style="background:rgba(163,230,53,.15);color:#a3e635;font-size:10px;padding:1px 7px;border-radius:4px;margin-left:4px;">Padrão</span></div>
+                <div class="notif-opt-title">Ambos <span style="background:rgba(163,230,53,.15);color:#a3e635;font-size:10px;padding:1px 7px;border-radius:4px;margin-left:4px;">Padrão</span></div>
                 <div class="notif-opt-desc">Número do responsável + grupo WhatsApp (se o lead for membro)</div>
               </div>
             </label>
@@ -2457,7 +2457,7 @@
           <!-- Número pessoal -->
           <div class="qual-dest-item">
             <div class="qual-dest-head">
-              <div class="qual-dest-ico primary">📱</div>
+              <div class="qual-dest-ico primary"></div>
               <div>
                 <div class="qual-dest-name">Número de Contato do Responsável</div>
                 <div class="qual-dest-desc">Recebe o relatório completo do lead qualificado em todas as qualificações</div>
@@ -2483,7 +2483,7 @@
           <!-- Grupo -->
           <div class="qual-dest-item">
             <div class="qual-dest-head">
-              <div class="qual-dest-ico secondary">👥</div>
+              <div class="qual-dest-ico secondary"></div>
               <div>
                 <div class="qual-dest-name">Grupo WhatsApp</div>
                 <div class="qual-dest-desc">Também notificado, porém <strong style="color:#8b949e;font-weight:600;">somente se o lead for participante</strong> do grupo</div>
@@ -2498,7 +2498,7 @@
               </div>
             </div>
             <div class="qual-info">
-              <span class="qual-info-ico">ℹ️</span>
+              <span class="qual-info-ico"></span>
               <div class="qual-info-txt">
                 <strong>Como obter o JID do grupo</strong>
                 O JID é o identificador único do grupo no formato <code>XXXXXXXXXXX@g.us</code>. Para listá-los, faça uma chamada à Evolution API da sua instância:
@@ -2513,7 +2513,7 @@
 
     <!-- AGENTE DE OBJEÇÃO -->
     <div class="page addon-objecao-page" id="page-agente-objecao">
-      <div class="page-header"><h1>🛡️ Agente de Objeção</h1><p>Configure o prompt específico para o agente que trata objeções</p></div>
+      <div class="page-header"><h1>Agente de Objeção</h1><p>Configure o prompt específico para o agente que trata objeções</p></div>
       
       <div class="card">
         <div class="card-title">Prompt do Agente de Objeção</div>
@@ -2533,7 +2533,7 @@
     <!-- NÚMEROS EXTRAS -->
     <div class="page" id="page-numeros-extras">
       <div class="page-header">
-        <h1>🔢 Números Extras de WhatsApp</h1>
+        <h1>Números Extras de WhatsApp</h1>
         <p>Gerencie os números de WhatsApp adicionais que você asinou como addon</p>
       </div>
 
@@ -2608,7 +2608,7 @@
     <!-- PERFIL -->
     <div class="page membro-hidden" id="page-perfil">
       <div class="page-header">
-        <h1>👤 Perfil</h1>
+        <h1>Perfil</h1>
         <p>Gerencie suas configurações de conta, empresa e notificações</p>
       </div>
 
@@ -2699,7 +2699,7 @@
 
       <!-- Banner explicativo -->
       <div style="background:linear-gradient(135deg,rgba(163,230,53,.08),rgba(163,230,53,.03));border:1px solid rgba(163,230,53,.2);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start;">
-        <span style="font-size:24px;flex-shrink:0;">🤖</span>
+        <span style="font-size:24px;flex-shrink:0;"></span>
         <div>
           <div style="font-weight:700;font-size:14px;margin-bottom:4px;color:#e6edf3;">Como funciona</div>
           <div style="font-size:13px;color:#8b949e;line-height:1.6;">O agente consulta esta base automaticamente quando precisar de informações específicas. Adicione <b style="color:#a3e635;">PDFs</b> (tabelas, leis, jurisprudência) e <b style="color:#a3e635;">links da web</b> (artigos, páginas do gov.br, portais). Tudo fica disponível em tempo real.</div>
@@ -2843,10 +2843,10 @@
     <div class="page" id="page-equipe">
       <div class="page-header">
         <div>
-          <h1>👥 Equipe</h1>
+          <h1>Equipe</h1>
           <p>Gerencie membros da equipe, atribua números de WhatsApp e tarefas de leads</p>
         </div>
-        <button class="btn-primary" onclick="abrirModalUsuario()">➕ Adicionar Membro</button>
+        <button class="btn-primary" onclick="abrirModalUsuario()">Adicionar Membro</button>
       </div>
 
       <!-- Barra de cota -->
@@ -2867,7 +2867,7 @@
       <!-- Grid de membros -->
       <div class="equipe-grid" id="equipe-grid">
         <div class="equipe-empty">
-          <div class="equipe-empty-icon">👥</div>
+          <div class="equipe-empty-icon"></div>
           <div class="equipe-empty-title">Nenhum membro adicionado</div>
           <div>Contrate usuários extras no Marketplace e adicione membros da equipe aqui.</div>
         </div>
@@ -2878,7 +2878,7 @@
     <div id="modal-usuario-extra">
       <div class="usuario-modal-box">
         <div class="usuario-modal-title">
-          <span id="usuario-modal-icon">👤</span>
+          <span id="usuario-modal-icon"></span>
           <span id="usuario-modal-title-text">Adicionar Membro</span>
         </div>
         <input type="hidden" id="usuario-id" />
@@ -2918,7 +2918,7 @@
           </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;">
-          <button class="btn-primary" style="flex:1;" onclick="salvarUsuarioExtra()">💾 Salvar</button>
+          <button class="btn-primary" style="flex:1;" onclick="salvarUsuarioExtra()">Salvar</button>
           <button class="btn-secondary" style="flex:1;" onclick="fecharModalUsuario()">Cancelar</button>
         </div>
       </div>
@@ -2949,14 +2949,14 @@
     <!-- KPIs & OKRs -->
     <div class="page" id="page-kpis">
       <div class="page-header">
-        <h1>📊 KPIs & OKRs</h1>
+        <h1>KPIs & OKRs</h1>
         <p>Defina e acompanhe suas metas e objetivos</p>
       </div>
 
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3 style="margin:0">Meus KPIs</h3>
-          <button class="btn-primary" onclick="abrirModalKPI()">➕ Adicionar KPI</button>
+          <button class="btn-primary" onclick="abrirModalKPI()">Adicionar KPI</button>
         </div>
         <div id="kpis-tabela"><p class="loading">Carregando...</p></div>
       </div>
@@ -2964,7 +2964,7 @@
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h3 style="margin:0">Meus OKRs</h3>
-          <button class="btn-primary" onclick="abrirModalOKR()">➕ Adicionar OKR</button>
+          <button class="btn-primary" onclick="abrirModalOKR()">Adicionar OKR</button>
         </div>
         <div id="okrs-tabela"><p class="loading">Carregando...</p></div>
       </div>
@@ -3001,7 +3001,7 @@
           <input type="number" id="kpi-valor" placeholder="0" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box;" />
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;">
-          <button class="btn-primary" style="flex:1;" onclick="salvarKPI()">💾 Salvar</button>
+          <button class="btn-primary" style="flex:1;" onclick="salvarKPI()">Salvar</button>
           <button class="btn-secondary" style="flex:1;" onclick="fecharModalKPI()">Cancelar</button>
         </div>
       </div>
@@ -3037,8 +3037,8 @@
       <div id="conta-aba-faturamento" class="conta-tab-pane active" style="display:block;">
         <!-- Tabs de navegação -->
         <div class="billing-tabs">
-          <button class="billing-tab-btn active" onclick="showBillingTab('assinatura',this)">📋 Minha Assinatura</button>
-          <button class="billing-tab-btn" onclick="showBillingTab('marketplace',this)">🛒 Marketplace</button>
+          <button class="billing-tab-btn active" onclick="showBillingTab('assinatura',this)">Minha Assinatura</button>
+          <button class="billing-tab-btn" onclick="showBillingTab('marketplace',this)">Marketplace</button>
         </div>
 
         <!-- ======================== TAB: MINHA ASSINATURA ======================== -->
@@ -3057,7 +3057,7 @@
           <!-- Banner Super Admin -->
           <div id="admin-marketplace-banner" class="admin-only" style="display:none;background:linear-gradient(135deg,rgba(163,230,53,.12),rgba(74,222,128,.08));border:1.5px solid rgba(163,230,53,.4);border-radius:14px;padding:20px 24px;margin-bottom:24px;">
             <div style="display:flex;align-items:center;gap:12px;">
-              <div style="font-size:36px;">🔑</div>
+              <div style="font-size:36px;"></div>
               <div>
                 <div style="font-size:16px;font-weight:800;color:#a3e635;margin-bottom:4px;">Super Admin — Acesso Ilimitado e Gratuito</div>
                 <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5;">Como administrador da plataforma, você possui acesso irrestrito a todos os recursos: agentes ilimitados, tokens ilimitados, números WhatsApp ilimitados, Agente de Objeção IA, usuários extras ilimitados e todas as funcionalidades do Designer de Fluxos — sem custo adicional.</div>
@@ -3067,20 +3067,20 @@
 
           <!-- O que está incluído no plano base -->
           <div class="plan-includes-banner">
-            <h4>✅ Incluído no Plano Base — R$ 497/mês</h4>
+            <h4>Incluído no Plano Base — R$ 497/mês</h4>
             <div class="plan-includes-items">
-              <span class="plan-inc-item">🤖 1 Agente de IA</span>
-              <span class="plan-inc-item">📱 1 Número WhatsApp</span>
-              <span class="plan-inc-item">🔢 5M tokens/mês</span>
-              <span class="plan-inc-item">🎙️ Transcrição de Áudio</span>
-              <span class="plan-inc-item">🔍 Pesquisa Web</span>
-              <span class="plan-inc-item">📎 Recebimento de Arquivos</span>
+              <span class="plan-inc-item">1 Agente de IA</span>
+              <span class="plan-inc-item">1 Número WhatsApp</span>
+              <span class="plan-inc-item">5M tokens/mês</span>
+              <span class="plan-inc-item">Transcrição de Áudio</span>
+              <span class="plan-inc-item">Pesquisa Web</span>
+              <span class="plan-inc-item">Recebimento de Arquivos</span>
             </div>
           </div>
 
           <!-- SEÇÃO 1: TOKENS EXTRAS -->
           <div class="mkt-section">
-            <div class="mkt-section-title">🔢 Tokens Extras</div>
+            <div class="mkt-section-title">Tokens Extras</div>
             <div class="mkt-section-sub">Seu plano já inclui 5M tokens/mês. Precisa atender mais leads? Adicione tokens a qualquer momento — somam ao saldo atual, sem prazo de validade.</div>
             <div class="pricing-grid">
               <div class="pricing-card">
@@ -3143,11 +3143,11 @@
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
               <span style="background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;">⭐ MAIS VENDIDO</span>
             </div>
-            <div class="mkt-section-title" style="color:#fca5a5;">🛡️ Agente IA — Identificação de Objeção + Plano de Ação Completo</div>
+            <div class="mkt-section-title" style="color:#fca5a5;">Agente IA — Identificação de Objeção + Plano de Ação Completo</div>
             <div class="mkt-section-sub">Um agente de IA especializado analisa toda a conversa com o lead, identifica a objeção com precisão, avalia o que dificultou a conversão (tempo de resposta, tom, engajamento), gera um plano de ação personalizado e envia o relatório completo + script de follow-up direto no WhatsApp do responsável.</div>
             <div class="mkt-qty-card" style="border-color:#dc2626;">
               <div class="mkt-qty-left">
-                <div style="font-size:42px;flex-shrink:0;">🛡️</div>
+                <div style="font-size:42px;flex-shrink:0;"></div>
                 <div>
                   <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente IA — Objeção + Diagnóstico + Plano de Ação</div>
                   <ul class="mkt-addon-features" style="margin:0;">
@@ -3163,9 +3163,9 @@
               </div>
               <div class="mkt-qty-right">
                 <div class="mkt-unit-price" style="color:#fca5a5;">R$ 127<span>/mês</span></div>
-                <div class="mkt-addon-recurrence" style="background:rgba(220,38,38,.08);color:#fca5a5;">🔄 Recorrente</div>
+                <div class="mkt-addon-recurrence" style="background:rgba(220,38,38,.08);color:#fca5a5;">Recorrente</div>
                 <button id="btn-addon-objecao" class="btn-addon-buy" style="background:#dc2626;" onclick="showAddonModal('objecao')">
-                  🛡️ Ativar Agente de Objeção IA
+                  Ativar Agente de Objeção IA
                 </button>
               </div>
             </div>
@@ -3173,11 +3173,11 @@
 
           <!-- SEÇÃO 3: AGENTES DE IA -->
           <div class="mkt-section">
-            <div class="mkt-section-title">🤖 Agentes de IA Extras</div>
+            <div class="mkt-section-title">Agentes de IA Extras</div>
             <div class="mkt-section-sub">Cada agente é independente: prompt, tom e base de conhecimento próprios. Escolha quantos precisa — todos aparecem no Designer de Fluxos. Acrescido à mensalidade.</div>
             <div class="mkt-qty-card">
               <div class="mkt-qty-left">
-                <div style="font-size:42px;flex-shrink:0;">🤖</div>
+                <div style="font-size:42px;flex-shrink:0;"></div>
                 <div>
                   <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente de IA Extra</div>
                   <ul class="mkt-addon-features" style="margin:0;">
@@ -3190,7 +3190,7 @@
               </div>
               <div class="mkt-qty-right">
                 <div class="mkt-unit-price">R$ 197<span>/mês cada</span></div>
-                <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+                <div class="mkt-addon-recurrence">Recorrente</div>
                 <div class="mkt-stepper">
                   <button onclick="changeAddonQty('agente',-1)">−</button>
                   <span class="mkt-stepper-val" id="qty-agente">1</span>
@@ -3206,11 +3206,11 @@
 
           <!-- SEÇÃO 4: NÚMEROS WHATSAPP -->
           <div class="mkt-section">
-            <div class="mkt-section-title">📱 Números WhatsApp Extras</div>
+            <div class="mkt-section-title">Números WhatsApp Extras</div>
             <div class="mkt-section-sub">Cada número é um canal separado — pode ter agente próprio, receber leads e atuar em etapas distintas no Designer de Fluxos. Acrescido à mensalidade.</div>
             <div class="mkt-qty-card">
               <div class="mkt-qty-left">
-                <div style="font-size:42px;flex-shrink:0;">📱</div>
+                <div style="font-size:42px;flex-shrink:0;"></div>
                 <div>
                   <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Número WhatsApp Extra</div>
                   <ul class="mkt-addon-features" style="margin:0;">
@@ -3223,7 +3223,7 @@
               </div>
               <div class="mkt-qty-right">
                 <div class="mkt-unit-price">R$ 97<span>/mês cada</span></div>
-                <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+                <div class="mkt-addon-recurrence">Recorrente</div>
                 <div class="mkt-stepper">
                   <button onclick="changeAddonQty('numero',-1)">−</button>
                   <span class="mkt-stepper-val" id="qty-numero">1</span>
@@ -3239,11 +3239,11 @@
 
           <!-- SEÇÃO 5: USUÁRIOS EXTRAS -->
           <div class="mkt-section">
-            <div class="mkt-section-title">👥 Usuários Extras da Equipe</div>
+            <div class="mkt-section-title">Usuários Extras da Equipe</div>
             <div class="mkt-section-sub">O plano base inclui 1 usuário (proprietário). Adicione membros da equipe para atribuir tarefas de leads, números de WhatsApp e responsabilidades de atendimento. Cada usuário extra tem acesso à página Equipe para ver suas atribuições.</div>
             <div class="mkt-qty-card" style="border-color:#6366f1;">
               <div class="mkt-qty-left">
-                <div style="font-size:42px;flex-shrink:0;">👤</div>
+                <div style="font-size:42px;flex-shrink:0;"></div>
                 <div>
                   <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Usuário Extra</div>
                   <ul class="mkt-addon-features" style="margin:0;">
@@ -3258,7 +3258,7 @@
               </div>
               <div class="mkt-qty-right">
                 <div class="mkt-unit-price" style="color:#818cf8;">R$ 57<span>/mês cada</span></div>
-                <div class="mkt-addon-recurrence" style="background:rgba(99,102,241,.08);color:#818cf8;">🔄 Recorrente</div>
+                <div class="mkt-addon-recurrence" style="background:rgba(99,102,241,.08);color:#818cf8;">Recorrente</div>
                 <div class="mkt-stepper">
                   <button onclick="changeAddonQty('usuario',-1)">−</button>
                   <span class="mkt-stepper-val" id="qty-usuario">1</span>
@@ -3372,8 +3372,8 @@
 
       <!-- Tabs de navegação -->
       <div class="billing-tabs">
-        <button class="billing-tab-btn active" onclick="showBillingTab('assinatura',this)">📋 Minha Assinatura</button>
-        <button class="billing-tab-btn" onclick="showBillingTab('marketplace',this)">🛒 Marketplace</button>
+        <button class="billing-tab-btn active" onclick="showBillingTab('assinatura',this)">Minha Assinatura</button>
+        <button class="billing-tab-btn" onclick="showBillingTab('marketplace',this)">Marketplace</button>
       </div>
 
       <!-- ======================== TAB: MINHA ASSINATURA ======================== -->
@@ -3393,9 +3393,9 @@
             <div class="price"><sup>R$</sup><span id="billing-total-price">497</span><sub>/mês</sub></div>
             <div style="opacity:.75;font-size:12px;margin-top:4px" id="billing-next-date">Próxima cobrança: —</div>
             <div style="margin-top:6px;font-size:11px;opacity:.6;" id="billing-addons-summary"></div>
-            <button class="btn-addon-buy" style="margin-top:10px;width:auto;padding:8px 16px;font-size:12px;" onclick="showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1])">➕ Adicionar recursos</button>
+            <button class="btn-addon-buy" style="margin-top:10px;width:auto;padding:8px 16px;font-size:12px;" onclick="showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1])">Adicionar recursos</button>
             <a id="btn-renovar-assinatura" href="https://pay.hotmart.com/A104782857U?off=xj0983i2" target="_blank" rel="noopener" style="display:none;margin-top:8px;text-decoration:none;">
-              <button class="btn-addon-buy" style="width:auto;padding:8px 16px;font-size:12px;background:linear-gradient(135deg,#dc2626,#b91c1c);">🔄 Renovar Assinatura via Hotmart</button>
+              <button class="btn-addon-buy" style="width:auto;padding:8px 16px;font-size:12px;background:linear-gradient(135deg,#dc2626,#b91c1c);">Renovar Assinatura via Hotmart</button>
             </a>
           </div>
         </div>
@@ -3485,7 +3485,7 @@
         <!-- Banner Super Admin -->
         <div id="admin-marketplace-banner" class="admin-only" style="display:none;background:linear-gradient(135deg,rgba(163,230,53,.12),rgba(74,222,128,.08));border:1.5px solid rgba(163,230,53,.4);border-radius:14px;padding:20px 24px;margin-bottom:24px;">
           <div style="display:flex;align-items:center;gap:12px;">
-            <div style="font-size:36px;">🔑</div>
+            <div style="font-size:36px;"></div>
             <div>
               <div style="font-size:16px;font-weight:800;color:#a3e635;margin-bottom:4px;">Super Admin — Acesso Ilimitado e Gratuito</div>
               <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.5;">Como administrador da plataforma, você possui acesso irrestrito a todos os recursos: agentes ilimitados, tokens ilimitados, números WhatsApp ilimitados, Agente de Objeção IA, usuários extras ilimitados e todas as funcionalidades do Designer de Fluxos — sem custo adicional.</div>
@@ -3495,20 +3495,20 @@
 
         <!-- O que está incluído no plano base -->
         <div class="plan-includes-banner">
-          <h4>✅ Incluído no Plano Base — R$ 497/mês</h4>
+          <h4>Incluído no Plano Base — R$ 497/mês</h4>
           <div class="plan-includes-items">
-            <span class="plan-inc-item">🤖 1 Agente de IA</span>
-            <span class="plan-inc-item">📱 1 Número WhatsApp</span>
-            <span class="plan-inc-item">🔢 5M tokens/mês</span>
-            <span class="plan-inc-item">🎙️ Transcrição de Áudio</span>
-            <span class="plan-inc-item">🔍 Pesquisa Web</span>
-            <span class="plan-inc-item">📎 Recebimento de Arquivos</span>
+            <span class="plan-inc-item">1 Agente de IA</span>
+            <span class="plan-inc-item">1 Número WhatsApp</span>
+            <span class="plan-inc-item">5M tokens/mês</span>
+            <span class="plan-inc-item">Transcrição de Áudio</span>
+            <span class="plan-inc-item">Pesquisa Web</span>
+            <span class="plan-inc-item">Recebimento de Arquivos</span>
           </div>
         </div>
 
         <!-- SEÇÃO 1: TOKENS EXTRAS -->
         <div class="mkt-section">
-          <div class="mkt-section-title">🔢 Tokens Extras</div>
+          <div class="mkt-section-title">Tokens Extras</div>
           <div class="mkt-section-sub">Seu plano já inclui 5M tokens/mês. Precisa atender mais leads? Adicione tokens a qualquer momento — somam ao saldo atual, sem prazo de validade.</div>
           <div class="pricing-grid">
             <div class="pricing-card">
@@ -3571,11 +3571,11 @@
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <span style="background:#dc2626;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;">⭐ MAIS VENDIDO</span>
           </div>
-          <div class="mkt-section-title" style="color:#fca5a5;">🛡️ Agente IA — Identificação de Objeção + Plano de Ação Completo</div>
+          <div class="mkt-section-title" style="color:#fca5a5;">Agente IA — Identificação de Objeção + Plano de Ação Completo</div>
           <div class="mkt-section-sub">Um agente de IA especializado analisa toda a conversa com o lead, identifica a objeção com precisão, avalia o que dificultou a conversão (tempo de resposta, tom, engajamento), gera um plano de ação personalizado e envia o relatório completo + script de follow-up direto no WhatsApp do responsável.</div>
           <div class="mkt-qty-card" style="border-color:#dc2626;">
             <div class="mkt-qty-left">
-              <div style="font-size:42px;flex-shrink:0;">🛡️</div>
+              <div style="font-size:42px;flex-shrink:0;"></div>
               <div>
                 <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente IA — Objeção + Diagnóstico + Plano de Ação</div>
                 <ul class="mkt-addon-features" style="margin:0;">
@@ -3591,9 +3591,9 @@
             </div>
             <div class="mkt-qty-right">
               <div class="mkt-unit-price" style="color:#fca5a5;">R$ 127<span>/mês</span></div>
-              <div class="mkt-addon-recurrence" style="background:rgba(220,38,38,.08);color:#fca5a5;">🔄 Recorrente</div>
+              <div class="mkt-addon-recurrence" style="background:rgba(220,38,38,.08);color:#fca5a5;">Recorrente</div>
               <button id="btn-addon-objecao" class="btn-addon-buy" style="background:#dc2626;" onclick="showAddonModal('objecao')">
-                🛡️ Ativar Agente de Objeção IA
+                Ativar Agente de Objeção IA
               </button>
             </div>
           </div>
@@ -3601,11 +3601,11 @@
 
         <!-- SEÇÃO 3: AGENTES DE IA -->
         <div class="mkt-section">
-          <div class="mkt-section-title">🤖 Agentes de IA Extras</div>
+          <div class="mkt-section-title">Agentes de IA Extras</div>
           <div class="mkt-section-sub">Cada agente é independente: prompt, tom e base de conhecimento próprios. Escolha quantos precisa — todos aparecem no Designer de Fluxos. Acrescido à mensalidade.</div>
           <div class="mkt-qty-card">
             <div class="mkt-qty-left">
-              <div style="font-size:42px;flex-shrink:0;">🤖</div>
+              <div style="font-size:42px;flex-shrink:0;"></div>
               <div>
                 <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Agente de IA Extra</div>
                 <ul class="mkt-addon-features" style="margin:0;">
@@ -3618,7 +3618,7 @@
             </div>
             <div class="mkt-qty-right">
               <div class="mkt-unit-price">R$ 197<span>/mês cada</span></div>
-              <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+              <div class="mkt-addon-recurrence">Recorrente</div>
               <div class="mkt-stepper">
                 <button onclick="changeAddonQty('agente',-1)">−</button>
                 <span class="mkt-stepper-val" id="qty-agente">1</span>
@@ -3634,11 +3634,11 @@
 
         <!-- SEÇÃO 4: NÚMEROS WHATSAPP -->
         <div class="mkt-section">
-          <div class="mkt-section-title">📱 Números WhatsApp Extras</div>
+          <div class="mkt-section-title">Números WhatsApp Extras</div>
           <div class="mkt-section-sub">Cada número é um canal separado — pode ter agente próprio, receber leads e atuar em etapas distintas no Designer de Fluxos. Acrescido à mensalidade.</div>
           <div class="mkt-qty-card">
             <div class="mkt-qty-left">
-              <div style="font-size:42px;flex-shrink:0;">📱</div>
+              <div style="font-size:42px;flex-shrink:0;"></div>
               <div>
                 <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Número WhatsApp Extra</div>
                 <ul class="mkt-addon-features" style="margin:0;">
@@ -3651,7 +3651,7 @@
             </div>
             <div class="mkt-qty-right">
               <div class="mkt-unit-price">R$ 97<span>/mês cada</span></div>
-              <div class="mkt-addon-recurrence">🔄 Recorrente</div>
+              <div class="mkt-addon-recurrence">Recorrente</div>
               <div class="mkt-stepper">
                 <button onclick="changeAddonQty('numero',-1)">−</button>
                 <span class="mkt-stepper-val" id="qty-numero">1</span>
@@ -3667,11 +3667,11 @@
 
         <!-- SEÇÃO 5: USUÁRIOS EXTRAS -->
         <div class="mkt-section">
-          <div class="mkt-section-title">👥 Usuários Extras da Equipe</div>
+          <div class="mkt-section-title">Usuários Extras da Equipe</div>
           <div class="mkt-section-sub">O plano base inclui 1 usuário (proprietário). Adicione membros da equipe para atribuir tarefas de leads, números de WhatsApp e responsabilidades de atendimento. Cada usuário extra tem acesso à página Equipe para ver suas atribuições.</div>
           <div class="mkt-qty-card" style="border-color:#6366f1;">
             <div class="mkt-qty-left">
-              <div style="font-size:42px;flex-shrink:0;">👤</div>
+              <div style="font-size:42px;flex-shrink:0;"></div>
               <div>
                 <div class="mkt-addon-name" style="font-size:16px;margin-bottom:6px;">Usuário Extra</div>
                 <ul class="mkt-addon-features" style="margin:0;">
@@ -3686,7 +3686,7 @@
             </div>
             <div class="mkt-qty-right">
               <div class="mkt-unit-price" style="color:#818cf8;">R$ 57<span>/mês cada</span></div>
-              <div class="mkt-addon-recurrence" style="background:rgba(99,102,241,.08);color:#818cf8;">🔄 Recorrente</div>
+              <div class="mkt-addon-recurrence" style="background:rgba(99,102,241,.08);color:#818cf8;">Recorrente</div>
               <div class="mkt-stepper">
                 <button onclick="changeAddonQty('usuario',-1)">−</button>
                 <span class="mkt-stepper-val" id="qty-usuario">1</span>
@@ -3797,59 +3797,59 @@
 
           <!-- Status do plano -->
           <div class="flow-plan-status" id="flow-plan-status">
-            <span class="flow-plan-badge num">📱 1 número</span>
-            <span class="flow-plan-badge agt">🤖 1 agente</span>
+            <span class="flow-plan-badge num">1 número</span>
+            <span class="flow-plan-badge agt">1 agente</span>
           </div>
           <div style="font-size:11px;color:#8b949e;margin-bottom:10px;line-height:1.4;">
             Quer mais? <a style="color:#58a6ff;cursor:pointer;text-decoration:none;" onclick="showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">Comprar no Marketplace ↗</a>
           </div>
 
           <h4>Gatilhos</h4>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'entrada')" style="background:rgba(163,230,53,.08);border-color:rgba(163,230,53,.3);">📨 Entrada WhatsApp</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'entrada')" style="background:rgba(163,230,53,.08);border-color:rgba(163,230,53,.3);">Entrada WhatsApp</div>
 
           <h4 style="margin-top:14px">Etapas de Atendimento</h4>
           <div class="palette-node-etapa" draggable="true" ondragstart="drag(event,'etapa')"
                title="Cada etapa escolhe um número e um agente de forma independente">
-            <div class="etapa-pal-num">📞 Etapa de Atendimento</div>
+            <div class="etapa-pal-num">Etapa de Atendimento</div>
             <div class="etapa-pal-agt" id="flow-etapa-hint">Arraste para o canvas</div>
           </div>
 
           <h4 style="margin-top:14px">Coleta &amp; Dados</h4>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'coletar_dados')">📝 Coletar Dados</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'captura')">📋 Captura Rápida</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'lead_score_coletor')">🎯 Colhedor de Lead Score</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'coletar_dados')">Coletar Dados</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'captura')">Captura Rápida</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'lead_score_coletor')">Colhedor de Lead Score</div>
 
           <h4 style="margin-top:14px">Lógica &amp; Fluxo</h4>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'condicao')">🔀 Condição IF/ELSE</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'divisao')">🔱 Divisão de Fluxo</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'expediente')">🕐 Verificar Expediente</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'condicao')">Condição IF/ELSE</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'divisao')">Divisão de Fluxo</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'expediente')">Verificar Expediente</div>
           <div class="palette-node" draggable="true" ondragstart="drag(event,'aguardar')">⏳ Aguardar / Wait</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'mudar_fluxo')" style="border-color:rgba(99,102,241,.4);color:#818cf8;">🔀 Mudar de Fluxo</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'mudar_fluxo')" style="border-color:rgba(99,102,241,.4);color:#818cf8;">Mudar de Fluxo</div>
 
           <h4 style="margin-top:14px">IA &amp; Automação</h4>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'modelo_ia')">🤖 Escolha Modelo IA</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'voz_ia')">🎙️ Enviar Voz por IA</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'contexto')">🧠 Contextualizar</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'modelo_ia')">Escolha Modelo IA</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'voz_ia')">Enviar Voz por IA</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'contexto')">Contextualizar</div>
           <div class="palette-node node-acao-pago" id="palette-objecao" draggable="true"
                ondragstart="dragObjecao(event)"
-               title="Agente IA — Identificar Objeção + Gerar Plano de Ação + Enviar relatório via WhatsApp — R$ 127/mês">🛡️ Identificar Objeção + Plano IA</div>
+               title="Agente IA — Identificar Objeção + Gerar Plano de Ação + Enviar relatório via WhatsApp — R$ 127/mês">Identificar Objeção + Plano IA</div>
 
           <h4 style="margin-top:14px">Ações</h4>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'departamento')">🏢 Transferir Departamento</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'enviar_relatorio')">📊 Enviar Relatório</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'followup')">📤 Follow-up</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'acao')">⚡ Ação / Webhook</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'anotacao')">🗒️ Anotação Interna</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'mover_pipeline')">🗂️ Mover no CRM</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'agendar_gcal')" style="border-color:rgba(26,115,232,.4);color:#93c5fd;">📅 Agendar no Google Agenda</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'departamento')">Transferir Departamento</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'enviar_relatorio')">Enviar Relatório</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'followup')">Follow-up</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'acao')">Ação / Webhook</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'anotacao')">Anotação Interna</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'mover_pipeline')">Mover no CRM</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'agendar_gcal')" style="border-color:rgba(26,115,232,.4);color:#93c5fd;">Agendar no Google Agenda</div>
           <div class="palette-node" draggable="true" ondragstart="drag(event,'disparo_programado')" style="border-color:rgba(234,179,8,.4);color:#fde047;">⏰ Disparo Programado</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'adicionar_campos')" style="border-color:rgba(168,85,247,.4);color:#d8b4fe;">🏷️ Campos & Tags</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'adicionar_campos')" style="border-color:rgba(168,85,247,.4);color:#d8b4fe;">Campos & Tags</div>
 
           <h4 style="margin-top:14px">Terminadores</h4>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'inicio')">🟢 Início</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'qualificado')">✅ Qualificado</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'desqualificado')">❌ Desqualificado</div>
-          <div class="palette-node" draggable="true" ondragstart="drag(event,'fim')">🔴 Fim</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'inicio')">Início</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'qualificado')">Qualificado</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'desqualificado')">Desqualificado</div>
+          <div class="palette-node" draggable="true" ondragstart="drag(event,'fim')">Fim</div>
 
           <h4 style="margin-top:14px">Fluxos salvos</h4>
           <div id="saved-flows-list"><p style="font-size:12px;color:#6e7681;text-align:center;padding:8px;">Nenhum fluxo salvo</p></div>
@@ -3868,7 +3868,7 @@
           </div>
           <!-- Legenda do rodapé do canvas -->
           <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(13,17,23,.85);backdrop-filter:blur(6px);border-top:1px solid rgba(163,230,53,.15);padding:6px 16px;display:flex;align-items:center;gap:16px;font-size:11px;color:#6e7681;pointer-events:none;z-index:10;">
-            <span style="color:#a3e635;font-weight:700;white-space:nowrap;">⚡ Fator multiplicador:</span>
+            <span style="color:#a3e635;font-weight:700;white-space:nowrap;">Fator multiplicador:</span>
             <span>Indica quanto custa 1 token nesse modelo em relação à base <code style="background:rgba(255,255,255,.08);padding:1px 5px;border-radius:3px;color:#e2e8f0;">gpt-4o-mini = 1×</code>.</span>
             <span style="display:flex;gap:10px;flex-shrink:0;">
               <span style="color:#4ade80;">●&nbsp;0.1–0.9× muito barato</span>
@@ -3884,7 +3884,7 @@
     <!-- MONITORAMENTO (admin only) -->
     <div class="page admin-only" id="page-monitoramento">
       <div class="page-header">
-        <h1>📊 Dashboard Financeiro</h1>
+        <h1>Dashboard Financeiro</h1>
         <p>Saúde e performance de assinaturas</p>
       </div>
 
@@ -4068,7 +4068,7 @@
     <!-- CALENDÁRIO -->
     <div class="page" id="page-calendario">
       <div class="page-header">
-        <h1>📅 Calendário de Tarefas</h1>
+        <h1>Calendário de Tarefas</h1>
         <p>Visualize e gerencie todas as tarefas dos seus leads por data</p>
       </div>
       <div class="card">
@@ -4227,7 +4227,7 @@
     <!-- INTEGRAÇÕES -->
     <div class="page" id="page-integracoes">
       <div class="page-header">
-        <h1>🔗 Integrações</h1>
+        <h1>Integrações</h1>
         <p>Conecte calendários e configure webhooks para automação</p>
       </div>
 
@@ -4236,7 +4236,7 @@
         <!-- CALENDÁRIOS -->
         <div class="card" style="padding:24px;">
           <h2 style="margin:0 0 20px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
-            📅 Calendários
+            Calendários
           </h2>
 
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
@@ -4251,7 +4251,7 @@
               </div>
               <div id="gcal-email" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;display:none;"></div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn-secondary" id="gcal-btn" onclick="conectarGoogleCalendar()" style="font-size:13px;padding:8px 12px;">🔗 Conectar</button>
+                <button class="btn-secondary" id="gcal-btn" onclick="conectarGoogleCalendar()" style="font-size:13px;padding:8px 12px;">Conectar</button>
                 <button class="btn-secondary" onclick="desconectarCalendar('google')" style="font-size:13px;padding:8px 12px;display:none;" id="gcal-disconnect">Desconectar</button>
               </div>
             </div>
@@ -4284,7 +4284,7 @@
               </div>
               <div id="calendly-email" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;display:none;"></div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn-secondary" id="calendly-btn" onclick="conectarCalendly()" style="font-size:13px;padding:8px 12px;">🔗 Conectar</button>
+                <button class="btn-secondary" id="calendly-btn" onclick="conectarCalendly()" style="font-size:13px;padding:8px 12px;">Conectar</button>
                 <button class="btn-secondary" onclick="desconectarCalendar('calendly')" style="font-size:13px;padding:8px 12px;display:none;" id="calendly-disconnect">Desconectar</button>
               </div>
             </div>
@@ -4295,7 +4295,7 @@
         <div class="card" style="padding:24px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
             <h2 style="margin:0;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
-              📤 Webhooks Saída (Outbound)
+              Webhooks Saída (Outbound)
             </h2>
             <button class="btn-primary" onclick="abrirModalNovoWebhook()" style="font-size:12px;padding:8px 12px;">+ Novo</button>
           </div>
@@ -4308,7 +4308,7 @@
         <!-- WEBHOOKS INBOUND -->
         <div class="card" style="padding:24px;">
           <h2 style="margin:0 0 16px;font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;">
-            📥 Webhooks Entrada (Inbound)
+            Webhooks Entrada (Inbound)
           </h2>
 
           <div style="background:var(--bg-secondary);border-radius:12px;padding:16px;margin-bottom:12px;">
@@ -4316,15 +4316,15 @@
             <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:12px;">
               <input type="text" id="inbound-webhook-url" readonly value=""
                 style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:12px;font-family:monospace;" />
-              <button class="btn-secondary" onclick="copiarWebhookURL()" style="padding:10px 14px;font-size:12px;">📋 Copiar</button>
+              <button class="btn-secondary" onclick="copiarWebhookURL()" style="padding:10px 14px;font-size:12px;">Copiar</button>
             </div>
 
             <p style="margin:0 0 12px;font-size:12px;font-weight:600;color:var(--text-secondary);">SECRET TOKEN</p>
             <div style="display:flex;gap:8px;align-items:stretch;">
               <input type="password" id="inbound-webhook-token" readonly value=""
                 style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-input);font-size:12px;font-family:monospace;" />
-              <button class="btn-secondary" onclick="toggleTokenVisibility()" style="padding:10px 14px;font-size:12px;">👁️ Ver</button>
-              <button class="btn-secondary" onclick="regenerarSecretToken()" style="padding:10px 14px;font-size:12px;">🔄 Regenerar</button>
+              <button class="btn-secondary" onclick="toggleTokenVisibility()" style="padding:10px 14px;font-size:12px;">Ver</button>
+              <button class="btn-secondary" onclick="regenerarSecretToken()" style="padding:10px 14px;font-size:12px;">Regenerar</button>
             </div>
 
             <p style="margin:12px 0 0;font-size:11px;color:var(--text-secondary);">
@@ -4347,7 +4347,7 @@
 
         <!-- Dados da conta -->
         <div class="card" style="padding:24px;">
-          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">👤 Dados da Conta</h3>
+          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Dados da Conta</h3>
           <div style="margin-bottom:12px;">
             <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">E-MAIL</label>
             <input type="email" id="settings-email" readonly disabled
@@ -4358,7 +4358,7 @@
 
         <!-- Meu Perfil (visível apenas para membros) -->
         <div class="card" id="settings-perfil-card" style="padding:24px;display:none;">
-          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">👤 Meu Perfil</h3>
+          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Meu Perfil</h3>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
             <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">NOME COMPLETO</label>
@@ -4386,7 +4386,7 @@
 
         <!-- Alterar senha -->
         <div class="card" style="padding:24px;">
-          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">🔑 Alterar Senha</h3>
+          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Alterar Senha</h3>
           <div style="margin-bottom:12px;">
             <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">NOVA SENHA</label>
             <input type="password" id="settings-new-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password"
@@ -4402,7 +4402,7 @@
 
         <!-- Integração WhatsApp / Evolution -->
         <div class="card" style="padding:24px;">
-          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">💬 Integração WhatsApp</h3>
+          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Integração WhatsApp</h3>
           <div style="margin-bottom:12px;">
             <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">URL DA INSTÂNCIA EVOLUTION API</label>
             <input type="text" id="settings-evo-instance" placeholder="https://evolution.sevenxperts.com"
@@ -4414,7 +4414,7 @@
 
         <!-- Tokens por Modelo (este mês) -->
         <div class="card" style="padding:24px;">
-          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">📊 Tokens Usados por Modelo (Este Mês)</h3>
+          <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Tokens Usados por Modelo (Este Mês)</h3>
           <div style="overflow-x:auto;">
             <table style="width:100%;border-collapse:collapse;font-size:13px;">
               <thead style="border-bottom:1px solid var(--border);">
@@ -4506,7 +4506,7 @@
 <div class="token-alert-backdrop" id="task-reminder-popup" onclick="if(event.target===this)dismissTaskReminder()">
   <div class="token-alert-box" style="max-width:440px;">
     <div class="token-alert-header" style="background:linear-gradient(135deg,#1e3a5f,#1e40af);">
-      <span class="token-alert-icon">📋</span>
+      <span class="token-alert-icon"></span>
       <h2 id="task-reminder-title">Tarefas pendentes!</h2>
       <p id="task-reminder-subtitle">Você tem tarefas vencidas ou para hoje.</p>
       <div class="token-alert-saldo" style="font-size:28px;" id="task-reminder-count">—</div>
@@ -4515,7 +4515,7 @@
       <div id="task-reminder-list" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
       <button class="btn-token-alert-buy" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);"
         onclick="dismissTaskReminder();showPage('crm',document.querySelector('.nav-item[onclick*=crm]'))">
-        🗂️ Ver no CRM
+        Ver no CRM
       </button>
       <button class="btn-token-alert-later" onclick="dismissTaskReminder()">
         Fechar
@@ -4666,9 +4666,10 @@
   const EVO_PROXY_URL = `${SUPABASE_URL}/functions/v1/evo-proxy`;
 
   // Helper: chama Evolution API via proxy autenticado (nunca expõe a chave)
-  async function evoProxy(action, body = null) {
+  async function evoProxy(action, body = null, extraParams = {}) {
     const session = (await db.auth.getSession()).data.session;
     if (!session) throw new Error('Sessão expirada. Faça login novamente.');
+    const params = new URLSearchParams({ action, ...extraParams });
     const opts = {
       method: body ? 'POST' : 'GET',
       headers: {
@@ -4678,7 +4679,7 @@
       },
       ...(body ? { body: JSON.stringify(body) } : {})
     };
-    const res = await fetch(`${EVO_PROXY_URL}?action=${action}`, opts);
+    const res = await fetch(`${EVO_PROXY_URL}?${params}`, opts);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
     return data;
@@ -4814,7 +4815,7 @@
       msg.textContent = 'Erro ao enviar. Tente novamente.';
     } else {
       msg.style.color = '#4ade80';
-      msg.textContent = '✅ Link enviado! Verifique sua caixa de entrada.';
+      msg.textContent = 'Link enviado! Verifique sua caixa de entrada.';
     }
   }
 
@@ -4857,7 +4858,7 @@
     // Verifica se retornou do OAuth do Google Calendar
     const params = new URLSearchParams(window.location.search);
     if (params.get('gcal') === 'connected') {
-      showNotification('Google Calendar conectado com sucesso! 🎉', 'success');
+      showNotification('Google Calendar conectado com sucesso!', 'success');
       // Remove parâmetro da URL
       window.history.replaceState({}, document.title, window.location.pathname);
       // Aguarda para garantir que o status está carregado
@@ -4902,8 +4903,8 @@
       if (nameEl) nameEl.textContent = profile?.display_name || user.email;
       const roleEl = document.getElementById('sidebar-user-role');
       if (roleEl) roleEl.textContent =
-        profile?.role === 'admin'  ? '🔑 Super Admin' :
-        profile?.role === 'membro' ? '👤 Atendente' : '👤 Cliente';
+        profile?.role === 'admin'  ? 'Super Admin' :
+        profile?.role === 'membro' ? 'Atendente' : 'Cliente';
       // Exibe nome da empresa no logo
       const compEl = document.getElementById('sidebar-company-name');
       if (compEl && profile?.display_name) compEl.textContent = profile.display_name;
@@ -5124,20 +5125,20 @@
       const state = data?.instance?.state || data?.state || 'close';
       if (state === 'open') {
         bar.className = 'wa-status-bar connected';
-        txt.textContent = '🟢 WhatsApp Conectado — Agente ativo e recebendo mensagens';
+        txt.textContent = 'WhatsApp Conectado — Agente ativo e recebendo mensagens';
         dot.className = 'badge-dot online';
         btnDesc.style.display = 'inline-block';
         document.getElementById('btn-gerar-qr').style.display = 'none';
       } else {
         bar.className = 'wa-status-bar disconnected';
-        txt.textContent = '🔴 WhatsApp Desconectado — Gere o QR Code para conectar';
+        txt.textContent = 'WhatsApp Desconectado — Gere o QR Code para conectar';
         dot.className = 'badge-dot offline';
         btnDesc.style.display = 'none';
         document.getElementById('btn-gerar-qr').style.display = 'flex';
       }
     } catch (e) {
       bar.className = 'wa-status-bar connecting';
-      txt.textContent = '🟡 Não foi possível verificar o status';
+      txt.textContent = 'Não foi possível verificar o status';
     }
   }
 
@@ -5174,7 +5175,7 @@
     } catch (e) {
       alert('Erro ao conectar com a Evolution API: ' + e.message);
     }
-    btn.disabled = false; btn.innerHTML = '<span>🔄</span> Novo QR Code';
+    btn.disabled = false; btn.innerHTML = 'Novo QR Code';
   }
 
   function startQRCountdown() {
@@ -5189,7 +5190,7 @@
         document.getElementById('qr-timer').style.display = 'none';
         document.getElementById('qr-image').style.display = 'none';
         document.getElementById('qr-placeholder').style.display = 'flex';
-        document.getElementById('btn-gerar-qr').innerHTML = '<span>📷</span> Gerar QR Code';
+        document.getElementById('btn-gerar-qr').innerHTML = 'Gerar QR Code';
       }
     }, 1000);
   }
@@ -5202,8 +5203,41 @@
     } catch(e) { alert('Erro ao desconectar: ' + e.message); }
   }
 
+  async function checkStatusNumeroExtra(index) {
+    const statusEl = document.getElementById(`numero-extra-status-${index}`);
+    const actionsEl = document.getElementById(`numero-extra-actions-${index}`);
+    try {
+      const data = await evoProxy('status', null, { extra: String(index) });
+      const state = data?.instance?.state || data?.state || '';
+      const owner = data?.instance?.profileName || data?.ownerJid || '';
+      const phone = owner ? owner.replace('@s.whatsapp.net', '').replace('@c.us', '') : '';
+      if (state === 'open') {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#22c55e;font-weight:600;">Conectado</span>${phone ? ` — ${phone}` : ''}`;
+        if (actionsEl) actionsEl.innerHTML = `
+          <button class="btn-secondary" onclick="desconectarNumeroExtra(${index})" style="border-color:#dc2626;color:#dc2626;">Desconectar</button>
+        `;
+      } else {
+        if (statusEl) statusEl.innerHTML = '<span style="color:#f59e0b;">Não conectado</span>';
+        if (actionsEl) actionsEl.innerHTML = `<button class="btn-secondary" onclick="conectarNumeroExtra(${index})">Conectar QR</button>`;
+      }
+    } catch (e) {
+      if (statusEl) statusEl.innerHTML = '<span style="color:#8b949e;">Não configurado</span>';
+      if (actionsEl) actionsEl.innerHTML = `<button class="btn-secondary" onclick="conectarNumeroExtra(${index})">Conectar QR</button>`;
+    }
+  }
+
+  async function desconectarNumeroExtra(index) {
+    if (!confirm(`Deseja desconectar o Número Extra ${index}?`)) return;
+    try {
+      await evoProxy('logout', null, { extra: String(index) });
+      showToast(`Número Extra ${index} desconectado`, 'success');
+      checkStatusNumeroExtra(index);
+    } catch (e) {
+      showToast('Erro ao desconectar: ' + e.message, 'error');
+    }
+  }
+
   function conectarNumeroExtra(index) {
-    // Abre modal para conectar número extra
     const modal = document.createElement('div');
     modal.id = `modal-numero-${index}`;
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
@@ -5213,57 +5247,82 @@
           <h2 style="margin:0;color:#e6edf3;">Conectar Número Extra ${index}</h2>
           <button onclick="document.getElementById('modal-numero-${index}').remove()" style="background:none;border:none;color:#8b949e;font-size:24px;cursor:pointer;">✕</button>
         </div>
-        
         <div style="margin-bottom:24px;">
-          <p style="color:#8b949e;margin-bottom:16px;">Escaneie o QR Code com seu WhatsApp para conectar o número extra</p>
+          <p style="color:#8b949e;margin-bottom:16px;">Abra o WhatsApp no celular, vá em <strong style="color:#e6edf3;">Dispositivos Conectados</strong> e escaneie o QR Code.</p>
           <div id="qr-container-${index}" style="text-align:center;padding:20px;background:#161b22;border-radius:8px;">
             <div id="qr-placeholder-${index}" style="color:#8b949e;padding:40px;">Clique em "Gerar QR Code" para começar</div>
             <img id="qr-image-${index}" style="display:none;width:240px;height:240px;border-radius:8px;" />
           </div>
-          <div id="qr-timer-${index}" style="display:none;color:#a3e635;text-align:center;margin-top:12px;">QR expira em <span id="qr-countdown-${index}">60</span>s</div>
+          <div id="qr-timer-${index}" style="display:none;color:#a3e635;text-align:center;margin-top:12px;">QR expira em <span id="qr-countdown-${index}">60</span>s — gere um novo se expirar</div>
         </div>
-        
-        <button class="btn-wa-connect" onclick="gerarQRNumeroExtra(${index})" style="width:100%;">
-          Gerar QR Code
-        </button>
+        <div style="display:flex;gap:12px;">
+          <button class="btn-wa-connect" id="btn-gerar-qr-${index}" onclick="gerarQRNumeroExtra(${index})" style="flex:1;">Gerar QR Code</button>
+          <button class="btn-secondary" onclick="verificarConexaoNumeroExtra(${index})" style="flex:1;">Verificar Conexão</button>
+        </div>
       </div>
     `;
     document.body.appendChild(modal);
     modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    // Gera QR automaticamente ao abrir
+    setTimeout(() => gerarQRNumeroExtra(index), 300);
   }
 
   async function gerarQRNumeroExtra(index) {
-    const btn = event.target;
+    const btn = document.getElementById(`btn-gerar-qr-${index}`);
     const placeholder = document.getElementById(`qr-placeholder-${index}`);
     const img = document.getElementById(`qr-image-${index}`);
     const timer = document.getElementById(`qr-timer-${index}`);
-    btn.disabled = true; btn.innerHTML = '<span>⏳</span> Gerando...';
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
     try {
-      // TODO: Usar instância específica do número extra: numero-{index}
-      const data = await evoProxy('connect', `numero-${index}`);
+      const data = await evoProxy('connect', null, { extra: String(index) });
       const base64 = data?.base64 || data?.qrcode?.base64 || data?.code;
       if (base64) {
-        placeholder.style.display = 'none';
-        img.src = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
-        img.style.display = 'block';
-        timer.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
+        if (img) {
+          img.src = base64.startsWith('data:') ? base64 : `data:image/png;base64,${base64}`;
+          img.style.display = 'block';
+        }
+        if (timer) timer.style.display = 'block';
         startQRCountdownNumero(index);
+      } else if (data?.instance?.state === 'open') {
+        if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'Número já conectado!'; placeholder.style.color = '#22c55e'; }
+        if (img) img.style.display = 'none';
+        if (timer) timer.style.display = 'none';
+        checkStatusNumeroExtra(index);
       } else {
-        alert('Não foi possível gerar o QR Code para o número extra.');
+        if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'Não foi possível gerar QR Code. Tente novamente.'; }
       }
     } catch (e) {
-      alert('Erro ao gerar QR Code: ' + e.message);
+      if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'Erro: ' + e.message; }
     }
-    btn.disabled = false; btn.innerHTML = '<span>📷</span> Gerar QR Code';
+    if (btn) { btn.disabled = false; btn.textContent = 'Gerar QR Code'; }
+  }
+
+  async function verificarConexaoNumeroExtra(index) {
+    try {
+      const data = await evoProxy('status', null, { extra: String(index) });
+      const state = data?.instance?.state || data?.state || '';
+      if (state === 'open') {
+        alert(`Número Extra ${index} conectado com sucesso!`);
+        const modal = document.getElementById(`modal-numero-${index}`);
+        if (modal) modal.remove();
+        checkStatusNumeroExtra(index);
+      } else {
+        alert('Ainda não conectado. Escaneie o QR Code com seu WhatsApp e tente novamente.');
+      }
+    } catch (e) {
+      alert('Erro ao verificar: ' + e.message);
+    }
   }
 
   function startQRCountdownNumero(index) {
     let secs = 60;
-    document.getElementById(`qr-countdown-${index}`).textContent = secs;
+    const el = document.getElementById(`qr-countdown-${index}`);
+    if (el) el.textContent = secs;
     const interval = setInterval(() => {
       secs--;
-      const el = document.getElementById(`qr-countdown-${index}`);
-      if (el) el.textContent = secs;
+      const countEl = document.getElementById(`qr-countdown-${index}`);
+      if (countEl) countEl.textContent = secs;
       if (secs <= 0) {
         clearInterval(interval);
         const timer = document.getElementById(`qr-timer-${index}`);
@@ -5271,7 +5330,7 @@
         const img = document.getElementById(`qr-image-${index}`);
         if (img) img.style.display = 'none';
         const placeholder = document.getElementById(`qr-placeholder-${index}`);
-        if (placeholder) placeholder.style.display = 'block';
+        if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'QR expirado. Clique em "Gerar QR Code" para um novo.'; }
       }
     }, 1000);
   }
@@ -5357,7 +5416,7 @@
   function renderConvList(convs) {
     const el = document.getElementById('conv-list');
     if (!convs.length) {
-      el.innerHTML = '<div class="empty-state" style="padding:32px 16px;"><div style="font-size:32px;margin-bottom:8px;">📭</div><div style="font-size:13px;">Nenhuma conversa ativa</div></div>';
+      el.innerHTML = '<div class="empty-state" style="padding:32px 16px;"><div style="font-size:32px;margin-bottom:8px;"></div><div style="font-size:13px;">Nenhuma conversa ativa</div></div>';
       return;
     }
     el.innerHTML = convs.map(c => {
@@ -5430,11 +5489,11 @@
     const btn    = document.getElementById('btn-toggle-agente');
     if (pausado) {
       banner.style.display = 'block';
-      btn.textContent = '▶ Reativar Agente';
+      btn.textContent = 'Reativar Agente';
       btn.style.background = '#dcfce7'; btn.style.color = '#16a34a'; btn.style.borderColor = '#bbf7d0';
     } else {
       banner.style.display = 'none';
-      btn.textContent = '⏸ Pausar Agente';
+      btn.textContent = 'Pausar Agente';
       btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
     }
   }
@@ -5456,14 +5515,14 @@
     const hist = parseHistory(conv.historico);
     const el = document.getElementById('messages-area');
     if (!hist.length) {
-      el.innerHTML = '<div class="empty-state"><div style="font-size:28px">💬</div><p>Nenhuma mensagem ainda</p></div>';
+      el.innerHTML = '<div class="empty-state"><div style="font-size:28px"></div><p>Nenhuma mensagem ainda</p></div>';
       return;
     }
     el.innerHTML = hist.map(msg => {
       const isUser = msg.role === 'user';
       const isAudio = msg.type === 'audio';
       const audioTag = isAudio
-        ? `<div class="msg-audio-tag">${isUser ? '🎤 Áudio transcrito' : '🔊 Resposta em áudio'}</div>`
+        ? `<div class="msg-audio-tag">${isUser ? 'Áudio transcrito' : 'Resposta em áudio'}</div>`
         : '';
       return `<div class="msg-row ${isUser ? 'user' : 'assistant'}">
         <div class="msg-bubble">${audioTag}${escapeHtml(msg.content || '')}</div>
@@ -5474,7 +5533,7 @@
     const lastRole = hist.length ? hist[hist.length-1].role : '';
     const statusBadge = document.getElementById('chat-status-badge');
     if (lastRole === 'assistant') {
-      statusBadge.className = 'badge badge-blue'; statusBadge.textContent = '🤖 Aguardando lead';
+      statusBadge.className = 'badge badge-blue'; statusBadge.textContent = 'Aguardando lead';
     } else {
       statusBadge.className = 'badge badge-yellow'; statusBadge.textContent = '⏳ Processando';
     }
@@ -5657,12 +5716,12 @@
   // CRM KANBAN
   // =====================
   const CRM_STAGES = [
-    { id: 'novo_contato',    label: '🆕 Novo Contato',      color: '#f59e0b' },
-    { id: 'em_atendimento',  label: '💬 Em Atendimento',    color: '#3b82f6' },
-    { id: 'qualificado',     label: '✅ Qualificado',        color: '#16a34a' },
-    { id: 'nao_qualificado', label: '❌ Não Qualificado',   color: '#dc2626' },
-    { id: 'convertido',      label: '🎉 Convertido',         color: '#7c3aed' },
-    { id: 'perdido',         label: '🚪 Perdido',            color: '#9ca3af' }
+    { id: 'novo_contato',    label: 'Novo Contato',      color: '#f59e0b' },
+    { id: 'em_atendimento',  label: 'Em Atendimento',    color: '#3b82f6' },
+    { id: 'qualificado',     label: 'Qualificado',        color: '#16a34a' },
+    { id: 'nao_qualificado', label: 'Não Qualificado',   color: '#dc2626' },
+    { id: 'convertido',      label: 'Convertido',         color: '#7c3aed' },
+    { id: 'perdido',         label: 'Perdido',            color: '#9ca3af' }
   ];
 
   let crmLeads = [];
@@ -5698,7 +5757,7 @@
       container.innerHTML = crmFluxos.map(f => {
         const count = crmLeads.filter(l => l.fluxo_id === f.id).length;
         return `<button class="crm-funnel-tab ${crmFluxoFilter === f.id ? 'active' : ''}" data-fluxo="${f.id}" onclick="filterCRMByFluxo('${f.id}',this)">
-          🔀 ${escapeHtml(f.nome)} <span class="funnel-count">${count}</span>
+          ${escapeHtml(f.nome)} <span class="funnel-count">${count}</span>
         </button>`;
       }).join('');
     }
@@ -5783,18 +5842,18 @@
     let taskClass = '', taskText = '';
     if (overdueT.length > 0) {
       taskClass = 'has-overdue';
-      taskText  = `⚠️ ${overdueT.length} atrasada${overdueT.length>1?'s':''}`;
+      taskText  = `${overdueT.length} atrasada${overdueT.length>1?'s':''}`;
     } else if (todayT.length > 0) {
       taskClass = 'has-today';
       taskText  = `⏰ ${todayT.length} p/ hoje`;
     } else if (tomorrowT.length > 0) {
       taskClass = 'has-tomorrow';
-      taskText  = `📅 ${tomorrowT.length} p/ amanhã`;
+      taskText  = `${tomorrowT.length} p/ amanhã`;
     } else if (semVenc.length > 0) {
       taskClass = 'has-pending';
-      taskText  = `📋 ${semVenc.length} pendente${semVenc.length>1?'s':''}`;
+      taskText  = `${semVenc.length} pendente${semVenc.length>1?'s':''}`;
     } else if (tasks.length > 0) {
-      taskText = `✅ ${tasks.length} concluída${tasks.length>1?'s':''}`;
+      taskText = `${tasks.length} concluída${tasks.length>1?'s':''}`;
     } else {
       taskText = '<span style="opacity:.35;">＋ tarefa</span>';
     }
@@ -5817,9 +5876,9 @@
     const phone = lead.celular || lead.numero_whatsapp || '';
     const phoneDisplay = phone.replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3') || phone;
     const chips = [
-      phoneDisplay ? `<span class="crm-card-chip">📱 ${escapeHtml(phoneDisplay)}</span>` : '',
-      lead.email   ? `<span class="crm-card-chip">✉️ ${escapeHtml(lead.email)}</span>`   : '',
-      lead.data_aniversario ? `<span class="crm-card-chip">🎂 ${new Date(lead.data_aniversario+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span>` : '',
+      phoneDisplay ? `<span class="crm-card-chip">${escapeHtml(phoneDisplay)}</span>` : '',
+      lead.email   ? `<span class="crm-card-chip">${escapeHtml(lead.email)}</span>`   : '',
+      lead.data_aniversario ? `<span class="crm-card-chip">${new Date(lead.data_aniversario+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span>` : '',
     ].filter(Boolean).join('');
 
     return `<div class="crm-card" data-lead-id="${lead.id}" data-stage="${stg}"
@@ -5828,11 +5887,11 @@
       ondragstart="dragCard(event,this)"
       onclick="openLeadModal('${lead.id}')">
       <div id="qtp-${lead.id}" class="quick-task-pop" onclick="event.stopPropagation()">
-        <div class="quick-task-pop-title">⚡ Adicionar tarefa rápida</div>
+        <div class="quick-task-pop-title">Adicionar tarefa rápida</div>
         <input type="text" id="qtp-desc-${lead.id}" placeholder="Descreva a tarefa..." onkeydown="if(event.key==='Enter')saveQuickTask('${lead.id}')" />
         <input type="date" id="qtp-date-${lead.id}" style="margin-bottom:0;" />
         <div class="quick-task-pop-actions" style="margin-top:8px;">
-          <button class="quick-task-pop-save" onclick="saveQuickTask('${lead.id}')">✅ Salvar</button>
+          <button class="quick-task-pop-save" onclick="saveQuickTask('${lead.id}')">Salvar</button>
           <button class="quick-task-pop-cancel" onclick="closeQuickTask('${lead.id}')">Cancelar</button>
         </div>
       </div>
@@ -5845,14 +5904,14 @@
         ${lead.assunto ? `<div class="crm-card-assunto">${escapeHtml(lead.assunto)}</div>` : ''}
         ${chips || fluxo ? `<div class="crm-card-meta">
           ${chips}
-          ${fluxo ? `<span class="crm-card-funil">🔀 ${escapeHtml(fluxo.nome)}</span>` : ''}
+          ${fluxo ? `<span class="crm-card-funil">${escapeHtml(fluxo.nome)}</span>` : ''}
         </div>` : ''}
       </div>
       <div class="crm-card-footer">
         <span class="crm-card-tasks ${taskClass}" onclick="event.stopPropagation();openQuickTask('${lead.id}')" title="Clique para adicionar tarefa">${taskText}</span>
         <div style="display:flex;align-items:center;gap:6px;">
           <button class="crm-card-add-task" onclick="event.stopPropagation();openQuickTask('${lead.id}')" title="Adicionar tarefa">＋ tarefa</button>
-          ${crmFluxos.length > 0 ? `<button class="crm-card-move" onclick="event.stopPropagation();openMoveToFunilPopup('${lead.id}',event)" title="Mover para outro funil">🔀</button>` : ''}
+          ${crmFluxos.length > 0 ? `<button class="crm-card-move" onclick="event.stopPropagation();openMoveToFunilPopup('${lead.id}',event)" title="Mover para outro funil">Mover</button>` : ''}
           ${scoreHTML(score)}
           <span class="crm-card-date">${lead.atualizado_em ? timeAgo(lead.atualizado_em) : '—'}</span>
         </div>
@@ -6045,8 +6104,8 @@
       resumo: document.getElementById('crm-resumo').value,
       atualizado_em: new Date().toISOString()
     }).eq('id', id);
-    if (saveErr) { st.textContent = '❌ ' + saveErr.message; st.style.color = '#ef4444'; return; }
-    st.textContent = '✅ Salvo!'; st.style.color = '#16a34a';
+    if (saveErr) { st.textContent = 'Erro: ' + saveErr.message; st.style.color = '#ef4444'; return; }
+    st.textContent = 'Salvo!'; st.style.color = '#16a34a';
     setTimeout(() => st.textContent = '', 3000);
     // Atualiza local e re-renderiza card
     const lead = crmLeads.find(x => x.id === id);
@@ -6072,7 +6131,7 @@
     const st = document.getElementById('crm-notas-status');
     st.textContent = 'Salvando...'; st.style.color = '#888';
     await db.from('leads').update({ notas: document.getElementById('crm-notas').value, atualizado_em: new Date().toISOString() }).eq('id', id);
-    st.textContent = '✅ Salvo!'; st.style.color = '#16a34a';
+    st.textContent = 'Salvo!'; st.style.color = '#16a34a';
     setTimeout(() => st.textContent = '', 2500);
   }
 
@@ -6111,13 +6170,13 @@
     el.innerHTML = tarefas.map(t => {
       const membro = _equipeMembros?.find(m => m.id === t.atribuido_a);
       const membroTag = membro
-        ? `<span style="font-size:10px;background:${membro.cor||'#6366f1'}22;color:${membro.cor||'#6366f1'};border:1px solid ${membro.cor||'#6366f1'}44;border-radius:5px;padding:1px 6px;font-weight:600;">👤 ${escapeHtml(membro.nome.split(' ')[0])}</span>`
+        ? `<span style="font-size:10px;background:${membro.cor||'#6366f1'}22;color:${membro.cor||'#6366f1'};border:1px solid ${membro.cor||'#6366f1'}44;border-radius:5px;padding:1px 6px;font-weight:600;">${escapeHtml(membro.nome.split(' ')[0])}</span>`
         : '';
       return `<div class="tarefa-item" data-tarefa-id="${t.id}">
         <input type="checkbox" ${t.concluida?'checked':''} onchange="toggleTarefa('${t.id}',this.checked)" />
         <span class="tarefa-desc ${t.concluida?'done':''}">${escapeHtml(t.descricao)}</span>
         ${membroTag}
-        ${t.data_vencimento ? `<span class="tarefa-date">📅 ${new Date(t.data_vencimento+'T00:00:00').toLocaleDateString('pt-BR')}</span>` : ''}
+        ${t.data_vencimento ? `<span class="tarefa-date">${new Date(t.data_vencimento+'T00:00:00').toLocaleDateString('pt-BR')}</span>` : ''}
         <button class="tarefa-del" onclick="deleteTarefa('${t.id}')" title="Excluir">✕</button>
       </div>`;
     }).join('');
@@ -6183,7 +6242,7 @@
     const errEl = document.getElementById('nl-error');
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
     const btn = document.getElementById('btn-create-lead');
-    if (btn) { btn.disabled = false; btn.textContent = '✅ Criar lead'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar lead'; }
     document.getElementById('modal-novo-lead').classList.add('open');
   }
   function closeNewLeadModal() {
@@ -6203,7 +6262,7 @@
     if (capEl) capEl.textContent = `${atual} de ${MAX_FUNIS} funis criados`;
     if (btn) {
       btn.disabled = atual >= MAX_FUNIS;
-      btn.textContent = atual >= MAX_FUNIS ? `Limite atingido (${MAX_FUNIS}/${MAX_FUNIS})` : '✅ Criar funil';
+      btn.textContent = atual >= MAX_FUNIS ? `Limite atingido (${MAX_FUNIS}/${MAX_FUNIS})` : 'Criar funil';
     }
     document.getElementById('modal-novo-funil').classList.add('open');
   }
@@ -6232,7 +6291,7 @@
         const isCurrent = (lead.fluxo_id || '') === o.id;
         return `<div class="crm-move-popup-item ${isCurrent ? 'current-funil' : ''}"
           onclick="moveLeadToFunil('${leadId}','${o.id}')">
-          ${o.id ? '🔀' : '✖️'} ${escapeHtml(o.label)}${isCurrent ? ' ✓' : ''}
+          ${o.id ? '' : ''} ${escapeHtml(o.label)}${isCurrent ? ' ✓' : ''}
         </div>`;
       }).join('');
     document.body.appendChild(popup);
@@ -6287,7 +6346,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
     const { data: { user } } = await db.auth.getUser();
     const { error } = await db.from('fluxos').insert({ nome, descricao: desc || null, user_id: user.id });
-    if (btn) { btn.disabled = false; btn.textContent = '✅ Criar funil'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar funil'; }
     if (error) { errEl.textContent = 'Erro: ' + error.message; errEl.style.display='block'; return; }
     closeNewFunilModal();
     await loadCRM();
@@ -6323,7 +6382,7 @@
       user_id: _effectiveUserId || user.id, stage: 'novo_contato',
       atualizado_em: new Date().toISOString()
     });
-    if (btn) { btn.disabled = false; btn.textContent = '✅ Criar lead'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar lead'; }
     if (error) {
       if (errEl) { errEl.textContent = 'Erro: ' + error.message; errEl.style.display = 'block'; }
       else alert('Erro ao criar lead: ' + error.message);
@@ -6484,8 +6543,8 @@
       { user_id: user.id, chave: 'crm_stages', valor: JSON.stringify(crmStages) },
       { onConflict: 'user_id,chave' }
     );
-    if (error) { st.textContent = '❌ Erro ao salvar'; st.style.color = '#ef4444'; return; }
-    st.textContent = '✅ Colunas salvas!'; st.style.color = '#16a34a';
+    if (error) { st.textContent = 'Erro ao salvar'; st.style.color = '#ef4444'; return; }
+    st.textContent = 'Colunas salvas!'; st.style.color = '#16a34a';
     setTimeout(() => { closeStagesModal(); renderKanban(crmLeads); }, 900);
   }
 
@@ -6537,11 +6596,11 @@
   let _agentesData  = [];
 
   const FUNCAO_LABEL = {
-    vendas:       '💰 Vendas',
-    suporte:      '🛠️ Suporte',
-    qualificacao: '🎯 Qualificação',
-    objecao:      '🛡️ Objeção',
-    followup:     '🔁 Follow-up',
+    vendas:       'Vendas',
+    suporte:      'Suporte',
+    qualificacao: 'Qualificação',
+    objecao:      'Objeção',
+    followup:     'Follow-up',
   };
 
   async function loadAgentes() {
@@ -6556,7 +6615,7 @@
     const infoEl = document.getElementById('agente-quota-info');
     if (infoEl) {
       infoEl.textContent = quota === 0
-        ? '⚠️ Nenhum slot de agente extra ativo. Adquira no Marketplace.'
+        ? 'Nenhum slot de agente extra ativo. Adquira no Marketplace.'
         : `Usando ${usado} de ${quota} agente(s) extra disponíve${quota === 1 ? 'l' : 'is'}.`;
     }
     renderAgentesList();
@@ -6576,7 +6635,7 @@
           <span class="agente-funcao-badge funcao-${a.funcao}">${FUNCAO_LABEL[a.funcao] || a.funcao}</span>
         </div>
         <div class="agente-item-meta">
-          <span>📱 ${escapeHtml(a.evo_instance || '—')}</span>
+          <span>${escapeHtml(a.evo_instance || '—')}</span>
           <span class="agente-status-dot ${a.ativo ? 'ativo' : 'inativo'}">${a.ativo ? '● Ativo' : '● Inativo'}</span>
         </div>
       </div>
@@ -6597,7 +6656,7 @@
 
     if (id) {
       const a = _agentesData.find(x => x.id === id);
-      document.getElementById('agente-modal-title').textContent = '✏️ Editar Agente';
+      document.getElementById('agente-modal-title').textContent = 'Editar Agente';
       document.getElementById('agente-nome').value = a.nome;
       document.getElementById('agente-funcao').value = a.funcao;
       selInst.value = a.evo_instance;
@@ -6613,7 +6672,7 @@
         showNotification(`Você tem ${quota} slot(s) disponível(is). Adquira mais no Marketplace.`, 'warning');
         return;
       }
-      document.getElementById('agente-modal-title').textContent = '➕ Novo Agente';
+      document.getElementById('agente-modal-title').textContent = 'Novo Agente';
       document.getElementById('agente-nome').value = '';
       document.getElementById('agente-funcao').value = 'vendas';
       document.getElementById('agente-prompt').value = '';
@@ -6672,25 +6731,25 @@
     'gpt-4.1-nano':    { color:'#6ee7b7', html:'💰 <strong>gpt-4.1-nano:</strong> ~$0.10/M input + $0.40/M output — custo ~R$1.50 por 5M tokens · margem ~<strong>98%</strong>' },
     'gpt-4.1-mini':    { color:'#6ee7b7', html:'⭐ <strong>gpt-4.1-mini:</strong> ~$0.40/M input + $1.60/M output — custo ~R$3 por 5M tokens · margem ~<strong>97%</strong>' },
     'gpt-4o-mini':     { color:'#6ee7b7', html:'💰 <strong>gpt-4o-mini:</strong> ~$0.15/M input + $0.60/M output — custo ~R$4 por 5M tokens · margem ~<strong>92%</strong>' },
-    'o4-mini':         { color:'#fde68a', html:'🧠 <strong>o4-mini:</strong> ~$1.10/M input + $4.40/M output — custo ~R$15 por 5M tokens · margem ~<strong>85%</strong>' },
-    'o3-mini':         { color:'#fde68a', html:'🧠 <strong>o3-mini:</strong> ~$1.10/M input + $4.40/M output — custo ~R$20 por 5M tokens · margem ~<strong>80%</strong>' },
+    'o4-mini':         { color:'#fde68a', html:'<strong>o4-mini:</strong> ~$1.10/M input + $4.40/M output — custo ~R$15 por 5M tokens · margem ~<strong>85%</strong>' },
+    'o3-mini':         { color:'#fde68a', html:'<strong>o3-mini:</strong> ~$1.10/M input + $4.40/M output — custo ~R$20 por 5M tokens · margem ~<strong>80%</strong>' },
     'gpt-4.1':         { color:'#fb923c', html:'💰 <strong>gpt-4.1:</strong> ~$2/M input + $8/M output — custo ~R$30 por 5M tokens · margem ~<strong>70%</strong>' },
     'gpt-4-turbo':     { color:'#fb923c', html:'💰 <strong>gpt-4-turbo:</strong> ~$10/M input + $30/M output — custo ~R$80 por 5M tokens · margem ~<strong>20%</strong>' },
     'gpt-4o':          { color:'#f87171', html:'💰 <strong>gpt-4o:</strong> ~$2.50/M input + $10/M output — custo ~R$38 por 5M tokens · margem ~<strong>62%</strong>' },
-    'o3':              { color:'#f87171', html:'🧠 <strong>o3:</strong> ~$10/M input + $40/M output — custo ~R$150+ por 5M tokens · margem negativa possível' },
+    'o3':              { color:'#f87171', html:'<strong>o3:</strong> ~$10/M input + $40/M output — custo ~R$150+ por 5M tokens · margem negativa possível' },
     // Claude
     'claude-haiku-4-5-20251001':  { color:'#a5b4fc', html:'⭐ <strong>claude-haiku-4-5:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>' },
-    'claude-3-5-haiku-20241022':  { color:'#a5b4fc', html:'💜 <strong>claude-3-5-haiku:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>' },
-    'claude-sonnet-4-6':          { color:'#fde68a', html:'💜 <strong>claude-sonnet-4-6:</strong> ~$3/M input + $15/M output — custo ~R$50 por 5M tokens · margem ~<strong>50%</strong>' },
-    'claude-3-5-sonnet-20241022': { color:'#fde68a', html:'💜 <strong>claude-3-5-sonnet:</strong> ~$3/M input + $15/M output — custo ~R$50 por 5M tokens · margem ~<strong>50%</strong>' },
-    'claude-3-opus-20240229':     { color:'#f87171', html:'💜 <strong>claude-3-opus:</strong> ~$15/M input + $75/M output — custo ~R$240 por 5M tokens · margem negativa possível' },
-    'claude-opus-4-6':            { color:'#f87171', html:'💜 <strong>claude-opus-4-6:</strong> ~$15/M input + $75/M output — custo ~R$240 por 5M tokens · margem negativa possível' },
+    'claude-3-5-haiku-20241022':  { color:'#a5b4fc', html:'<strong>claude-3-5-haiku:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>' },
+    'claude-sonnet-4-6':          { color:'#fde68a', html:'<strong>claude-sonnet-4-6:</strong> ~$3/M input + $15/M output — custo ~R$50 por 5M tokens · margem ~<strong>50%</strong>' },
+    'claude-3-5-sonnet-20241022': { color:'#fde68a', html:'<strong>claude-3-5-sonnet:</strong> ~$3/M input + $15/M output — custo ~R$50 por 5M tokens · margem ~<strong>50%</strong>' },
+    'claude-3-opus-20240229':     { color:'#f87171', html:'<strong>claude-3-opus:</strong> ~$15/M input + $75/M output — custo ~R$240 por 5M tokens · margem negativa possível' },
+    'claude-opus-4-6':            { color:'#f87171', html:'<strong>claude-opus-4-6:</strong> ~$15/M input + $75/M output — custo ~R$240 por 5M tokens · margem negativa possível' },
     // Google
-    'gemini-2.0-flash-lite':    { color:'#4ade80', html:'🆓 <strong>gemini-2.0-flash-lite:</strong> gratuito no AI Studio (30 req/min) — custo ~R$0 · margem ~<strong>100%</strong>' },
-    'gemini-2.0-flash':         { color:'#4ade80', html:'🆓 <strong>gemini-2.0-flash:</strong> gratuito no AI Studio (15 req/min, 1M tokens/dia) — custo ~R$0 · margem ~<strong>100%</strong>' },
-    'gemini-1.5-flash':         { color:'#4ade80', html:'🆓 <strong>gemini-1.5-flash:</strong> gratuito no AI Studio (15 req/min, 1M tokens/dia) — custo ~R$0 · margem ~<strong>100%</strong>' },
+    'gemini-2.0-flash-lite':    { color:'#4ade80', html:'<strong>gemini-2.0-flash-lite:</strong> gratuito no AI Studio (30 req/min) — custo ~R$0 · margem ~<strong>100%</strong>' },
+    'gemini-2.0-flash':         { color:'#4ade80', html:'<strong>gemini-2.0-flash:</strong> gratuito no AI Studio (15 req/min, 1M tokens/dia) — custo ~R$0 · margem ~<strong>100%</strong>' },
+    'gemini-1.5-flash':         { color:'#4ade80', html:'<strong>gemini-1.5-flash:</strong> gratuito no AI Studio (15 req/min, 1M tokens/dia) — custo ~R$0 · margem ~<strong>100%</strong>' },
     'gemini-1.5-pro':           { color:'#fb923c', html:'💰 <strong>gemini-1.5-pro:</strong> ~$3.50/M input + $10.50/M output — custo ~R$35 por 5M tokens · margem ~<strong>73%</strong>' },
-    'gemini-2.5-pro-exp-03-25': { color:'#c084fc', html:'🧪 <strong>gemini-2.5-pro-exp:</strong> experimental/beta — custo variável (~fator 5×) · pode virar pago a qualquer momento' },
+    'gemini-2.5-pro-exp-03-25': { color:'#c084fc', html:'<strong>gemini-2.5-pro-exp:</strong> experimental/beta — custo variável (~fator 5×) · pode virar pago a qualquer momento' },
   };
 
   function selectAiModel(provider, model) {
@@ -6806,7 +6865,7 @@
     await db.from('agente_config').upsert(rows, { onConflict: 'user_id,chave' });
 
     const st = document.getElementById('save-ai-config');
-    if (st) { st.textContent = '✓ Salvo'; st.style.color = 'var(--lime)'; setTimeout(() => st.textContent = '', 2500); }
+    if (st) { st.textContent = 'Salvo'; st.style.color = 'var(--lime)'; setTimeout(() => st.textContent = '', 2500); }
   }
 
   // =====================================================================
@@ -6826,7 +6885,7 @@
   function updateWebSearchLabel(enabled) {
     const lbl = document.getElementById('web-search-label');
     if (!lbl) return;
-    lbl.textContent = enabled ? 'Busca na web ativada 🟢' : 'Busca na web desativada';
+    lbl.textContent = enabled ? 'Busca na web ativada' : 'Busca na web desativada';
   }
 
   async function saveWebSearchEnabled(checkbox) {
@@ -6862,7 +6921,7 @@
     const desc = (descEl?.value || '').trim();
     if (!url) { urlEl?.focus(); return; }
     if (!url.startsWith('http')) { status.textContent = '⚠ URL inválida'; return; }
-    if (webUrlsList.find(i => i.url === url)) { status.textContent = '⚠ URL já está na lista'; return; }
+    if (webUrlsList.find(i => i.url === url)) { status.textContent = 'URL já está na lista'; return; }
     webUrlsList.push({ url, desc });
     if (urlEl)  urlEl.value  = '';
     if (descEl) descEl.value = '';
@@ -6883,7 +6942,7 @@
     );
     renderWebUrlsList();
     if (statusEl) {
-      statusEl.textContent = error ? '❌ Erro ao salvar' : '✅ Salvo';
+      statusEl.textContent = error ? 'Erro ao salvar' : 'Salvo';
       setTimeout(() => { statusEl.textContent = ''; }, 2500);
     }
   }
@@ -6926,7 +6985,7 @@
       { onConflict: 'user_id,chave' }
     );
     if (status) {
-      status.textContent = error ? '❌ Erro ao salvar' : '✅ Salvo';
+      status.textContent = error ? 'Erro ao salvar' : 'Salvo';
       setTimeout(() => { status.textContent = ''; }, 2000);
     }
   }
@@ -6964,7 +7023,7 @@
         { onConflict: 'user_id,chave' }
       );
     }
-    if (statusEl) { statusEl.textContent = '✅ Salvo!'; statusEl.style.color = '#16a34a'; setTimeout(() => statusEl.textContent = '', 3000); }
+    if (statusEl) { statusEl.textContent = 'Salvo!'; statusEl.style.color = '#16a34a'; setTimeout(() => statusEl.textContent = '', 3000); }
   }
 
   async function loadAddonNavigation() {
@@ -6993,19 +7052,22 @@
       const listContainer = document.getElementById('numeros-extras-list');
       if (listContainer) {
         listContainer.innerHTML = '';
-        // Cria um item por número extra
-        // TODO: carregar números reais da tabela de instâncias Evolution API
         for (let i = 1; i <= numerosExtrasNum; i++) {
           const item = document.createElement('div');
+          item.id = `numero-extra-card-${i}`;
           item.style.cssText = 'border:1px solid #30363d;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;';
           item.innerHTML = `
             <div>
               <div style="font-weight:600;color:#e6edf3;">Número Extra ${i}</div>
-              <div style="font-size:12px;color:#8b949e;margin-top:4px;">Instância Evolution: numero-${i}</div>
+              <div id="numero-extra-status-${i}" style="font-size:12px;color:#8b949e;margin-top:4px;">Verificando...</div>
             </div>
-            <button class="btn-secondary" onclick="conectarNumeroExtra(${i})">Conectar QR</button>
+            <div id="numero-extra-actions-${i}" style="display:flex;gap:8px;">
+              <button class="btn-secondary" onclick="conectarNumeroExtra(${i})">Conectar QR</button>
+            </div>
           `;
           listContainer.appendChild(item);
+          // Carrega status desta instância extra
+          checkStatusNumeroExtra(i);
         }
       }
     }
@@ -7031,7 +7093,7 @@
       page.className = 'page agente-extra-page';
       page.id = `page-agente-extra-${i}`;
       page.innerHTML = `
-        <div class="page-header"><h1>🤖 Agente Extra ${i}</h1><p>Configure o prompt específico para este agente extra</p></div>
+        <div class="page-header"><h1>Agente Extra ${i}</h1><p>Configure o prompt específico para este agente extra</p></div>
         
         <div class="card">
           <div class="card-title">Prompt do Agente Extra ${i}</div>
@@ -7104,10 +7166,10 @@
           <div style="font-size:11px;color:#6e7681;margin-top:4px;">Criado em ${new Date(wf.criado_em).toLocaleDateString('pt-BR')}</div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-save" style="padding:6px 12px;font-size:12px;background:#4f46e5;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="editarWorkflow('${wf.id}','${wf.nome}')">⚙️ Configurar</button>
-          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="duplicarWorkflow('${wf.id}')">📋 Duplicar</button>
-          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="renomearWorkflow('${wf.id}','${wf.nome}')">✏️ Renomear</button>
-          <button style="padding:6px 12px;font-size:12px;background:#dc2626;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="deletarWorkflow('${wf.id}','${wf.nome}')">🗑️ Deletar</button>
+          <button class="btn-save" style="padding:6px 12px;font-size:12px;background:#4f46e5;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="editarWorkflow('${wf.id}','${wf.nome}')">Configurar</button>
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="duplicarWorkflow('${wf.id}')">Duplicar</button>
+          <button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="renomearWorkflow('${wf.id}','${wf.nome}')">Renomear</button>
+          <button style="padding:6px 12px;font-size:12px;background:#dc2626;border:none;color:#fff;border-radius:6px;cursor:pointer;" onclick="deletarWorkflow('${wf.id}','${wf.nome}')">Deletar</button>
         </div>
       `;
       listEl.appendChild(card);
@@ -7162,7 +7224,7 @@
       return;
     }
     
-    alert('✅ Workflow duplicado com sucesso!');
+    alert('Workflow duplicado com sucesso!');
     loadWorkflows();
   }
 
@@ -7180,7 +7242,7 @@
         return;
       }
       
-      alert('✅ Workflow renomeado!');
+      alert('Workflow renomeado!');
       loadWorkflows();
     })();
   }
@@ -7196,7 +7258,7 @@
         return;
       }
       
-      alert('✅ Workflow deletado!');
+      alert('Workflow deletado!');
       loadWorkflows();
     })();
   }
@@ -7304,7 +7366,7 @@
     }
     
     const statusEl = document.getElementById('save-workflow-config');
-    statusEl.textContent = '✅ Configurações salvas!';
+    statusEl.textContent = 'Configurações salvas!';
     statusEl.style.color = '#16a34a';
     setTimeout(() => {
       statusEl.textContent = '';
@@ -7819,15 +7881,15 @@
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Erro desconhecido');
 
-      status.textContent = `✅ Link indexado! ${result.chunks || '?'} trechos na base.`;
+      status.textContent = `Link indexado! ${result.chunks || '?'} trechos na base.`;
       status.style.color = '#4ade80';
       document.getElementById('url-link').value = '';
       document.getElementById('url-nome').value = '';
       loadPDFList();
     } catch(e) {
-      status.textContent = '❌ ' + e.message; status.style.color = '#f87171';
+      status.textContent = 'Erro: ' + e.message; status.style.color = '#f87171';
     }
-    btn.disabled = false; btn.textContent = '🌐 Indexar link';
+    btn.disabled = false; btn.textContent = 'Indexar link';
     setTimeout(() => status.textContent = '', 8000);
   }
 
@@ -7859,16 +7921,16 @@
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Erro desconhecido');
-      status.textContent = `✅ PDF processado! ${result.chunks} chunks indexados (${result.chars} chars).`;
+      status.textContent = `PDF processado! ${result.chunks} chunks indexados (${result.chars} chars).`;
       status.style.color = '#16a34a';
       document.getElementById('pdf-nome').value = '';
       document.getElementById('pdf-file').value = '';
       document.getElementById('pdf-filename').textContent = 'Clique para selecionar um PDF';
       loadPDFList();
     } catch(e) {
-      status.textContent = '❌ Erro: ' + e.message; status.style.color = '#ef4444';
+      status.textContent = 'Erro: ' + e.message; status.style.color = '#ef4444';
     }
-    btn.disabled = false; btn.textContent = '⬆️ Enviar para o agente';
+    btn.disabled = false; btn.textContent = 'Enviar para o agente';
     setTimeout(() => status.textContent = '', 6000);
   }
 
@@ -7887,14 +7949,14 @@
     });
     el.innerHTML = '<div class="pdf-list">' + Object.entries(unique).map(([nome, meta]) => {
       const isWeb = meta.categoria === 'Web' || (meta.url && meta.url.startsWith('http'));
-      const icon  = isWeb ? '🌐' : '📄';
+      const icon  = isWeb ? '' : '';
       const urlTag = isWeb && meta.url ? `<a href="${meta.url}" target="_blank" style="font-size:11px;color:var(--lime);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;" title="${meta.url}">${meta.url.replace(/^https?:\/\//, '').substring(0,40)}…</a>` : '';
       return `<div class="pdf-item">
         <span>${icon} ${meta.nome || nome}</span>
         ${urlTag}
         <span class="pdf-badge">${meta.categoria || 'Geral'}</span>
         <span class="pdf-chunks">${meta.chunks} trechos</span>
-        <button class="btn-delete-pdf" onclick="deletePDF('${nome.replace(/'/g,"\\'")}')" title="Remover da base">🗑️</button>
+        <button class="btn-delete-pdf" onclick="deletePDF('${nome.replace(/'/g,"\\'")}')" title="Remover da base">Remover</button>
       </div>`;
     }).join('') + '</div>';
   }
@@ -7951,18 +8013,18 @@
         const cor = saldo === 0 ? '#dc2626' : saldo < 3000000 ? '#ca8a04' : '#16a34a';
         return `<tr>
           <td style="font-weight:600">${escapeHtml(p.display_name || '—')}</td>
-          <td><span class="badge ${p.role==='admin'?'badge-purple':'badge-blue'}">${p.role==='admin'?'🔑 Admin':'👤 Cliente'}</span></td>
+          <td><span class="badge ${p.role==='admin'?'badge-purple':'badge-blue'}">${p.role==='admin'?'Admin':'Cliente'}</span></td>
           <td><code style="background:#0d1117;padding:2px 7px;border-radius:4px;font-size:12px;">${escapeHtml(p.evo_instance||'—')}</code></td>
-          <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'✅ Ativo':'❌ Inativo'}</span></td>
+          <td><span class="badge ${p.active?'badge-green':'badge-red'}">${p.active?'Ativo':'Inativo'}</span></td>
           <td style="font-weight:700;color:${cor};font-size:13px;">${(saldo/1000000).toFixed(1)}M</td>
           <td style="font-size:13px;color:#8b949e;">${leads.toLocaleString('pt-BR')}</td>
           <td style="display:flex;gap:6px;flex-wrap:wrap;">
             ${p.role !== 'admin' ? `
-              <button onclick="abrirAnalyticsCliente('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">📊 Analytics</button>
+              <button onclick="abrirAnalyticsCliente('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">Analytics</button>
               <button onclick="toggleClient('${p.id}',${p.active})" style="padding:5px 10px;font-size:12px;" class="btn-secondary">${p.active?'Desativar':'Ativar'}</button>
               <button onclick="openAddCreditsModal('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-success">💰 Créditos</button>
-              <button onclick="entrarComoCliente('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">🔑 Entrar</button>
-              <button onclick="verEquipeAdmin('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">👥 Equipe</button>
+              <button onclick="entrarComoCliente('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">Entrar</button>
+              <button onclick="verEquipeAdmin('${p.id}','${escapeHtml(p.display_name||'')}')" style="padding:5px 10px;font-size:12px;" class="btn-secondary">Equipe</button>
             ` : '<span style="color:#bbb;font-size:12px;">—</span>'}
           </td>
         </tr>`;
@@ -7996,7 +8058,7 @@
   function renderKPIsTabela(kpis) {
     const el = document.getElementById('kpis-tabela');
     if (!kpis.length) {
-      el.innerHTML = '<p style="color:#8b949e;text-align:center;padding:20px;">Nenhum KPI definido. Clique em "➕ Adicionar KPI" para começar.</p>';
+      el.innerHTML = '<p style="color:#8b949e;text-align:center;padding:20px;">Nenhum KPI definido. Clique em "Adicionarar KPI" para começar.</p>';
       return;
     }
     el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
@@ -8030,8 +8092,8 @@
               </div>
             </td>
             <td style="padding:12px;text-align:center;">
-              <button class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-right:4px;" onclick="abrirModalKPI('${k.id}')">✏️ Editar</button>
-              <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="removerKPI('${k.id}','${escapeHtml(k.nome)}')">🗑️ Remover</button>
+              <button class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-right:4px;" onclick="abrirModalKPI('${k.id}')">Editar</button>
+              <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="removerKPI('${k.id}','${escapeHtml(k.nome)}')">Remover</button>
             </td>
           </tr>`;
         }).join('')}
@@ -8072,7 +8134,7 @@
   function renderOKRsTabela(okrs) {
     const el = document.getElementById('okrs-tabela');
     if (!okrs.length) {
-      el.innerHTML = '<p style="color:#8b949e;text-align:center;padding:20px;">Nenhum OKR definido. Clique em "➕ Adicionar OKR" para começar.</p>';
+      el.innerHTML = '<p style="color:#8b949e;text-align:center;padding:20px;">Nenhum OKR definido. Clique em "Adicionarar OKR" para começar.</p>';
       return;
     }
     el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
@@ -8096,13 +8158,13 @@
             <select class="okr-status-select" onchange="atualizarOKR('${o.id}', 'status', this.value)"
               style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-weight:600;cursor:pointer;">
               <option value="em_progresso" ${o.status === 'em_progresso' ? 'selected' : ''}>⏳ Em progresso</option>
-              <option value="alcancado" ${o.status === 'alcancado' ? 'selected' : ''}>✅ Alcançado</option>
-              <option value="nao_alcancado" ${o.status === 'nao_alcancado' ? 'selected' : ''}>❌ Não alcançado</option>
+              <option value="alcancado" ${o.status === 'alcancado' ? 'selected' : ''}>Alcançado</option>
+              <option value="nao_alcancado" ${o.status === 'nao_alcancado' ? 'selected' : ''}>Não alcançado</option>
             </select>
           </td>
           <td style="padding:12px;text-align:center;">
-            <button class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-right:4px;" onclick="abrirModalOKR('${o.id}')">✏️ Editar</button>
-            <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="removerKPI('${o.id}','${escapeHtml(o.nome)}')">🗑️ Remover</button>
+            <button class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-right:4px;" onclick="abrirModalOKR('${o.id}')">Editar</button>
+            <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="removerKPI('${o.id}','${escapeHtml(o.nome)}')">Remover</button>
           </td>
         </tr>`).join('')}
       </tbody>
@@ -8298,12 +8360,12 @@
           else if (diasParaVencer <= 7) corDias = '#ca8a04';
 
           const statusAvancado = profile?.deleted_at
-            ? `🗑️ Dados apagados em ${new Date(profile.deleted_at).toLocaleDateString('pt-BR')}`
+            ? `Dados apagados em ${new Date(profile.deleted_at).toLocaleDateString('pt-BR')}`
             : ass.status === 'cancelada'
-            ? `⚫ Cancelada em ${ass.cancelada_em ? new Date(ass.cancelada_em).toLocaleDateString('pt-BR') : '—'}`
+            ? `Cancelada em ${ass.cancelada_em ? new Date(ass.cancelada_em).toLocaleDateString('pt-BR') : '—'}`
             : ass.status === 'suspensa' || ass.suspended_at
-            ? `🔴 Suspensa (${ass.suspended_at ? Math.ceil((new Date() - new Date(ass.suspended_at)) / (1000 * 60 * 60 * 24)) : '?'} dias)`
-            : '✅ Ativa';
+            ? `Suspensa (${ass.suspended_at ? Math.ceil((new Date() - new Date(ass.suspended_at)) / (1000 * 60 * 60 * 24)) : '?'} dias)`
+            : 'Ativa';
 
           return `<tr style="border-bottom:1px solid var(--border2);">
             <td style="padding:12px;"><strong>${escapeHtml(profile?.display_name || '—')}</strong></td>
@@ -8428,7 +8490,7 @@
       localStorage.setItem('impersonatedAt', new Date().toISOString());
       localStorage.setItem('realAdminId', currentProfile.id);
 
-      showToast(`🔐 Acessando como ${clientNome}...`, 'success');
+      showToast(`Acessando como ${clientNome}...`, 'success');
 
       // Recarrega a página para aplicar as restrições
       setTimeout(() => location.reload(), 1000);
@@ -8457,7 +8519,7 @@
           localStorage.removeItem('impersonatedAt');
           localStorage.removeItem('realAdminId');
 
-          showToast('✅ Saiu da impersonação', 'success');
+          showToast('Saiu da impersonação', 'success');
           setTimeout(() => location.reload(), 500);
         });
     }
@@ -8505,7 +8567,7 @@
     `;
 
     banner.innerHTML = `
-      <span>🔐 Acessando como <strong>${escapeHtml(clientNome)}</strong> (há ${minutos} min)</span>
+      <span>Acessando como <strong>${escapeHtml(clientNome)}</strong> (há ${minutos} min)</span>
       <button onclick="sairDaImpersonacao()" style="
         background: rgba(255,255,255,0.2);
         border: 1px solid rgba(255,255,255,0.3);
@@ -8552,7 +8614,7 @@
   // === ANALYTICS POR CLIENTE ===
   async function abrirAnalyticsCliente(clientId, clientNome) {
     const modal = document.getElementById('modal-analytics-cliente');
-    document.getElementById('analytics-titulo').textContent = `📊 Desempenho de ${clientNome}`;
+    document.getElementById('analytics-titulo').textContent = `Desempenho de ${clientNome}`;
 
     // Carrega dados
     await carregarAnalyticsCliente(clientId, 30);
@@ -8624,19 +8686,19 @@
 
           <!-- Gráfico por horário -->
           <div style="background:var(--bg-card);padding:16px;border-radius:8px;margin-bottom:24px;">
-            <h4 style="margin-bottom:16px;">📞 Mensagens por Horário</h4>
+            <h4 style="margin-bottom:16px;">Mensagens por Horário</h4>
             <canvas id="chart-horario" style="max-height:200px;"></canvas>
           </div>
 
           <!-- Gráfico por dia -->
           <div style="background:var(--bg-card);padding:16px;border-radius:8px;margin-bottom:24px;">
-            <h4 style="margin-bottom:16px;">📈 Leads por Dia</h4>
+            <h4 style="margin-bottom:16px;">Leads por Dia</h4>
             <canvas id="chart-dia" style="max-height:200px;"></canvas>
           </div>
 
           <!-- Gráfico funil -->
           <div style="background:var(--bg-card);padding:16px;border-radius:8px;margin-bottom:24px;">
-            <h4 style="margin-bottom:16px;">🔀 Funil de Atendimento</h4>
+            <h4 style="margin-bottom:16px;">Funil de Atendimento</h4>
             <canvas id="chart-funil" style="max-height:200px;"></canvas>
           </div>
 
@@ -8655,12 +8717,12 @@
                 ${Object.entries(funil).map(([stage, count]) => {
                   const pct = ((count / total) * 100).toFixed(0);
                   const labels = {
-                    'novo_contato': '🆕 Novo Contato',
-                    'em_atendimento': '💬 Em Atendimento',
-                    'qualificado': '✅ Qualificado',
-                    'convertido': '🎉 Convertido',
-                    'nao_qualificado': '❌ Não Qualificado',
-                    'perdido': '🚪 Perdido'
+                    'novo_contato': 'Novo Contato',
+                    'em_atendimento': 'Em Atendimento',
+                    'qualificado': 'Qualificado',
+                    'convertido': 'Convertido',
+                    'nao_qualificado': 'Não Qualificado',
+                    'perdido': 'Perdido'
                   };
                   return `<tr style="border-bottom:1px solid var(--border2);">
                     <td style="padding:8px;">${labels[stage]}</td>
@@ -8791,7 +8853,7 @@
       new Chart(ctxFunil, {
         type: 'doughnut',
         data: {
-          labels: ['🆕 Novo', '💬 Atend.', '✅ Qualif.', '🎉 Convert.', '❌ Não Q.', '🚪 Perdido'],
+          labels: ['Novo', 'Atend.', 'Qualif.', 'Convert.', 'Não Q.', 'Perdido'],
           datasets: [{
             data: funnelData,
             backgroundColor: ['#f59e0b', '#3b82f6', '#16a34a', '#8b5cf6', '#dc2626', '#6b7280'],
@@ -8813,7 +8875,7 @@
 
   async function verEquipeAdmin(clientId, clientNome) {
     const modal = document.getElementById('modal-admin-equipe');
-    document.getElementById('admin-equipe-titulo').textContent = `👥 Equipe de ${clientNome}`;
+    document.getElementById('admin-equipe-titulo').textContent = `Equipe de ${clientNome}`;
     document.getElementById('admin-equipe-lista').innerHTML = '<p style="color:#8b949e;padding:20px;text-align:center;">Carregando...</p>';
     modal.classList.add('open');
 
@@ -8836,8 +8898,8 @@
         <div style="display:flex;gap:8px;align-items:center;">
           <span style="font-size:11px;font-weight:700;${m.ativo ? 'color:#a3e635' : 'color:#6e7681'};">${m.ativo ? '● Ativo' : '○ Inativo'}</span>
           ${m.ativo
-            ? `<button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="revogarAcessoAdmin('${m.id}','${escapeHtml(m.nome)}','${clientId}','${escapeHtml(clientNome)}')">🚫 Revogar</button>`
-            : `<button class="btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="reativarAcessoAdmin('${m.id}','${escapeHtml(m.nome)}','${clientId}','${escapeHtml(clientNome)}')">✅ Reativar</button>`
+            ? `<button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="revogarAcessoAdmin('${m.id}','${escapeHtml(m.nome)}','${clientId}','${escapeHtml(clientNome)}')">Revogar</button>`
+            : `<button class="btn-secondary" style="font-size:11px;padding:4px 10px;" onclick="reativarAcessoAdmin('${m.id}','${escapeHtml(m.nome)}','${clientId}','${escapeHtml(clientNome)}')">Reativar</button>`
           }
         </div>
       </div>`).join('');
@@ -8937,10 +8999,10 @@
 
   // Pacotes de tokens EXTRAS (soma ao saldo)
   const PACOTES_CREDITOS = {
-    mini:   { nome: '➕ Mini',    leads: 135,   tokens: 5000000,   preco_brl: 97,  moeda: 'BRL' },
-    medio:  { nome: '➕➕ Médio', leads: 270,   tokens: 10000000,  preco_brl: 177, moeda: 'BRL' },
-    grande: { nome: '🚀 Grande',  leads: 540,   tokens: 20000000,  preco_brl: 297, moeda: 'BRL' },
-    max:    { nome: '💼 Max',     leads: 1350,  tokens: 50000000,  preco_brl: 597, moeda: 'BRL' },
+    mini:   { nome: 'Mini',    leads: 135,   tokens: 5000000,   preco_brl: 97,  moeda: 'BRL' },
+    medio:  { nome: 'Médio', leads: 270,   tokens: 10000000,  preco_brl: 177, moeda: 'BRL' },
+    grande: { nome: 'Grande',  leads: 540,   tokens: 20000000,  preco_brl: 297, moeda: 'BRL' },
+    max:    { nome: 'Max',     leads: 1350,  tokens: 50000000,  preco_brl: 597, moeda: 'BRL' },
   };
 
   // ── Links de Checkout Hotmart ─────────────────────────────────────────────
@@ -8996,7 +9058,7 @@
         <td style="font-weight:600">${PACOTES_CREDITOS[p.pacote]?.nome || p.pacote}</td>
         <td>${(p.tokens/1000000).toFixed(1)}M tokens</td>
         <td style="font-weight:700;color:#a3e635">${p.preco_brl ? 'R$ '+p.preco_brl : p.preco_usd ? '$'+p.preco_usd : '—'}</td>
-        <td><span class="pedidos-badge ${p.status}">${p.status === 'pendente' ? '⏳ Pendente' : p.status === 'aprovado' ? '✅ Aprovado' : '❌ Recusado'}</span></td>
+        <td><span class="pedidos-badge ${p.status}">${p.status === 'pendente' ? 'Pendente' : p.status === 'aprovado' ? 'Aprovado' : 'Recusado'}</span></td>
       </tr>`).join('')}</tbody>
     </table>`;
   }
@@ -9035,7 +9097,7 @@
     if (saldo <= TOKENS_ALERTA_CRITICO) {
       // CRÍTICO — vermelho
       header.className    = 'token-alert-header';
-      icon.textContent    = '🚨';
+      icon.textContent    = '!';
       title.textContent   = 'Tokens esgotados! Agente parado!';
       sub.textContent     = 'O agente não está mais conseguindo atender novos leads.';
       progress.style.background = '#dc2626';
@@ -9043,7 +9105,7 @@
     } else {
       // BAIXO — laranja
       header.className    = 'token-alert-header warning';
-      icon.textContent    = '⚠️';
+      icon.textContent    = '!';
       title.textContent   = 'Seus tokens estão acabando!';
       sub.textContent     = `Restam apenas ~${leads} atendimentos. Recarregue para não perder leads.`;
       progress.style.background = '#ea580c';
@@ -9098,9 +9160,9 @@
       const leadNome  = t.leads?.nome ? escapeHtml(t.leads.nome) : '';
       return `<div class="task-reminder-chip ${isOverdue ? 'overdue' : ''}">
         <div>
-          <div class="task-reminder-chip-date">${isOverdue ? '🔴' : '🟡'} ${dateLabel}</div>
+          <div class="task-reminder-chip-date">${isOverdue ? 'Atrasado' : 'Pendente'} — ${dateLabel}</div>
           <div class="task-reminder-chip-text">${escapeHtml(t.descricao)}</div>
-          ${leadNome ? `<div class="task-reminder-chip-lead">👤 ${leadNome}</div>` : ''}
+          ${leadNome ? `<div class="task-reminder-chip-lead">${leadNome}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -9154,13 +9216,13 @@
     ['mini','medio','grande','max'].forEach(k => {
       const el = document.getElementById('btn-buy-' + k);
       if (!el) return;
-      el.textContent = HOTMART_LINKS['tokens_' + k] ? '🛒 Comprar via Hotmart' : 'Adicionar';
+      el.textContent = HOTMART_LINKS['tokens_' + k] ? 'Comprar via Hotmart' : 'Adicionar';
     });
     ['objecao','agente','numero','usuario'].forEach(k => {
       const el = document.getElementById('btn-addon-' + k);
       if (!el) return;
-      const base = { objecao: '🛡️ Ativar Agente de Objeção IA', agente: 'Contratar', numero: 'Contratar', usuario: 'Contratar' };
-      const baseHotmart = { objecao: '🛡️ Comprar via Hotmart', agente: '🛒 Comprar via Hotmart', numero: '🛒 Comprar via Hotmart', usuario: '🛒 Comprar via Hotmart' };
+      const base = { objecao: 'Ativar Agente de Objeção IA', agente: 'Contratar', numero: 'Contratar', usuario: 'Contratar' };
+      const baseHotmart = { objecao: 'Comprar via Hotmart', agente: 'Comprar via Hotmart', numero: 'Comprar via Hotmart', usuario: 'Comprar via Hotmart' };
       el.textContent = HOTMART_LINKS['addon_' + k] ? baseHotmart[k] : base[k];
     });
   }
@@ -9189,7 +9251,7 @@
 
     // Objeção IA
     if (sub.addon_objecao) {
-      setBadge('btn-addon-objecao', '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">✅ Ativo — Agente de Objeção funcionando</span>');
+      setBadge('btn-addon-objecao', '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">Ativartivo — Agente de Objeção funcionando</span>');
     } else {
       setBadge('btn-addon-objecao', null);
     }
@@ -9197,7 +9259,7 @@
     // Agentes extras
     const agentes = sub.agentes_extras || 0;
     if (agentes > 0) {
-      setBadge('btn-addon-agente', `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">✅ ${agentes} agente${agentes>1?'s':''} extra${agentes>1?'s':''} ativo${agentes>1?'s':''}</span>`);
+      setBadge('btn-addon-agente', `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">${agentes} agente${agentes>1?'s':''} extra${agentes>1?'s':''} ativo${agentes>1?'s':''}</span>`);
     } else {
       setBadge('btn-addon-agente', null);
     }
@@ -9205,7 +9267,7 @@
     // Números extras
     const numeros = sub.numeros_extras || 0;
     if (numeros > 0) {
-      setBadge('btn-addon-numero', `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">✅ ${numeros} número${numeros>1?'s':''} extra${numeros>1?'s':''} ativo${numeros>1?'s':''}</span>`);
+      setBadge('btn-addon-numero', `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(59,130,246,.12);color:#93c5fd;border:1px solid rgba(147,197,253,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">${numeros} número${numeros>1?'s':''} extra${numeros>1?'s':''} ativo${numeros>1?'s':''}</span>`);
     } else {
       setBadge('btn-addon-numero', null);
     }
@@ -9213,7 +9275,7 @@
     // Usuários extras
     const usuarios = sub.usuarios_extras_limite || 0;
     if (usuarios > 0) {
-      setBadge('btn-addon-usuario', `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(165,180,252,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">✅ ${usuarios} usuário${usuarios>1?'s':''} extra${usuarios>1?'s':''} ativo${usuarios>1?'s':''}</span>`);
+      setBadge('btn-addon-usuario', `<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(165,180,252,.3);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;width:100%;justify-content:center;">${usuarios} usuário${usuarios>1?'s':''} extra${usuarios>1?'s':''} ativo${usuarios>1?'s':''}</span>`);
     } else {
       setBadge('btn-addon-usuario', null);
     }
@@ -9241,9 +9303,9 @@
     const qty   = _addonQty[tipo] || 1;
     const unit  = _addonUnit[tipo];
     const total = tipo === 'objecao' ? 127 : qty * unit;
-    const icons = { agente:'🤖', numero:'📱', objecao:'🛡️', usuario:'👤' };
+    const icons = { agente:'', numero:'', objecao:'', usuario:'' };
     const nomes = { agente:'Agente de IA Extra', numero:'Número WhatsApp Extra', objecao:'Identificação de Objeção IA', usuario:'Usuário Extra' };
-    const icon  = icons[tipo] || '📦';
+    const icon  = icons[tipo] || '';
     const nome  = nomes[tipo] || tipo;
 
     // Se link Hotmart configurado → redireciona para checkout
@@ -9251,10 +9313,10 @@
     if (hotmartLink) {
       let msg;
       if (tipo === 'objecao') {
-        msg = `🛡️ Ativar Agente IA — Objeção + Plano de Ação\n\nR$ 127/mês — recorrente mensal\n\n✅ Após a compra, o recurso é ativado automaticamente em até 5 minutos.\n\nAbrir checkout agora?`;
+        msg = `Ativar Agente IA — Objeção + Plano de Ação\n\nR$ 127/mês — recorrente mensal\n\nApós a compra, o recurso é ativado automaticamente em até 5 minutos.\n\nAbrir checkout agora?`;
       } else {
         const plural = qty > 1 ? 's' : '';
-        msg = `${icon} Contratar ${qty} ${nome}${plural}\n\nQuantidade: ${qty}\nTotal: R$ ${total}/mês — recorrente\n\n✅ Após a compra, o recurso é ativado automaticamente em até 5 minutos.\n\nAbrir checkout agora?`;
+        msg = `Contratar ${qty} ${nome}${plural}\n\nQuantidade: ${qty}\nTotal: R$ ${total}/mês — recorrente\n\nApós a compra, o recurso é ativado automaticamente em até 5 minutos.\n\nAbrir checkout agora?`;
       }
       if (confirm(msg)) window.open(hotmartLink, '_blank');
       return;
@@ -9262,17 +9324,17 @@
 
     // Fallback: fluxo PIX / solicitação manual
     if (tipo === 'objecao') {
-      const msg = `🛡️ Ativar Agente IA — Identificação de Objeção + Plano de Ação\n\nO agente monitora a conversa em tempo real, detecta objeções, gera um plano de ação personalizado e envia o relatório via WhatsApp ao responsável.\n\nValor: R$ 127/mês\n⚠️ Será acrescido à sua mensalidade.\n\nApós ativação, o nó aparecerá desbloqueado no Designer de Fluxos.\n\nDeseja solicitar?`;
+      const msg = `Ativar Agente IA — Identificação de Objeção + Plano de Ação\n\nO agente monitora a conversa em tempo real, detecta objeções, gera um plano de ação personalizado e envia o relatório via WhatsApp ao responsável.\n\nValor: R$ 127/mês\nSerá acrescido à sua mensalidade.\n\nApós ativação, o nó aparecerá desbloqueado no Designer de Fluxos.\n\nDeseja solicitar?`;
       if (!confirm(msg)) return;
       requestAddonPurchase('objecao', 1, 127);
       return;
     }
     const plural = qty > 1 ? 's' : '';
-    const msg = `${icon} Contratar ${qty} ${nome}${plural}\n\n` +
+    const msg = `Contratar ${qty} ${nome}${plural}\n\n` +
       `Quantidade: ${qty}\n` +
       `Valor unitário: R$ ${unit}/mês\n` +
       `Total acrescido na mensalidade: R$ ${total}/mês\n\n` +
-      `⚠️ Este valor será somado à sua mensalidade a partir do próximo ciclo.\n\n` +
+      `Este valor será somado à sua mensalidade a partir do próximo ciclo.\n\n` +
       `Deseja solicitar? O administrador entrará em contato com os dados de pagamento via PIX.`;
     if (!confirm(msg)) return;
     requestAddonPurchase(tipo, qty, total);
@@ -9291,7 +9353,7 @@
     const { error } = await db.from('pedidos_creditos').insert(inserts);
     if (error) { alert('Erro ao enviar solicitação. Tente novamente.'); return; }
     const noun = tipo === 'agente' ? 'agente(s) de IA' : 'número(s) WhatsApp';
-    alert(`✅ Solicitação enviada!\n\n${qty} ${noun} extra(s)\nTotal: R$ ${totalPreco.toLocaleString('pt-BR')}/mês\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os recursos serão ativados em até 2h.`);
+    alert(`Solicitação enviada!\n\n${qty} ${noun} extra(s)\nTotal: R$ ${totalPreco.toLocaleString('pt-BR')}/mês\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os recursos serão ativados em até 2h.`);
     loadAdminPedidos && loadAdminPedidos();
   }
 
@@ -9303,11 +9365,11 @@
     const hotmartLink = HOTMART_LINKS['tokens_' + pacoteId];
     if (hotmartLink) {
       if (confirm(
-        `⚡ Adicionar ${pkg.nome}\n\n` +
-        `🔢 +${(pkg.tokens/1000000).toFixed(0)}M tokens\n` +
-        `👥 +${pkg.leads.toLocaleString('pt-BR')} atendimentos extras\n` +
-        `💳 R$ ${pkg.preco_brl} — pagamento único\n\n` +
-        `✅ Após a compra, os tokens serão creditados automaticamente em até 5 minutos.\n\n` +
+        `Adicionar ${pkg.nome}\n\n` +
+        `+${(pkg.tokens/1000000).toFixed(0)}M tokens\n` +
+        `+${pkg.leads.toLocaleString('pt-BR')} atendimentos extras\n` +
+        `R$ ${pkg.preco_brl} — pagamento único\n\n` +
+        `Após a compra, os tokens serão creditados automaticamente em até 5 minutos.\n\n` +
         `Abrir checkout agora?`
       )) {
         window.open(hotmartLink, '_blank');
@@ -9320,14 +9382,14 @@
     const precoFmt = pkg.moeda === 'BRL'
       ? `R$ ${pkg.preco_brl}`
       : `$${pkg.preco_usd}`;
-    document.getElementById('buy-modal-title').textContent = `⚡ Adicionar ${pkg.nome}`;
+    document.getElementById('buy-modal-title').textContent = `Adicionar ${pkg.nome}`;
     document.getElementById('buy-pkg-name').textContent = pkg.nome;
     document.getElementById('buy-pkg-price').textContent = precoFmt;
-    document.getElementById('buy-pkg-leads').textContent = `👥 +${pkg.leads.toLocaleString('pt-BR')} atendimentos`;
-    document.getElementById('buy-pkg-tokens').textContent = `🔢 +${(pkg.tokens/1000000).toFixed(0)}M tokens`;
+    document.getElementById('buy-pkg-leads').textContent = `+${pkg.leads.toLocaleString('pt-BR')} atendimentos`;
+    document.getElementById('buy-pkg-tokens').textContent = `+${(pkg.tokens/1000000).toFixed(0)}M tokens`;
     document.getElementById('buy-modal-error').textContent = '';
     document.getElementById('btn-confirm-buy').disabled = false;
-    document.getElementById('btn-confirm-buy').textContent = '✅ Confirmar Pedido';
+    document.getElementById('btn-confirm-buy').textContent = 'Confirmar Pedido';
     document.getElementById('modal-buy-credits').classList.add('open');
   }
 
@@ -9352,11 +9414,11 @@
     });
     if (error) {
       errEl.textContent = 'Erro ao enviar pedido. Tente novamente.';
-      btn.disabled = false; btn.textContent = '✅ Confirmar Pedido'; return;
+      btn.disabled = false; btn.textContent = 'Confirmar Pedido'; return;
     }
     closeBuyModal();
     const precoFmt = pkg.preco_brl ? `R$ ${pkg.preco_brl}` : `$${pkg.preco_usd}`;
-    alert(`✅ Pedido enviado!\n\nPacote: ${pkg.nome}\nValor: ${precoFmt}\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os tokens serão creditados em até 2h.`);
+    alert(`Pedido enviado!\n\nPacote: ${pkg.nome}\nValor: ${precoFmt}\n\nEm breve o administrador entrará em contato com os dados para pagamento via PIX.\nApós confirmação, os tokens serão creditados em até 2h.`);
     loadCredits();
   }
 
@@ -9368,7 +9430,7 @@
     document.getElementById('add-credits-obs').value = '';
     document.getElementById('add-credits-error').textContent = '';
     document.getElementById('btn-confirm-add-credits').disabled = false;
-    document.getElementById('btn-confirm-add-credits').textContent = '✅ Adicionar Créditos';
+    document.getElementById('btn-confirm-add-credits').textContent = 'Adicionar Créditos';
     document.getElementById('modal-add-credits').classList.add('open');
   }
 
@@ -9392,7 +9454,7 @@
       user_id: addCreditsUserId, saldo_tokens: novoSaldo,
       atualizado_em: new Date().toISOString()
     }, { onConflict: 'user_id' });
-    if (error) { errEl.textContent = 'Erro: ' + error.message; btn.disabled = false; btn.textContent = '✅ Adicionar Créditos'; return; }
+    if (error) { errEl.textContent = 'Erro: ' + error.message; btn.disabled = false; btn.textContent = 'Adicionar Créditos'; return; }
     // Registra no histórico e aprova pedido pendente
     if (obs) {
       await db.from('pedidos_creditos')
@@ -9400,7 +9462,7 @@
         .eq('user_id', addCreditsUserId).eq('status', 'pendente');
     }
     closeAddCreditsModal();
-    alert(`✅ ${(tokens/1000000).toFixed(1)}M tokens adicionados com sucesso!\nNovo saldo: ${novoSaldo.toLocaleString('pt-BR')} tokens`);
+    alert(`${(tokens/1000000).toFixed(1)}M tokens adicionados com sucesso!\nNovo saldo: ${novoSaldo.toLocaleString('pt-BR')} tokens`);
     loadAdminPedidos();
   }
 
@@ -9419,11 +9481,11 @@
         <td>${PACOTES_CREDITOS[p.pacote]?.nome || p.pacote}</td>
         <td>${(p.tokens/1000000).toFixed(1)}M tokens</td>
         <td style="font-weight:700;color:#a3e635">${p.preco_brl ? 'R$ '+p.preco_brl : p.preco_usd ? '$'+p.preco_usd : '—'}</td>
-        <td><span class="pedidos-badge ${p.status}">${p.status === 'pendente' ? '⏳ Pendente' : p.status === 'aprovado' ? '✅ Aprovado' : '❌ Recusado'}</span></td>
+        <td><span class="pedidos-badge ${p.status}">${p.status === 'pendente' ? 'Pendente' : p.status === 'aprovado' ? 'Aprovado' : 'Recusado'}</span></td>
         <td>
           ${p.status === 'pendente' ? `
-            <button class="btn-success" style="font-size:12px;padding:5px 12px;" onclick="openAddCreditsModal('${p.user_id}','${escapeHtml(p.profiles?.display_name || '')}')">✅ Aprovar</button>
-            <button class="btn-danger" style="font-size:12px;padding:5px 12px;margin-left:4px;" onclick="recusarPedido('${p.id}')">❌ Recusar</button>
+            <button class="btn-success" style="font-size:12px;padding:5px 12px;" onclick="openAddCreditsModal('${p.user_id}','${escapeHtml(p.profiles?.display_name || '')}')">Ativarprovar</button>
+            <button class="btn-danger" style="font-size:12px;padding:5px 12px;margin-left:4px;" onclick="recusarPedido('${p.id}')">Recusar</button>
           ` : '—'}
         </td>
       </tr>`).join('')}</tbody>
@@ -9455,7 +9517,7 @@
     return res.json();
   }
 
-  const STATUS_LABELS = { trial:'⏳ Período de teste', ativa:'✅ Ativa', inadimplente:'🔴 Inadimplente', cancelada:'⚫ Cancelada' };
+  const STATUS_LABELS = { trial:'Período de teste', ativa:'Ativa', inadimplente:'Inadimplente', cancelada:'Cancelada' };
   const STATUS_CLASSES = { trial:'trial', ativa:'ativa', inadimplente:'inadimplente', cancelada:'cancelada' };
 
   async function loadBilling() {
@@ -9477,7 +9539,7 @@
       const addons = [];
       if (assin.addon_objecao) {
         totalMensal += 127;
-        addons.push('🛡️ Objeção IA');
+        addons.push('Objeção IA');
       }
       if (assin.agentes_extras) {
         totalMensal += assin.agentes_extras * 197;
@@ -9517,7 +9579,7 @@
       <tbody>${hist.map(h => `<tr>
         <td style="font-weight:600">${h.mes_referencia || '—'}</td>
         <td>R$ ${Number(h.valor).toFixed(2).replace('.',',')}</td>
-        <td class="history-row-${h.status}">${h.status === 'pago' ? '✅ Pago' : h.status === 'pendente' ? '⏳ Pendente' : h.status === 'atrasado' ? '🔴 Atrasado' : h.status}</td>
+        <td class="history-row-${h.status}">${h.status === 'pago' ? 'Pago' : h.status === 'pendente' ? 'Pendente' : h.status === 'atrasado' ? 'Atrasado' : h.status}</td>
         <td>${h.vencimento ? new Date(h.vencimento+'T00:00:00').toLocaleDateString('pt-BR') : '—'}</td>
         <td>${h.pago_em ? new Date(h.pago_em).toLocaleDateString('pt-BR') : '—'}</td>
         <td style="color:#6e7681;font-size:12px">${h.observacao || '—'}</td>
@@ -9547,8 +9609,8 @@
         <td style="font-weight:700">R$ ${Number(a.valor || 497).toFixed(2).replace('.',',')}</td>
         <td>
           <div class="billing-actions">
-            ${a.status !== 'ativa' ? `<button class="btn-success" onclick="setBillingStatus('${a.user_id}','ativa')">✅ Ativar</button>` : ''}
-            ${a.status !== 'inadimplente' ? `<button class="btn-danger" onclick="setBillingStatus('${a.user_id}','inadimplente')">🔴 Inadimplente</button>` : ''}
+            ${a.status !== 'ativa' ? `<button class="btn-success" onclick="setBillingStatus('${a.user_id}','ativa')">Ativartivar</button>` : ''}
+            ${a.status !== 'inadimplente' ? `<button class="btn-danger" onclick="setBillingStatus('${a.user_id}','inadimplente')">Inadimplente</button>` : ''}
             <button class="btn-secondary" onclick="registerPayment('${a.user_id}','${meAtual}')" style="font-size:12px">💰 Registrar Pgto</button>
           </div>
         </td>
@@ -9577,26 +9639,26 @@
   let dragNodeType = null;
 
   const NODE_TEMPLATES = {
-    inicio:         { title:'🟢 Início',           inputs:0, outputs:1, html:'<div class="box">Ponto de entrada do fluxo</div>', cls:'node-inicio' },
-    qualificado:    { title:'✅ Lead Qualificado',  inputs:1, outputs:0, html:'<div class="box" style="color:#16a34a">Lead qualificado — notifica responsável</div>', cls:'node-qualificado' },
-    desqualificado: { title:'❌ Desqualificado',    inputs:1, outputs:0, html:'<div class="box" style="color:#dc2626">Lead não qualificado — encerra atendimento</div>', cls:'node-desqualificado' },
-    fim:            { title:'🔴 Fim',               inputs:1, outputs:0, html:'<div class="box">Encerra a conversa</div>', cls:'node-fim' },
+    inicio:         { title:'Início',           inputs:0, outputs:1, html:'<div class="box">Ponto de entrada do fluxo</div>', cls:'node-inicio' },
+    qualificado:    { title:'Lead Qualificado',  inputs:1, outputs:0, html:'<div class="box" style="color:#16a34a">Lead qualificado — notifica responsável</div>', cls:'node-qualificado' },
+    desqualificado: { title:'Desqualificado',    inputs:1, outputs:0, html:'<div class="box" style="color:#dc2626">Lead não qualificado — encerra atendimento</div>', cls:'node-desqualificado' },
+    fim:            { title:'Fim',               inputs:1, outputs:0, html:'<div class="box">Encerra a conversa</div>', cls:'node-fim' },
     etapa: {
-      title: '📞 Etapa de Atendimento',
+      title: 'Etapa de Atendimento',
       inputs: 1, outputs: 1, cls: 'node-etapa',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">📱 Número WhatsApp</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Número WhatsApp</label>
         <select class="etapa-select etapa-numero">ETAPA_NUMEROS_OPTIONS</select>
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">🤖 Agente de IA</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Agente de IA</label>
         <select class="etapa-select etapa-agente">ETAPA_AGENTES_OPTIONS</select>
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">👤 Colaborador responsável</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Colaborador responsável</label>
         <select class="etapa-select etapa-colaborador">ETAPA_COLABORADORES_OPTIONS</select>
         <label class="etapa-relatorio-wrap" title="O resumo do atendimento anterior é enviado para este agente antes de ele responder">
           <input type="checkbox" class="etapa-relatorio" checked />
-          📊 Receber relatório do atendimento anterior
+          Receber relatório do atendimento anterior
         </label>
         <div class="etapa-report-preview" id="etapa-report-sample">
-          <em>📋 Exemplo de relatório:</em><br/>
+          <em>Exemplo de relatório:</em><br/>
           Lead: João Silva | Serviço: Plano Premium<br/>
           Resumo: Interessado, aguardando proposta. Perguntou sobre prazo.
         </div>
@@ -9604,27 +9666,27 @@
     },
     // ── Ações ─────────────────────────────────────────────────────────────
     departamento: {
-      title: '🏢 Transferir Departamento', inputs: 1, outputs: 1, cls: 'node-departamento',
+      title: 'Transferir Departamento', inputs: 1, outputs: 1, cls: 'node-departamento',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">🏢 Nome do departamento</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Nome do departamento</label>
         <input class="etapa-select" placeholder="ex: Comercial, Suporte, Financeiro, Pós-venda..." style="margin-bottom:8px;" />
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">📱 Número do departamento</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Número do departamento</label>
         <select class="etapa-select">ETAPA_NUMEROS_OPTIONS</select>
-        <label class="etapa-relatorio-wrap"><input type="checkbox" checked />📊 Enviar contexto da conversa</label>
+        <label class="etapa-relatorio-wrap"><input type="checkbox" checked />Enviar contexto da conversa</label>
       </div>`
     },
     captura: {
-      title: '📋 Captura de Dados', inputs: 1, outputs: 1, cls: 'node-captura',
+      title: 'Captura de Dados', inputs: 1, outputs: 1, cls: 'node-captura',
       html: `<div class="box">
         <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:8px;">Campos a capturar do lead:</div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> 👤 Nome</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" style="accent-color:#a3e635;" /> 👤 Sobrenome</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> 📱 Telefone</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> 💬 O que te trouxe ao atendimento?</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> Nome</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" style="accent-color:#a3e635;" /> Sobrenome</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:5px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> Telefone</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" checked style="accent-color:#a3e635;" /> O que te trouxe ao atendimento?</label>
       </div>`
     },
     condicao: {
-      title: '🔀 Condição IF/ELSE', inputs: 1, outputs: 2, cls: 'node-condicao',
+      title: 'Condição IF/ELSE', inputs: 1, outputs: 2, cls: 'node-condicao',
       html: `<div class="box">
         <select class="etapa-select" style="margin-bottom:6px;">
           <option>Produto/Serviço de interesse contém...</option>
@@ -9635,8 +9697,8 @@
         </select>
         <input class="etapa-select" placeholder="Valor para comparar..." />
         <div style="display:flex;justify-content:space-between;font-size:10px;color:#6e7681;margin-top:8px;padding:0 2px;">
-          <span style="color:#16a34a;font-weight:600;">✅ Sim (saída 1)</span>
-          <span style="color:#dc2626;font-weight:600;">❌ Não (saída 2)</span>
+          <span style="color:#16a34a;font-weight:600;">Sim (saída 1)</span>
+          <span style="color:#dc2626;font-weight:600;">Não (saída 2)</span>
         </div>
       </div>`
     },
@@ -9656,9 +9718,9 @@
       </div>`
     },
     followup: {
-      title: '📤 Follow-up', inputs: 1, outputs: 1, cls: 'node-followup',
+      title: 'Follow-up', inputs: 1, outputs: 1, cls: 'node-followup',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">💬 Mensagem</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Mensagem</label>
         <textarea class="etapa-select" style="resize:vertical;min-height:60px;font-size:12px;margin-bottom:8px;" placeholder="Olá {{nome}}! Queria acompanhar o seu interesse em {{servico}}..."></textarea>
         <div style="display:flex;align-items:center;gap:6px;">
           <span style="font-size:11px;color:#8b949e;white-space:nowrap;">⏱ Após</span>
@@ -9673,34 +9735,34 @@
       </div>`
     },
     contexto: {
-      title: '🧠 Contextualizar Conversa', inputs: 1, outputs: 1, cls: 'node-contexto',
+      title: 'Contextualizar Conversa', inputs: 1, outputs: 1, cls: 'node-contexto',
       html: `<div class="box">
         <div style="font-size:12px;color:#c9d1d9;margin-bottom:8px;">Resume toda a conversa e injeta como contexto para o próximo agente ou etapa.</div>
         <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">Incluir no resumo:</div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:4px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#7c3aed;" /> 🗨️ Histórico da conversa</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:4px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#7c3aed;" /> 👤 Dados do lead</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" style="accent-color:#7c3aed;" /> 🛡️ Objeções identificadas</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:4px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#7c3aed;" /> Histórico da conversa</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;margin-bottom:4px;cursor:pointer;"><input type="checkbox" checked style="accent-color:#7c3aed;" /> Dados do lead</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" style="accent-color:#7c3aed;" /> Objeções identificadas</label>
       </div>`
     },
     mover_pipeline: {
-      title: '🗂️ Mover no CRM', inputs: 1, outputs: 1, cls: 'node-mover-pipeline',
+      title: 'Mover no CRM', inputs: 1, outputs: 1, cls: 'node-mover-pipeline',
       html: `<div class="box">
         <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:6px;">Mover lead para o estágio:</label>
         <select class="etapa-select">
-          <option value="novo_contato">🆕 Novo Contato</option>
-          <option value="em_atendimento">💬 Em Atendimento</option>
-          <option value="qualificado">✅ Qualificado</option>
-          <option value="nao_qualificado">❌ Não Qualificado</option>
-          <option value="convertido">🎉 Convertido</option>
-          <option value="perdido">🚪 Perdido</option>
+          <option value="novo_contato">Novo Contato</option>
+          <option value="em_atendimento">Em Atendimento</option>
+          <option value="qualificado">Qualificado</option>
+          <option value="nao_qualificado">Não Qualificado</option>
+          <option value="convertido">Convertido</option>
+          <option value="perdido">Perdido</option>
         </select>
       </div>`
     },
 
     mudar_fluxo: {
-      title: '🔀 Mudar de Fluxo', inputs: 1, outputs: 1, cls: 'node-mudar-fluxo',
+      title: 'Mudar de Fluxo', inputs: 1, outputs: 1, cls: 'node-mudar-fluxo',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#818cf8;display:block;margin-bottom:4px;">🔀 Ir para o fluxo:</label>
+        <label style="font-size:11px;font-weight:600;color:#818cf8;display:block;margin-bottom:4px;">Ir para o fluxo:</label>
         <select class="etapa-select" style="border-color:rgba(99,102,241,.4);margin-bottom:6px;">FLUXOS_OPTIONS</select>
         <label style="display:flex;align-items:flex-start;gap:7px;cursor:pointer;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.2);border-radius:7px;padding:7px 9px;font-size:11px;color:#a5b4fc;line-height:1.4;">
           <input type="checkbox" checked style="accent-color:#6366f1;margin-top:1px;flex-shrink:0;" />
@@ -9709,16 +9771,16 @@
       </div>`
     },
     objecao: {
-      title: '🛡️ Identificar Objeção + Plano de Ação (IA)', inputs: 1, outputs: 2, cls: 'node-objecao',
+      title: 'Identificar Objeção + Plano de Ação (IA)', inputs: 1, outputs: 2, cls: 'node-objecao',
       html: `<div class="box">
-        <div class="objecao-badge">⚡ Agente IA especializado em objeções comerciais</div>
+        <div class="objecao-badge">Agente IA especializado em objeções comerciais</div>
         <!-- WhatsApp do responsável (sempre visível) -->
-        <div style="font-size:10px;font-weight:600;color:#8b949e;margin-bottom:3px;margin-top:4px;">📱 WhatsApp do responsável</div>
+        <div style="font-size:10px;font-weight:600;color:#8b949e;margin-bottom:3px;margin-top:4px;">WhatsApp do responsável</div>
         <input class="etapa-select" placeholder="5511999999999" style="margin-bottom:6px;" />
         <!-- SAÍDAS compactas -->
         <div class="objecao-outputs">
-          <span style="color:#dc2626;font-weight:700;">🛡️ Com objeção → 1</span>
-          <span style="color:#16a34a;font-weight:700;">✅ Sem objeção → 2</span>
+          <span style="color:#dc2626;font-weight:700;">Com objeção → 1</span>
+          <span style="color:#16a34a;font-weight:700;">Sem objeção → 2</span>
         </div>
         <!-- Toggle detalhes -->
         <button class="node-toggle-btn" onclick="toggleNodeDetails(this)">
@@ -9749,18 +9811,18 @@
           </div>
           <div class="objecao-divider"><span>3 · O que dificultou a conversão</span></div>
           <label class="objecao-check-full"><input type="checkbox" checked /> ⏱️ Tempo de resposta lento</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 🕐 Horário fora do ideal</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 🔇 Desengajamento do lead</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 💬 Tom inadequado do agente</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 📋 Informações insuficientes</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 🔁 Abandono da conversa</label>
-          <label class="objecao-check-full"><input type="checkbox" /> 📉 Queda de engajamento</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Horário fora do ideal</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Desengajamento do lead</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Tom inadequado do agente</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Informações insuficientes</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Abandono da conversa</label>
+          <label class="objecao-check-full"><input type="checkbox" /> Queda de engajamento</label>
           <div class="objecao-divider"><span>4 · Plano de ação gerado</span></div>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 🎯 Argumentos personalizados</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 📅 Melhor momento para retomar</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 📝 Script de follow-up</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 🔍 Apontar erros do atendimento</label>
-          <label class="objecao-check-full"><input type="checkbox" /> 💡 Sugerir ajuste no fluxo</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Argumentos personalizados</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Melhor momento para retomar</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Script de follow-up</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Apontar erros do atendimento</label>
+          <label class="objecao-check-full"><input type="checkbox" /> Sugerir ajuste no fluxo</label>
           <div style="margin-top:6px;">
             <div style="font-size:10px;font-weight:600;color:#8b949e;margin-bottom:3px;">Instruções adicionais (opcional):</div>
             <textarea class="objecao-textarea" placeholder="Ex: Para objeção de preço, oferecer parcelamento..."></textarea>
@@ -9772,7 +9834,7 @@
     // ── NOVOS NÓS ──────────────────────────────────────────────────────────
 
     entrada: {
-      title: '📨 Entrada WhatsApp', inputs: 0, outputs: 1, cls: 'node-entrada',
+      title: 'Entrada WhatsApp', inputs: 0, outputs: 1, cls: 'node-entrada',
       html: `<div class="box">
         <div style="font-size:11px;font-weight:700;color:#a3e635;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Gatilho de entrada</div>
         <select class="etapa-select" style="margin-bottom:6px;">
@@ -9788,16 +9850,16 @@
     },
 
     enviar_relatorio: {
-      title: '📊 Enviar Relatório', inputs: 1, outputs: 1, cls: 'node-enviar-relatorio',
+      title: 'Enviar Relatório', inputs: 1, outputs: 1, cls: 'node-enviar-relatorio',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">📱 Enviar para (WhatsApp)</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Enviar para (WhatsApp)</label>
         <input class="etapa-select" placeholder="5511999999999" style="margin-bottom:0;" />
         <button class="node-toggle-btn" onclick="toggleNodeDetails(this)">
           <span class="toggle-icon">▼</span>
           <span class="toggle-label">Ver conteúdo</span>
         </button>
         <div class="node-details-body">
-          <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:6px;margin-top:4px;">📊 Conteúdo do relatório</label>
+          <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:6px;margin-top:4px;">Conteúdo do relatório</label>
           <div style="display:flex;flex-direction:column;gap:4px;">
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" checked style="accent-color:#0ea5e9;" /> Dados do lead</label>
             <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;"><input type="checkbox" checked style="accent-color:#0ea5e9;" /> Resumo da conversa</label>
@@ -9810,7 +9872,7 @@
     },
 
     coletar_dados: {
-      title: '📝 Coletar Dados do Lead', inputs: 1, outputs: 1, cls: 'node-coletar-dados',
+      title: 'Coletar Dados do Lead', inputs: 1, outputs: 1, cls: 'node-coletar-dados',
       html: `<div class="box">
         <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">Campos a coletar (arraste para reordenar):</div>
         <div id="coletar-campos-list" style="display:flex;flex-direction:column;gap:4px;">
@@ -9836,18 +9898,18 @@
     },
 
     anotacao: {
-      title: '🗒️ Anotação Interna', inputs: 1, outputs: 1, cls: 'node-anotacao',
+      title: 'Anotação Interna', inputs: 1, outputs: 1, cls: 'node-anotacao',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">📝 Nota interna (não enviada ao lead)</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Nota interna (não enviada ao lead)</label>
         <textarea class="etapa-select" style="resize:vertical;min-height:70px;font-size:12px;background:rgba(250,204,21,.05);border-color:rgba(250,204,21,.3);" placeholder="Ex: Lead chegou pelo tráfego pago. Verificar se tem histórico de atendimento anterior..."></textarea>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#c9d1d9;cursor:pointer;margin-top:5px;"><input type="checkbox" style="accent-color:#facc15;" /> Adicionar ao CRM</label>
       </div>`
     },
 
     acao: {
-      title: '⚡ Ação / Webhook', inputs: 1, outputs: 1, cls: 'node-acao',
+      title: 'Ação / Webhook', inputs: 1, outputs: 1, cls: 'node-acao',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">⚡ Tipo de ação</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Tipo de ação</label>
         <select class="etapa-select" style="margin-bottom:6px;" onchange="this.closest('.box').querySelector('.webhook-url-wrap').style.display=this.value==='webhook'?'block':'none'">
           <option value="tag">Adicionar tag ao lead</option>
           <option value="campo">Atualizar campo do lead</option>
@@ -9862,7 +9924,7 @@
     },
 
     divisao: {
-      title: '🔱 Divisão de Fluxo', inputs: 1, outputs: 3, cls: 'node-divisao',
+      title: 'Divisão de Fluxo', inputs: 1, outputs: 3, cls: 'node-divisao',
       html: `<div class="box">
         <div style="font-size:12px;color:#c9d1d9;margin-bottom:6px;">Divide o fluxo em múltiplos caminhos paralelos.</div>
         <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Saídas:</label>
@@ -9878,7 +9940,7 @@
     },
 
     expediente: {
-      title: '🕐 Verificar Expediente', inputs: 1, outputs: 2, cls: 'node-expediente',
+      title: 'Verificar Expediente', inputs: 1, outputs: 2, cls: 'node-expediente',
       html: `<div class="box">
         <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;">Horário de funcionamento:</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;">
@@ -9892,8 +9954,8 @@
           </div>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px;">
-          <span style="color:#16a34a;font-weight:600;">✅ Dentro → saída 1</span>
-          <span style="color:#dc2626;font-weight:600;">❌ Fora → saída 2</span>
+          <span style="color:#16a34a;font-weight:600;">Dentro → saída 1</span>
+          <span style="color:#dc2626;font-weight:600;">Fora → saída 2</span>
         </div>
         <button class="node-toggle-btn" onclick="toggleNodeDetails(this)">
           <span class="toggle-icon">▼</span>
@@ -9909,7 +9971,7 @@
     },
 
     modelo_ia: {
-      title: '🤖 Escolha o Modelo de IA', inputs: 1, outputs: 1, cls: 'node-modelo-ia',
+      title: 'Escolha o Modelo de IA', inputs: 1, outputs: 1, cls: 'node-modelo-ia',
       html: `<div class="box">
         <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:5px;">Provedor de IA:</label>
         <div style="display:flex;gap:4px;margin-bottom:8px;">
@@ -9943,9 +10005,9 @@
         </div>
         <div data-prov="google" style="display:none;">
           <select class="etapa-select" style="margin-bottom:6px;" onchange="updateNodeFator(this)">
-            <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — fator 0.1× 🆓</option>
-            <option value="gemini-2.0-flash">gemini-2.0-flash — fator 0.2× 🆓</option>
-            <option value="gemini-1.5-flash">gemini-1.5-flash — fator 0.2× 🆓</option>
+            <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite — fator 0.1×</option>
+            <option value="gemini-2.0-flash">gemini-2.0-flash — fator 0.2×</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash — fator 0.2×</option>
             <option value="gemini-1.5-pro">gemini-1.5-pro — fator 1.5×</option>
             <option value="gemini-2.5-pro-exp-03-25">gemini-2.5-pro-exp — fator 5.0×</option>
           </select>
@@ -9967,11 +10029,11 @@
     },
 
     voz_ia: {
-      title: '🎙️ Enviar Voz por IA', inputs: 1, outputs: 1, cls: 'node-voz-ia',
+      title: 'Enviar Voz por IA', inputs: 1, outputs: 1, cls: 'node-voz-ia',
       html: `<div class="box">
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">💬 Texto a converter em voz</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Texto a converter em voz</label>
         <textarea class="etapa-select" style="resize:vertical;min-height:56px;font-size:12px;margin-bottom:6px;" placeholder="Olá {{nome}}! Variáveis: {{nome}}, {{telefone}}, {{servico}}"></textarea>
-        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">🎤 Voz</label>
+        <label style="font-size:11px;font-weight:600;color:#8b949e;display:block;margin-bottom:4px;">Voz</label>
         <select class="etapa-select" style="margin-bottom:0;">
           <option>Alloy — Neutro</option>
           <option>Echo — Masculino profissional</option>
@@ -9994,19 +10056,19 @@
     },
 
     agendar_gcal: {
-      title: '📅 Agendar no Google Agenda', inputs: 1, outputs: 1, cls: 'node-agendar-gcal',
+      title: 'Agendar no Google Agenda', inputs: 1, outputs: 1, cls: 'node-agendar-gcal',
       html: `<div class="box">
         <div style="margin-bottom:6px;">
-          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">📝 Título do evento</div>
+          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Título do evento</div>
           <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Reunião com {{nome}}" value="Reunião com {{nome}}" />
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
           <div>
-            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">📅 Data</div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Data</div>
             <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" value="{{data_agendamento}}" />
           </div>
           <div>
-            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">🕐 Hora</div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Hora</div>
             <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" value="{{hora_agendamento}}" />
           </div>
         </div>
@@ -10020,11 +10082,11 @@
             <input type="number" class="etapa-select" style="margin-bottom:0;font-size:11px;width:80px;" value="60" min="15" step="15" />
           </div>
           <div style="margin-bottom:6px;">
-            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">📋 Descrição / Notas</div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Descrição / Notas</div>
             <textarea class="etapa-select" style="margin-bottom:0;font-size:11px;height:42px;resize:none;">Lead: {{nome}} — {{telefone}}</textarea>
           </div>
           <div style="background:rgba(26,115,232,.1);border:1px solid rgba(26,115,232,.25);border-radius:6px;padding:5px 8px;font-size:10px;color:#93c5fd;">
-            ⚙️ Configure OAuth em <strong>Configuração → Integrações</strong>
+            Configure OAuth em <strong>Configuração → Integrações</strong>
           </div>
         </div>
       </div>`
@@ -10033,7 +10095,7 @@
       title: '⏰ Disparo Programado', inputs: 1, outputs: 1, cls: 'node-disparo-programado',
       html: `<div class="box">
         <div style="margin-bottom:6px;">
-          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">💬 Mensagem</div>
+          <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Mensagem</div>
           <textarea class="etapa-select" style="margin-bottom:0;font-size:11px;height:50px;resize:none;" placeholder="Olá {{nome}}, aqui é o assistente...">Olá {{nome}}, passando para verificar se ainda tem interesse 😊</textarea>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
@@ -10056,7 +10118,7 @@
         </button>
         <div class="node-details-body">
           <div style="margin-bottom:6px;margin-top:4px;">
-            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">🕐 Somente entre</div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Somente entre</div>
             <div style="display:flex;gap:6px;align-items:center;">
               <input type="time" class="etapa-select" style="margin-bottom:0;font-size:11px;flex:1;" value="08:00" />
               <span style="font-size:10px;color:#6e7681;">e</span>
@@ -10064,7 +10126,7 @@
             </div>
           </div>
           <div>
-            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">📋 Condição de envio</div>
+            <div style="font-size:10px;color:#6e7681;margin-bottom:3px;">Condição de envio</div>
             <select class="etapa-select" style="margin-bottom:0;font-size:11px;">
               <option value="sem_resposta">Lead sem resposta</option>
               <option value="sempre">Sempre</option>
@@ -10075,9 +10137,9 @@
       </div>`
     },
     adicionar_campos: {
-      title: '🏷️ Campos & Tags', inputs: 1, outputs: 1, cls: 'node-adicionar-campos',
+      title: 'Campos & Tags', inputs: 1, outputs: 1, cls: 'node-adicionar-campos',
       html: `<div class="box">
-        <div style="font-size:11px;font-weight:600;color:#d8b4fe;margin-bottom:8px;">🏷️ Definir Campos & Tags no Lead</div>
+        <div style="font-size:11px;font-weight:600;color:#d8b4fe;margin-bottom:8px;">Definir Campos & Tags no Lead</div>
         <div style="margin-bottom:8px;">
           <div style="font-size:10px;color:#6e7681;margin-bottom:4px;">Tags a adicionar <span style="opacity:.6">(vírgula separa)</span></div>
           <input type="text" class="etapa-select" style="margin-bottom:0;font-size:11px;" placeholder="Ex: vip, produto-x, hot-lead" />
@@ -10097,15 +10159,15 @@
       </div>`
     },
     lead_score_coletor: {
-      title: '🎯 Colhedor de Lead Score', inputs: 1, outputs: 2, cls: 'node-lead-score-coletor',
+      title: 'Colhedor de Lead Score', inputs: 1, outputs: 2, cls: 'node-lead-score-coletor',
       html: `<div class="box">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
-          <span style="font-size:11px;color:#8b949e;white-space:nowrap;">🎯 Mín. pontos para qualificar:</span>
+          <span style="font-size:11px;color:#8b949e;white-space:nowrap;">Mín. pontos para qualificar:</span>
           <input type="number" class="etapa-select" style="width:55px;margin-bottom:0;font-weight:700;" value="3" min="1" max="6" />
         </div>
         <div style="display:flex;justify-content:space-between;font-size:10px;">
-          <span style="color:#16a34a;font-weight:600;">✅ Acima → saída 1</span>
-          <span style="color:#dc2626;font-weight:600;">❌ Abaixo → saída 2</span>
+          <span style="color:#16a34a;font-weight:600;">Ativarcima → saída 1</span>
+          <span style="color:#dc2626;font-weight:600;">Abaixo → saída 2</span>
         </div>
         <button class="node-toggle-btn" onclick="toggleNodeDetails(this)">
           <span class="toggle-icon">▼</span>
@@ -10113,12 +10175,12 @@
         </button>
         <div class="node-details-body">
           <div style="font-size:11px;font-weight:600;color:#8b949e;margin-bottom:6px;margin-top:4px;">Critérios de pontuação:</div>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 📱 Respondeu todas as perguntas</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Respondeu todas as perguntas</label>
           <label class="objecao-check-full"><input type="checkbox" checked /> ⏱️ Tempo de resposta &lt;2min</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> ✅ Confirmou interesse</label>
-          <label class="objecao-check-full"><input type="checkbox" checked /> 📍 Dentro do perfil ideal</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Confirmou interesse</label>
+          <label class="objecao-check-full"><input type="checkbox" checked /> Dentro do perfil ideal</label>
           <label class="objecao-check-full"><input type="checkbox" /> 💰 Mencionou orçamento</label>
-          <label class="objecao-check-full"><input type="checkbox" /> 📅 Agendou reunião ou visita</label>
+          <label class="objecao-check-full"><input type="checkbox" /> Agendou reunião ou visita</label>
         </div>
       </div>`
     },
@@ -10742,7 +10804,7 @@
     if (!grid) return;
     if (!membros.length) {
       grid.innerHTML = `<div class="equipe-empty">
-        <div class="equipe-empty-icon">👥</div>
+        <div class="equipe-empty-icon"></div>
         <div class="equipe-empty-title">Nenhum membro adicionado</div>
         <div style="font-size:13px;">Contrate usuários extras no Marketplace e clique em "Adicionar Membro".</div>
       </div>`;
@@ -10766,18 +10828,18 @@
             </div>
           </div>
           <div class="equipe-card-actions">
-            <button class="equipe-btn" onclick="abrirModalUsuario('${m.id}')" title="Editar membro">✏️</button>
-            ${m.email ? `<button class="equipe-btn" onclick="reenviarConvite('${m.id}','${escapeHtml(m.email)}','${escapeHtml(m.nome)}')" title="Reenviar convite por e-mail">📧</button>` : ''}
-            <button class="equipe-btn danger" onclick="removerUsuario('${m.id}','${escapeHtml(m.nome)}')" title="Cancelar acesso e remover membro">🗑️</button>
+            <button class="equipe-btn" onclick="abrirModalUsuario('${m.id}')" title="Editar membro">Editar</button>
+            ${m.email ? `<button class="equipe-btn" onclick="reenviarConvite('${m.id}','${escapeHtml(m.email)}','${escapeHtml(m.nome)}')" title="Reenviar convite por e-mail">Reenviar convite</button>` : ''}
+            <button class="equipe-btn danger" onclick="removerUsuario('${m.id}','${escapeHtml(m.nome)}')" title="Cancelar acesso e remover membro">Excluir</button>
           </div>
         </div>
         <div class="equipe-card-body">
           ${m.whatsapp_contato ? `<div class="equipe-field">
-            <div class="equipe-field-label">📱 WhatsApp de contato</div>
+            <div class="equipe-field-label">WhatsApp de contato</div>
             <div class="equipe-field-value">${escapeHtml(m.whatsapp_contato)}</div>
           </div>` : ''}
           <div class="equipe-field">
-            <div class="equipe-field-label">📡 Número WhatsApp atribuído</div>
+            <div class="equipe-field-label">Número WhatsApp atribuído</div>
             <div class="equipe-field-value">
               <select onchange="atribuirNumero('${m.id}', this.value)">
                 <option value="">— Sem número atribuído —</option>
@@ -10786,7 +10848,7 @@
             </div>
           </div>
           <div class="equipe-field" id="tarefas-count-${m.id}">
-            <div class="equipe-field-label">📋 Tarefas atribuídas</div>
+            <div class="equipe-field-label">Tarefas atribuídas</div>
             <div class="equipe-field-value" id="tarefas-val-${m.id}">
               <span class="equipe-tarefas-count">Carregando...</span>
             </div>
@@ -10806,7 +10868,7 @@
       .eq('concluida', false);
     const el = document.getElementById('tarefas-val-' + membroId);
     if (el) el.innerHTML = count > 0
-      ? `<span class="equipe-tarefas-count">📋 ${count} tarefa${count !== 1 ? 's' : ''} aberta${count !== 1 ? 's' : ''}</span>`
+      ? `<span class="equipe-tarefas-count">${count} tarefa${count !== 1 ? 's' : ''} aberta${count !== 1 ? 's' : ''}</span>`
       : `<span style="color:#6e7681;font-size:12px;">Nenhuma tarefa pendente</span>`;
   }
 
@@ -10839,7 +10901,7 @@
       const m = _equipeMembros.find(x => x.id === membroId);
       if (!m) return;
       document.getElementById('usuario-modal-title-text').textContent = 'Editar Membro';
-      document.getElementById('usuario-modal-icon').textContent = '✏️';
+      document.getElementById('usuario-modal-icon').textContent = '';
       document.getElementById('usuario-id').value      = m.id;
       document.getElementById('usuario-nome').value    = m.nome || '';
       document.getElementById('usuario-cargo').value   = m.cargo || '';
@@ -10853,7 +10915,7 @@
     } else {
       // Modo criação
       document.getElementById('usuario-modal-title-text').textContent = 'Adicionar Membro';
-      document.getElementById('usuario-modal-icon').textContent = '👤';
+      document.getElementById('usuario-modal-icon').textContent = '';
       document.getElementById('usuario-id').value       = '';
       document.getElementById('usuario-nome').value     = '';
       document.getElementById('usuario-cargo').value    = '';
@@ -10888,7 +10950,7 @@
     if (!id) {
       // Verifica cota
       if (_equipeMembros.length >= _equipeQuotaMax) {
-        if (!confirm(`⚠️ Você atingiu o limite de ${_equipeQuotaMax} usuário${_equipeQuotaMax > 1 ? 's' : ''} contratado${_equipeQuotaMax > 1 ? 's' : ''}.\n\nDeseja ir ao Marketplace para contratar mais?`)) return;
+        if (!confirm(`Você atingiu o limite de ${_equipeQuotaMax} usuário${_equipeQuotaMax > 1 ? 's' : ''} contratado${_equipeQuotaMax > 1 ? 's' : ''}.\n\nDeseja ir ao Marketplace para contratar mais?`)) return;
         fecharModalUsuario();
         showPage('faturamento', document.querySelector('.nav-item[onclick*="faturamento"]'));
         setTimeout(() => showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1]), 400);
@@ -10948,7 +11010,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Convite reenviado para ${email}!\n\nO membro receberá um e-mail para criar sua senha de acesso.`);
+        alert(`Convite reenviado para ${email}!\n\nO membro receberá um e-mail para criar sua senha de acesso.`);
       } else {
         alert(`Erro ao reenviar convite: ${data.error || 'Tente novamente.'}`);
       }
@@ -11012,9 +11074,9 @@
     const statusEl = document.getElementById('flow-plan-status');
     if (statusEl) {
       statusEl.innerHTML =
-        `<span class="flow-plan-badge num">📱 ${_fluxoNumeros.length} número${_fluxoNumeros.length > 1 ? 's' : ''}</span>` +
-        `<span class="flow-plan-badge agt">🤖 ${_fluxoAgentes.length} agente${_fluxoAgentes.length > 1 ? 's' : ''}</span>` +
-        (_fluxoObjecao ? `<span class="flow-plan-badge" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3);" title="Agente IA detecta objeções, gera plano de ação e envia relatório via WhatsApp">🛡️ Objeção IA + Plano de Ação</span>` : '');
+        `<span class="flow-plan-badge num">${_fluxoNumeros.length} número${_fluxoNumeros.length > 1 ? 's' : ''}</span>` +
+        `<span class="flow-plan-badge agt">${_fluxoAgentes.length} agente${_fluxoAgentes.length > 1 ? 's' : ''}</span>` +
+        (_fluxoObjecao ? `<span class="flow-plan-badge" style="background:rgba(220,38,38,.12);color:#fca5a5;border:1px solid rgba(220,38,38,.3);" title="Agente IA detecta objeções, gera plano de ação e envia relatório via WhatsApp">Objeção IA + Plano de Ação</span>` : '');
     }
 
     // 6. Atualiza hint da paleta
@@ -11034,7 +11096,7 @@
       } else {
         palOb.classList.add('locked');
         palOb.setAttribute('draggable','false');
-        palOb.title = '🔒 Agente IA — Identificação de Objeção + Plano de Ação — R$ 127/mês. Comprar no Marketplace';
+        palOb.title = 'Agente IA — Identificação de Objeção + Plano de Ação — R$ 127/mês. Comprar no Marketplace';
       }
     }
   }
@@ -11042,7 +11104,7 @@
   function dragObjecao(event) {
     if (!_fluxoObjecao) {
       event.preventDefault();
-      alert('🔒 Agente IA — Identificação de Objeção + Plano de Ação é um recurso pago.\n\nO que inclui:\n• Detecção de objeções em tempo real\n• Geração de plano de ação personalizado para contorná-las\n• Envio do relatório via WhatsApp ao responsável\n\nValor: R$ 127/mês\n\nAcesse Faturamento → Marketplace para contratar.');
+      alert('Agente IA — Identificação de Objeção + Plano de Ação é um recurso pago.\n\nO que inclui:\n• Detecção de objeções em tempo real\n• Geração de plano de ação personalizado para contorná-las\n• Envio do relatório via WhatsApp ao responsável\n\nValor: R$ 127/mês\n\nAcesse Faturamento → Marketplace para contratar.');
       return;
     }
     drag(event, 'objecao');
@@ -11165,7 +11227,7 @@
         .replace('ETAPA_NUMEROS_OPTIONS', numerosOpts)
         .replace('ETAPA_AGENTES_OPTIONS', agentesOpts)
         .replace('ETAPA_COLABORADORES_OPTIONS', colaboradoresOpts);
-      nodeHtml = `<div class="title-box">📞 Etapa de Atendimento</div>${body}`;
+      nodeHtml = `<div class="title-box">Etapa de Atendimento</div>${body}`;
     } else if (type === 'departamento') {
       // Popula o select de número do departamento
       const body = cfg.html.replace('ETAPA_NUMEROS_OPTIONS', numerosOpts);
@@ -11276,8 +11338,8 @@
     }
     el.innerHTML = data.map(f => `
       <div class="flow-saved-item" onclick="loadFlow('${f.id}','${escapeHtml(f.nome)}')">
-        <span>📋 ${escapeHtml(f.nome)}</span>
-        <button onclick="event.stopPropagation();deleteFlow('${f.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;">🗑️</button>
+        <span>${escapeHtml(f.nome)}</span>
+        <button onclick="event.stopPropagation();deleteFlow('${f.id}')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;">Excluir</button>
       </div>`).join('');
   }
 
@@ -11551,7 +11613,7 @@
     const sub  = document.getElementById('crm-reminder-subtitle');
     if (!body) return;
     if (!crmReminders.length) {
-      body.innerHTML = '<div class="crm-reminder-empty">🎉 Nenhuma tarefa vencida ou próxima do prazo nos próximos 7 dias!</div>';
+      body.innerHTML = '<div class="crm-reminder-empty">Nenhuma tarefa vencida ou próxima do prazo nos próximos 7 dias!</div>';
       if (sub) sub.textContent = 'Tudo em dia';
       return;
     }
@@ -11561,10 +11623,10 @@
     const soon     = crmReminders.filter(t => taskUrgency(t.data_vencimento) === 'soon');
     if (sub) sub.textContent = `${overdue.length + today.length} urgente${(overdue.length+today.length)!==1?'s':''} · ${crmReminders.length} nos próximos 7 dias`;
     const sections = [
-      { list: overdue,  label: '⚠️ Atrasadas', cls: 'overdue' },
+      { list: overdue,  label: 'Atrasadas', cls: 'overdue' },
       { list: today,    label: '⏰ Vence hoje',  cls: 'today' },
-      { list: tomorrow, label: '📅 Amanhã',      cls: 'tomorrow' },
-      { list: soon,     label: '🔮 Em breve',    cls: 'soon' },
+      { list: tomorrow, label: 'Amanhã',      cls: 'tomorrow' },
+      { list: soon,     label: 'Em breve',    cls: 'soon' },
     ].filter(s => s.list.length > 0);
     body.innerHTML = sections.map(sec =>
       `<div style="padding:8px 18px 4px;font-size:10px;font-weight:700;color:#6e7681;text-transform:uppercase;letter-spacing:.4px;">${sec.label}</div>` +
@@ -11775,7 +11837,7 @@
     const disconnectEl = document.getElementById('gcal-disconnect');
 
     if (result?.connected) {
-      statusEl.textContent = '✅ Conectado';
+      statusEl.textContent = 'Conectado';
       statusEl.style.color = '#10b981';
       badgeEl.style.display = 'block';
       emailEl.textContent = result.email || '';
@@ -11783,7 +11845,7 @@
       btnEl.style.display = 'none';
       disconnectEl.style.display = 'block';
     } else {
-      statusEl.textContent = '❌ Desconectado';
+      statusEl.textContent = 'Desconectado';
       badgeEl.style.display = 'none';
       emailEl.style.display = 'none';
       btnEl.style.display = 'block';
@@ -11815,7 +11877,7 @@
     const disconnectEl = document.getElementById('apple-disconnect');
 
     if (result?.connected) {
-      statusEl.textContent = '✅ Conectado';
+      statusEl.textContent = 'Conectado';
       statusEl.style.color = '#10b981';
       badgeEl.style.display = 'block';
       emailEl.textContent = result.email || '';
@@ -11823,7 +11885,7 @@
       btnEl.style.display = 'none';
       disconnectEl.style.display = 'block';
     } else {
-      statusEl.textContent = '❌ Desconectado';
+      statusEl.textContent = 'Desconectado';
       badgeEl.style.display = 'none';
       emailEl.style.display = 'none';
       btnEl.style.display = 'block';
@@ -11850,7 +11912,7 @@
     const disconnectEl = document.getElementById('calendly-disconnect');
 
     if (result?.connected) {
-      statusEl.textContent = '✅ Conectado';
+      statusEl.textContent = 'Conectado';
       statusEl.style.color = '#10b981';
       badgeEl.style.display = 'block';
       emailEl.textContent = result.email || '';
@@ -11858,7 +11920,7 @@
       btnEl.style.display = 'none';
       disconnectEl.style.display = 'block';
     } else {
-      statusEl.textContent = '❌ Desconectado';
+      statusEl.textContent = 'Desconectado';
       badgeEl.style.display = 'none';
       emailEl.style.display = 'none';
       btnEl.style.display = 'block';
@@ -11891,9 +11953,9 @@
         <div style="border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg-secondary);">
           <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
             <div style="flex:1;">
-              <p style="margin:0;font-size:13px;font-weight:600;color:var(--text);">🔗 ${wh.url}</p>
+              <p style="margin:0;font-size:13px;font-weight:600;color:var(--text);">${wh.url}</p>
               <p style="margin:4px 0 0;font-size:11px;color:var(--text-secondary);">Eventos: ${wh.events?.join(', ') || 'nenhum'}</p>
-              <p style="margin:4px 0 0;font-size:11px;color:var(--text-secondary);">Status: ${wh.active ? '✅ Ativo' : '⏸️ Inativo'}</p>
+              <p style="margin:4px 0 0;font-size:11px;color:var(--text-secondary);">Status: ${wh.active ? 'Ativo' : '⏸️ Inativo'}</p>
             </div>
             <div style="display:flex;gap:6px;">
               <button class="btn-secondary" onclick="testarWebhook('${wh.id}')" style="font-size:11px;padding:6px 10px;">Testar</button>
@@ -12064,7 +12126,7 @@
     list.innerHTML = data.map(lead => {
       const dt = new Date(lead.atualizado_em);
       const dtStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const stageLabel = { convertido: '🎉 Convertido', perdido: '🚪 Perdido' }[lead.stage] || lead.stage;
+      const stageLabel = { convertido: 'Convertido', perdido: 'Perdido' }[lead.stage] || lead.stage;
       const stageColor = { convertido: '#16a34a', perdido: '#dc2626' }[lead.stage] || '#6e7681';
       const phone = lead.celular || lead.numero_whatsapp || '—';
       
@@ -12074,8 +12136,8 @@
             <div>
               <h3 style="margin:0 0 4px;color:#e6edf3;font-weight:700;font-size:15px;">${escapeHtml(lead.nome || phone)}</h3>
               <div style="display:flex;gap:8px;font-size:12px;color:#6e7681;margin-bottom:8px;">
-                <span>📱 ${escapeHtml(phone)}</span>
-                ${lead.email ? `<span>✉️ ${escapeHtml(lead.email)}</span>` : ''}
+                <span>${escapeHtml(phone)}</span>
+                ${lead.email ? `<span>${escapeHtml(lead.email)}</span>` : ''}
               </div>
             </div>
             <span style="background:${stageColor}20;color:${stageColor};border:1px solid ${stageColor}40;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;">${stageLabel}</span>
@@ -12092,7 +12154,7 @@
           `}
           
           <div style="color:#6e7681;font-size:12px;">
-            📅 ${dtStr}
+            ${dtStr}
           </div>
         </div>
       `;
@@ -12142,7 +12204,7 @@
     link.setAttribute('href', URL.createObjectURL(blob));
     link.setAttribute('download', `historico-leads-${new Date().toISOString().slice(0,10)}.csv`);
     link.click();
-    showNotification('Histórico exportado! 📥', 'success');
+    showNotification('Histórico exportado!', 'success');
   }
 
   // Carregar ao abrir página
@@ -12217,7 +12279,7 @@
     }
 
     const el = document.getElementById('save-empresa');
-    el.textContent = '✅ Perfil salvo!';
+    el.textContent = 'Perfil salvo!';
     el.style.color = '#16a34a';
     setTimeout(() => el.textContent = '', 3000);
   }
@@ -12274,7 +12336,7 @@
     document.getElementById('cfg-senha-confirma').value = '';
 
     const el = document.getElementById('save-senha');
-    el.textContent = '✅ Senha alterada com sucesso!';
+    el.textContent = 'Senha alterada com sucesso!';
     el.style.color = '#16a34a';
     setTimeout(() => el.textContent = '', 3000);
   }
@@ -12309,7 +12371,7 @@
     }
 
     const el = document.getElementById('save-notif');
-    el.textContent = '✅ Notificações salvas!';
+    el.textContent = 'Notificações salvas!';
     el.style.color = '#16a34a';
     setTimeout(() => el.textContent = '', 3000);
   }
