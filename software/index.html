@@ -1459,6 +1459,9 @@
       <div class="nav-item membro-hidden" onclick="showPage('calendario', this)">
         <span class="icon"><i data-lucide="calendar"></i></span> Calendário
       </div>
+      <div class="nav-item membro-hidden" onclick="showPage('agenda', this)">
+        <span class="icon"><i data-lucide="calendar-check"></i></span> Agenda de Atendimentos
+      </div>
       <div class="nav-item membro-hidden" onclick="showPage('equipe', this)">
         <span class="icon"><i data-lucide="users"></i></span> Equipe
       </div>
@@ -4085,6 +4088,142 @@
       </div>
     </div>
 
+    <!-- AGENDA DE ATENDIMENTOS -->
+    <div class="page membro-hidden" id="page-agenda">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h1>Agenda de Atendimentos</h1>
+          <p>Gerencie seus agendamentos sincronizados com Google Calendar e Apple Calendar</p>
+        </div>
+        <button class="btn-save" onclick="abrirModalNovoEvento()" style="display:flex;align-items:center;gap:8px;white-space:nowrap;">
+          <i data-lucide="plus" style="width:15px;height:15px;"></i> Novo Evento
+        </button>
+      </div>
+
+      <!-- Cards de conexão -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+        <!-- Google Calendar -->
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(26,115,232,.12);border:1px solid rgba(26,115,232,.25);display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">Google Calendar</div>
+              <div id="agenda-gcal-status-text" style="font-size:12px;color:var(--text2);">Verificando...</div>
+            </div>
+            <span id="agenda-gcal-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(107,114,128,.15);border:1px solid #30363d;color:#6b7280;">–</span>
+          </div>
+          <div id="agenda-gcal-email-info" style="display:none;font-size:12px;color:#93c5fd;background:rgba(26,115,232,.06);border:1px solid rgba(26,115,232,.2);border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+            Conta: <strong id="agenda-gcal-email"></strong>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-save" id="agenda-btn-gcal-connect" onclick="agendaConectarGCal()" style="background:rgba(26,115,232,.85);flex:1;">Conectar</button>
+            <button class="btn-secondary" id="agenda-btn-gcal-disconnect" onclick="agendaDesconectarGCal()" style="display:none;color:#fca5a5;border-color:rgba(239,68,68,.3);flex:1;">Desconectar</button>
+          </div>
+        </div>
+
+        <!-- Apple Calendar -->
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="color:#c9d1d9;"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">Apple Calendar</div>
+              <div id="agenda-apple-status-text" style="font-size:12px;color:var(--text2);">Não conectado</div>
+            </div>
+            <span id="agenda-apple-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(107,114,128,.15);border:1px solid #30363d;color:#6b7280;">–</span>
+          </div>
+          <div id="agenda-apple-email-info" style="display:none;font-size:12px;color:#c9d1d9;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+            Conta: <strong id="agenda-apple-email"></strong>
+          </div>
+          <!-- Form de login Apple -->
+          <div id="agenda-apple-login-form">
+            <div style="margin-bottom:8px;">
+              <input type="email" id="agenda-apple-id" placeholder="Apple ID (email)" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:13px;box-sizing:border-box;" />
+            </div>
+            <div style="margin-bottom:12px;">
+              <input type="password" id="agenda-apple-pw" placeholder="Senha de app específica do iCloud" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:13px;box-sizing:border-box;" autocomplete="new-password" />
+              <div style="font-size:11px;color:var(--text2);margin-top:5px;">Gere em <a href="https://appleid.apple.com" target="_blank" style="color:#a3e635;">appleid.apple.com</a> → Segurança → Senhas de app</div>
+            </div>
+            <button class="btn-save" onclick="agendaConectarApple()" style="width:100%;background:rgba(255,255,255,.1);color:#e6edf3;border:1px solid rgba(255,255,255,.15);">Entrar com Apple</button>
+          </div>
+          <button class="btn-secondary" id="agenda-btn-apple-disconnect" onclick="agendaDesconectarApple()" style="display:none;width:100%;color:#fca5a5;border-color:rgba(239,68,68,.3);">Desconectar</button>
+        </div>
+      </div>
+
+      <!-- Navegação de data + view -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="cal-nav-btn" onclick="agendaNavegar(-1)">‹</button>
+          <span id="agenda-periodo-label" style="font-size:15px;font-weight:700;min-width:180px;text-align:center;"></span>
+          <button class="cal-nav-btn" onclick="agendaNavegar(1)">›</button>
+          <button class="cal-nav-btn" onclick="agendaHoje()" style="background:rgba(163,230,53,.1);border-color:rgba(163,230,53,.3);color:#a3e635;">Hoje</button>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="cal-view-btn active" id="agenda-btn-semana" onclick="agendaSetView('semana',this)">Semana</button>
+          <button class="cal-view-btn" id="agenda-btn-mes" onclick="agendaSetView('mes',this)">Mês</button>
+        </div>
+      </div>
+
+      <!-- Corpo da agenda -->
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div id="agenda-corpo" style="min-height:400px;"></div>
+      </div>
+
+      <!-- Modal Novo Evento -->
+      <div class="modal-backdrop" id="modal-novo-evento">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;width:480px;max-width:95vw;padding:28px;box-sizing:border-box;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h3 style="margin:0;font-size:16px;font-weight:700;">Novo Agendamento</h3>
+            <button onclick="fecharModalEvento()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1;">×</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">TÍTULO</label>
+              <input type="text" id="novo-evento-titulo" placeholder="Ex: Reunião com cliente" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:14px;box-sizing:border-box;" />
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">DATA</label>
+                <input type="date" id="novo-evento-data" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:14px;box-sizing:border-box;" />
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">HORÁRIO</label>
+                <input type="time" id="novo-evento-hora" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:14px;box-sizing:border-box;" />
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">DURAÇÃO</label>
+              <select id="novo-evento-duracao" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:14px;">
+                <option value="30">30 minutos</option>
+                <option value="60" selected>1 hora</option>
+                <option value="90">1h30</option>
+                <option value="120">2 horas</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">DESCRIÇÃO</label>
+              <textarea id="novo-evento-desc" placeholder="Notas, link de reunião..." rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:14px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px;">CRIAR EM</label>
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="novo-evento-gcal" checked /> Google Calendar</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="novo-evento-apple" /> Apple Calendar</label>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:20px;">
+            <button class="btn-save" onclick="salvarNovoEvento()" style="flex:1;" id="btn-salvar-evento">Criar Evento</button>
+            <button class="btn-secondary" onclick="fecharModalEvento()" style="flex:1;">Cancelar</button>
+          </div>
+          <span id="novo-evento-status" style="display:block;text-align:center;font-size:13px;margin-top:8px;"></span>
+        </div>
+      </div>
+    </div>
+
     <!-- INTEGRAÇÕES -->
     <div class="page" id="page-integracoes">
       <div class="page-header">
@@ -4853,6 +4992,7 @@
     if (name === 'conta') loadPageConta();
     if (name === 'integracoes') loadIntegracoes();
     if (name === 'perfil') loadConfiguracoes();
+    if (name === 'agenda') loadAgendaPage();
     if (name === 'fluxos') {
       setTimeout(() => loadFluxosPage(), 100);
     }
@@ -10021,6 +10161,349 @@
     if (!confirm('Desconectar o Google Calendar?')) return;
     await callFunction('gcal-proxy', 'disconnect', null, 'GET');
     location.reload();
+  }
+
+  // =====================
+  // AGENDA DE ATENDIMENTOS
+  // =====================
+  let agendaView = 'semana';
+  let agendaDataRef = new Date();
+  let agendaEventos = [];
+  let agendaGCalConectado = false;
+  let agendaAppleConectado = false;
+
+  async function loadAgendaPage() {
+    await Promise.all([agendaCheckGCal(), agendaCheckApple()]);
+    agendaRenderPeriodo();
+    agendaCarregarEventos();
+  }
+
+  async function agendaCheckGCal() {
+    try {
+      const res = await callFunction('gcal-proxy', 'status', null, 'GET');
+      agendaGCalConectado = !!res?.connected;
+      const badge  = document.getElementById('agenda-gcal-badge');
+      const info   = document.getElementById('agenda-gcal-email-info');
+      const btnOn  = document.getElementById('agenda-btn-gcal-connect');
+      const btnOff = document.getElementById('agenda-btn-gcal-disconnect');
+      const txt    = document.getElementById('agenda-gcal-status-text');
+      if (agendaGCalConectado) {
+        if (badge)  { badge.textContent = 'Conectado'; badge.style.cssText += ';background:rgba(163,230,53,.12);border-color:rgba(163,230,53,.3);color:#a3e635;'; }
+        if (info)   { info.style.display = 'block'; document.getElementById('agenda-gcal-email').textContent = res.email ?? ''; }
+        if (btnOn)  btnOn.style.display = 'none';
+        if (btnOff) btnOff.style.display = 'block';
+        if (txt)    txt.textContent = res.email ?? 'Conectado';
+      } else {
+        if (badge)  badge.textContent = 'Desconectado';
+        if (txt)    txt.textContent = 'Não conectado';
+      }
+    } catch(_) {}
+  }
+
+  async function agendaCheckApple() {
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      const { data } = await db.from('agente_config')
+        .select('valor').eq('user_id', user.id).eq('chave', 'apple_cal_username').maybeSingle();
+      agendaAppleConectado = !!data?.valor;
+      const badge  = document.getElementById('agenda-apple-badge');
+      const info   = document.getElementById('agenda-apple-email-info');
+      const form   = document.getElementById('agenda-apple-login-form');
+      const btnOff = document.getElementById('agenda-btn-apple-disconnect');
+      const txt    = document.getElementById('agenda-apple-status-text');
+      if (agendaAppleConectado) {
+        if (badge)  { badge.textContent = 'Conectado'; badge.style.cssText += ';background:rgba(163,230,53,.12);border-color:rgba(163,230,53,.3);color:#a3e635;'; }
+        if (info)   { info.style.display = 'block'; document.getElementById('agenda-apple-email').textContent = data.valor; }
+        if (form)   form.style.display = 'none';
+        if (btnOff) btnOff.style.display = 'block';
+        if (txt)    txt.textContent = data.valor;
+      } else {
+        if (badge)  badge.textContent = 'Desconectado';
+        if (txt)    txt.textContent = 'Não conectado';
+      }
+    } catch(_) {}
+  }
+
+  async function agendaConectarGCal() {
+    try {
+      const res = await callFunction('gcal-proxy', 'auth-url', null, 'GET');
+      if (res?.url) window.open(res.url, '_blank', 'width=500,height=650');
+      else alert('Configure GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET nas variáveis da edge function.');
+    } catch(e) { alert('Erro: ' + e.message); }
+  }
+
+  async function agendaDesconectarGCal() {
+    if (!confirm('Desconectar Google Calendar?')) return;
+    await callFunction('gcal-proxy', 'disconnect', null, 'GET');
+    agendaGCalConectado = false;
+    await agendaCheckGCal();
+    agendaCarregarEventos();
+  }
+
+  async function agendaConectarApple() {
+    const appleId = document.getElementById('agenda-apple-id').value.trim();
+    const appPw   = document.getElementById('agenda-apple-pw').value.trim();
+    if (!appleId || !appPw) { alert('Preencha o Apple ID e a senha de app.'); return; }
+    try {
+      // Testa as credenciais via edge function
+      const res = await callFunction('apple-cal-proxy', 'test', { username: appleId, password: appPw });
+      if (res?.ok) {
+        // Salva credenciais criptografadas no agente_config
+        const { data: { user } } = await db.auth.getUser();
+        await db.from('agente_config').upsert([
+          { user_id: user.id, chave: 'apple_cal_username', valor: appleId },
+          { user_id: user.id, chave: 'apple_cal_password', valor: appPw },
+        ], { onConflict: 'user_id,chave' });
+        agendaAppleConectado = true;
+        await agendaCheckApple();
+        agendaCarregarEventos();
+      } else {
+        alert('Credenciais inválidas ou serviço iCloud indisponível. Verifique seu Apple ID e a senha de app.');
+      }
+    } catch(e) { alert('Erro ao conectar: ' + e.message); }
+  }
+
+  async function agendaDesconectarApple() {
+    if (!confirm('Desconectar Apple Calendar?')) return;
+    const { data: { user } } = await db.auth.getUser();
+    await db.from('agente_config').delete().eq('user_id', user.id).in('chave', ['apple_cal_username', 'apple_cal_password']);
+    agendaAppleConectado = false;
+    await agendaCheckApple();
+    agendaCarregarEventos();
+  }
+
+  function agendaSetView(v, btn) {
+    agendaView = v;
+    document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    agendaRenderPeriodo();
+    agendaCarregarEventos();
+  }
+
+  function agendaNavegar(dir) {
+    if (agendaView === 'semana') {
+      agendaDataRef = new Date(agendaDataRef.getTime() + dir * 7 * 86400000);
+    } else {
+      agendaDataRef.setMonth(agendaDataRef.getMonth() + dir);
+    }
+    agendaRenderPeriodo();
+    agendaCarregarEventos();
+  }
+
+  function agendaHoje() {
+    agendaDataRef = new Date();
+    agendaRenderPeriodo();
+    agendaCarregarEventos();
+  }
+
+  function agendaRenderPeriodo() {
+    const el = document.getElementById('agenda-periodo-label');
+    if (!el) return;
+    if (agendaView === 'semana') {
+      const ini = agendaInicioSemana(agendaDataRef);
+      const fim = new Date(ini.getTime() + 6 * 86400000);
+      const fmt = d => d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' });
+      el.textContent = `${fmt(ini)} — ${fmt(fim)}`;
+    } else {
+      el.textContent = agendaDataRef.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    }
+  }
+
+  function agendaInicioSemana(d) {
+    const r = new Date(d);
+    r.setDate(r.getDate() - r.getDay());
+    r.setHours(0,0,0,0);
+    return r;
+  }
+
+  async function agendaCarregarEventos() {
+    const corpo = document.getElementById('agenda-corpo');
+    if (!corpo) return;
+    corpo.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2);font-size:14px;">Carregando eventos...</div>';
+    agendaEventos = [];
+
+    let dataIni, dataFim;
+    if (agendaView === 'semana') {
+      dataIni = agendaInicioSemana(agendaDataRef);
+      dataFim = new Date(dataIni.getTime() + 7 * 86400000);
+    } else {
+      dataIni = new Date(agendaDataRef.getFullYear(), agendaDataRef.getMonth(), 1);
+      dataFim = new Date(agendaDataRef.getFullYear(), agendaDataRef.getMonth() + 1, 0);
+    }
+
+    // Busca Google Calendar
+    if (agendaGCalConectado) {
+      try {
+        const res = await callFunction('gcal-proxy', 'list-events', {
+          timeMin: dataIni.toISOString(),
+          timeMax: dataFim.toISOString(),
+        });
+        if (res?.events) {
+          agendaEventos.push(...res.events.map(e => ({ ...e, fonte: 'google' })));
+        }
+      } catch(_) {}
+    }
+
+    // Busca Apple Calendar
+    if (agendaAppleConectado) {
+      try {
+        const res = await callFunction('apple-cal-proxy', 'list-events', {
+          timeMin: dataIni.toISOString(),
+          timeMax: dataFim.toISOString(),
+        });
+        if (res?.events) {
+          agendaEventos.push(...res.events.map(e => ({ ...e, fonte: 'apple' })));
+        }
+      } catch(_) {}
+    }
+
+    // Ordena por data
+    agendaEventos.sort((a, b) => new Date(a.start) - new Date(b.start));
+    agendaRenderCorpo(dataIni, dataFim);
+  }
+
+  function agendaRenderCorpo(dataIni, dataFim) {
+    const corpo = document.getElementById('agenda-corpo');
+    if (!corpo) return;
+    const hoje = new Date(); hoje.setHours(0,0,0,0);
+
+    if (agendaView === 'semana') {
+      const dias = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(dataIni.getTime() + i * 86400000);
+        dias.push(d);
+      }
+      const nomeDia = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+      let html = '<div style="display:grid;grid-template-columns:repeat(7,1fr);border-bottom:1px solid var(--border);">';
+      dias.forEach(d => {
+        const isHoje = d.getTime() === hoje.getTime();
+        html += `<div style="padding:10px 8px;text-align:center;border-right:1px solid var(--border);${isHoje ? 'background:rgba(163,230,53,.06);' : ''}">
+          <div style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;">${nomeDia[d.getDay()]}</div>
+          <div style="font-size:18px;font-weight:800;margin-top:2px;${isHoje ? 'color:#a3e635;' : ''}">${d.getDate()}</div>
+        </div>`;
+      });
+      html += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);min-height:320px;">';
+      dias.forEach(d => {
+        const isHoje = d.getTime() === hoje.getTime();
+        const dStr = d.toISOString().slice(0,10);
+        const evDia = agendaEventos.filter(e => (e.start ?? '').slice(0,10) === dStr);
+        html += `<div style="border-right:1px solid var(--border);padding:8px 6px;min-height:200px;${isHoje ? 'background:rgba(163,230,53,.03);' : ''}">`;
+        evDia.forEach(ev => {
+          const cor = ev.fonte === 'google' ? '#4285F4' : '#c9d1d9';
+          const hora = ev.start ? new Date(ev.start).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
+          html += `<div style="background:${ev.fonte === 'google' ? 'rgba(66,133,244,.15)' : 'rgba(255,255,255,.06)'};border-left:3px solid ${cor};border-radius:5px;padding:5px 7px;margin-bottom:5px;cursor:pointer;" title="${ev.title ?? ''}">
+            <div style="font-size:11px;font-weight:700;color:${cor};">${hora}</div>
+            <div style="font-size:12px;color:var(--text);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${ev.title ?? 'Sem título'}</div>
+          </div>`;
+        });
+        if (!evDia.length) html += '<div style="font-size:11px;color:var(--text2);text-align:center;margin-top:16px;opacity:.4;">—</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      corpo.innerHTML = html;
+    } else {
+      // View mês: lista de eventos agrupados por dia
+      if (!agendaEventos.length) {
+        corpo.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text2);font-size:14px;">Nenhum evento neste mês' + (!agendaGCalConectado && !agendaAppleConectado ? ' — conecte uma agenda acima' : '') + '</div>';
+        return;
+      }
+      const grupos = {};
+      agendaEventos.forEach(ev => {
+        const d = (ev.start ?? '').slice(0,10);
+        if (!grupos[d]) grupos[d] = [];
+        grupos[d].push(ev);
+      });
+      let html = '<div style="padding:8px 0;">';
+      Object.keys(grupos).sort().forEach(dStr => {
+        const d = new Date(dStr + 'T00:00:00');
+        const isHoje = d.toISOString().slice(0,10) === hoje.toISOString().slice(0,10);
+        html += `<div style="display:flex;gap:16px;padding:12px 20px;border-bottom:1px solid var(--border);">
+          <div style="width:48px;flex-shrink:0;text-align:center;">
+            <div style="font-size:11px;color:var(--text2);text-transform:uppercase;">${d.toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','')}</div>
+            <div style="font-size:22px;font-weight:800;${isHoje ? 'color:#a3e635;' : ''}">${d.getDate()}</div>
+          </div>
+          <div style="flex:1;">`;
+        grupos[dStr].forEach(ev => {
+          const cor = ev.fonte === 'google' ? '#4285F4' : '#c9d1d9';
+          const hora = ev.start ? new Date(ev.start).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : 'O dia todo';
+          html += `<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:${ev.fonte === 'google' ? 'rgba(66,133,244,.08)' : 'rgba(255,255,255,.04)'};border-left:3px solid ${cor};border-radius:6px;margin-bottom:6px;">
+            <div style="width:44px;font-size:12px;font-weight:700;color:${cor};flex-shrink:0;">${hora}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);">${ev.title ?? 'Sem título'}</div>
+            <div style="margin-left:auto;font-size:10px;color:var(--text2);">${ev.fonte === 'google' ? 'Google' : 'Apple'}</div>
+          </div>`;
+        });
+        html += '</div></div>';
+      });
+      html += '</div>';
+      corpo.innerHTML = html;
+    }
+  }
+
+  function abrirModalNovoEvento() {
+    const hoje = new Date().toISOString().slice(0,10);
+    const hora  = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('novo-evento-data').value  = hoje;
+    document.getElementById('novo-evento-hora').value  = hora;
+    document.getElementById('novo-evento-titulo').value = '';
+    document.getElementById('novo-evento-desc').value  = '';
+    document.getElementById('novo-evento-status').textContent = '';
+    document.getElementById('novo-evento-gcal').checked  = agendaGCalConectado;
+    document.getElementById('novo-evento-apple').checked = agendaAppleConectado;
+    document.getElementById('modal-novo-evento').classList.add('open');
+  }
+
+  function fecharModalEvento() {
+    document.getElementById('modal-novo-evento').classList.remove('open');
+  }
+
+  async function salvarNovoEvento() {
+    const titulo = document.getElementById('novo-evento-titulo').value.trim();
+    const data   = document.getElementById('novo-evento-data').value;
+    const hora   = document.getElementById('novo-evento-hora').value;
+    const dur    = parseInt(document.getElementById('novo-evento-duracao').value);
+    const desc   = document.getElementById('novo-evento-desc').value.trim();
+    const emGCal = document.getElementById('novo-evento-gcal').checked;
+    const emApple= document.getElementById('novo-evento-apple').checked;
+    if (!titulo || !data || !hora) { alert('Preencha título, data e horário.'); return; }
+
+    const statusEl = document.getElementById('novo-evento-status');
+    const btn = document.getElementById('btn-salvar-evento');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    const startDt = new Date(`${data}T${hora}:00`);
+    const endDt   = new Date(startDt.getTime() + dur * 60000);
+    let ok = false;
+
+    if (emGCal && agendaGCalConectado) {
+      try {
+        await callFunction('gcal-proxy', 'create-event', {
+          title: titulo,
+          description: desc,
+          start: startDt.toISOString(),
+          end: endDt.toISOString(),
+        });
+        ok = true;
+      } catch(e) { statusEl.textContent = 'Erro no Google Calendar: ' + e.message; statusEl.style.color = '#f87171'; }
+    }
+
+    if (emApple && agendaAppleConectado) {
+      try {
+        await callFunction('apple-cal-proxy', 'create-event', {
+          title: titulo,
+          description: desc,
+          start: startDt.toISOString(),
+          end: endDt.toISOString(),
+        });
+        ok = true;
+      } catch(e) { statusEl.textContent = 'Erro no Apple Calendar: ' + e.message; statusEl.style.color = '#f87171'; }
+    }
+
+    btn.disabled = false; btn.textContent = 'Criar Evento';
+    if (ok) {
+      fecharModalEvento();
+      agendaCarregarEventos();
+    }
   }
 
   // Helper genérico para chamar edge functions autenticadas
