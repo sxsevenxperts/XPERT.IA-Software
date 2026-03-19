@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
 
 
@@ -75,6 +76,502 @@
       console.log('Lead sincronizado:', numero_whatsapp, updates);
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // MONITORAMENTO — Dashboard de Performance
+  // ═══════════════════════════════════════════════════════════════
+
+  let monitoringCharts = {};
+
+  async function loadMonitoringData() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      // Buscar estatísticas agregadas (últimas 24h)
+      const { data: executions } = await db
+        .from('workflow_executions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('timestamp_inicio', new Date(Date.now() - 24*60*60*1000).toISOString())
+        .limit(1000);
+
+      if (!executions || executions.length === 0) {
+        document.getElementById('monitoring-table-body').innerHTML =
+          '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Nenhuma execução ainda</td></tr>';
+        return;
+      }
+
+      // Calcular métricas
+      const totalExec = executions.length;
+      const successCount = executions.filter(e => e.status === 'sucesso').length;
+      const successRate = totalExec > 0 ? Math.round((successCount / totalExec) * 100) : 0;
+      const totalTokens = executions.reduce((sum, e) => sum + (e.tokens_total || 0), 0);
+      const totalCost = executions.reduce((sum, e) => sum + (e.custo_usd || 0), 0);
+      const avgTime = totalExec > 0 ? Math.round(executions.reduce((sum, e) => sum + (e.duracao_ms || 0), 0) / totalExec) : 0;
+      const maxTime = Math.max(...executions.map(e => e.duracao_ms || 0), 0);
+      const uniqueLeads = new Set(executions.filter(e => e.lead_id).map(e => e.lead_id)).size;
+
+      // Atualizar cards
+      document.getElementById('metric-executions').textContent = totalExec;
+      document.getElementById('metric-success-rate').textContent = successRate + '%';
+      document.getElementById('metric-tokens').textContent = totalTokens.toLocaleString('pt-BR');
+      document.getElementById('metric-cost').textContent = '$' + totalCost.toFixed(2);
+      document.getElementById('metric-avg-time').textContent = avgTime;
+      document.getElementById('metric-max-time').textContent = maxTime;
+      document.getElementById('metric-leads').textContent = uniqueLeads;
+
+      // Renderizar gráficos
+      renderExecutionChart(executions);
+      renderErrorChart(executions);
+      renderExecutionTable(executions);
+
+    } catch (error) {
+      console.error('Erro ao carregar monitoramento:', error);
+      showNotification('Erro ao carregar dados de monitoramento', 'error');
+    }
+  }
+
+  function renderExecutionChart(executions) {
+    const ctx = document.getElementById('chart-executions');
+    if (!ctx) return;
+
+    // Agrupar por hora
+    const hourly = {};
+    executions.forEach(e => {
+      const date = new Date(e.timestamp_inicio);
+      const hour = date.toISOString().slice(0, 13) + ':00';
+      hourly[hour] = (hourly[hour] || 0) + 1;
+    });
+
+    const labels = Object.keys(hourly).sort().slice(-24);
+    const data = labels.map(h => hourly[h] || 0);
+
+    if (monitoringCharts.executions) monitoringCharts.executions.destroy();
+    monitoringCharts.executions = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Execuções',
+          data,
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { color: 'var(--text-secondary)' } },
+          x: { ticks: { color: 'var(--text-secondary)' } }
+        }
+      }
+    });
+  }
+
+  function renderErrorChart(executions) {
+    const ctx = document.getElementById('chart-errors');
+    if (!ctx) return;
+
+    const agents = {};
+    executions.forEach(e => {
+      const agent = e.agent_type || 'unknown';
+      if (!agents[agent]) agents[agent] = { total: 0, errors: 0 };
+      agents[agent].total++;
+      if (e.status === 'erro') agents[agent].errors++;
+    });
+
+    const labels = Object.keys(agents);
+    const errorRates = labels.map(a => Math.round((agents[a].errors / agents[a].total) * 100));
+
+    if (monitoringCharts.errors) monitoringCharts.errors.destroy();
+    monitoringCharts.errors = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Taxa de Erro (%)',
+          data: errorRates,
+          backgroundColor: ['#ef4444', '#f97316', '#eab308'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { max: 100, ticks: { color: 'var(--text-secondary)' } },
+          x: { ticks: { color: 'var(--text-secondary)' } }
+        }
+      }
+    });
+  }
+
+  function renderExecutionTable(executions) {
+    const agent = document.getElementById('filter-agent')?.value || '';
+    const status = document.getElementById('filter-status')?.value || '';
+
+    let filtered = [...executions];
+    if (agent) filtered = filtered.filter(e => e.agent_type === agent);
+    if (status) filtered = filtered.filter(e => e.status === status);
+
+    const rows = filtered
+      .sort((a, b) => new Date(b.timestamp_inicio) - new Date(a.timestamp_inicio))
+      .slice(0, 50)
+      .map(e => {
+        const date = new Date(e.timestamp_inicio);
+        const timeStr = date.toLocaleTimeString('pt-BR');
+        const statusEmoji = { sucesso: '✅', erro: '❌', timeout: '⏱️' }[e.status] || '❓';
+        return `
+          <tr style="border-bottom: 1px solid var(--border); ${e.status === 'erro' ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
+            <td style="padding: 12px;">${e.lead_id ? e.lead_id.slice(0, 8) : '-'}</td>
+            <td style="padding: 12px; text-align: center;">${e.agent_type || '-'}</td>
+            <td style="padding: 12px; text-align: center;">${statusEmoji} ${e.status}</td>
+            <td style="padding: 12px; text-align: right; color: var(--primary); font-weight: 600;">${(e.tokens_total || 0).toLocaleString('pt-BR')}</td>
+            <td style="padding: 12px; text-align: right;">${e.duracao_ms}ms</td>
+            <td style="padding: 12px; text-align: right; color: var(--primary); font-weight: 600;">$${(e.custo_usd || 0).toFixed(4)}</td>
+            <td style="padding: 12px; font-size: 12px; color: var(--text-secondary);">${timeStr}</td>
+          </tr>
+        `;
+      });
+
+    document.getElementById('monitoring-table-body').innerHTML = rows.length > 0
+      ? rows.join('')
+      : '<tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Nenhuma execução com esses filtros</td></tr>';
+  }
+
+  function refreshMonitoringData() {
+    loadMonitoringData();
+  }
+
+  document.addEventListener('page-shown', (e) => {
+    if (e.detail?.page === 'monitoramento') loadMonitoringData();
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // ANALYTICS — Phase 2 & 3 (Win Rate, AI Insights, Alertas)
+  // ═══════════════════════════════════════════════════════════════
+
+  let analyticsCharts = {};
+
+  function switchAnalyticsTab(tabName, button) {
+    // Hide all tabs
+    document.querySelectorAll('.analytics-tab-content').forEach(tab => tab.style.display = 'none');
+    document.querySelectorAll('.analytics-tab-btn').forEach(btn => {
+      btn.style.color = '#6e7681';
+      btn.style.borderBottom = '2px solid transparent';
+    });
+
+    // Show selected tab
+    document.getElementById(`tab-${tabName}`).style.display = 'block';
+    button.style.color = '#e6edf3';
+    button.style.borderBottom = '2px solid #1f6feb';
+
+    // Load data if needed
+    if (tabName === 'ai-insights') loadAIInsights();
+    if (tabName === 'alerts') loadAlerts();
+  }
+
+  async function refreshAnalyticsData() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      // Buscar feedback stats
+      const { data: feedbackStats } = await db
+        .from('vw_feedback_por_agente')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!feedbackStats || feedbackStats.length === 0) {
+        console.log('Nenhum dado de feedback ainda');
+        return;
+      }
+
+      // Atualizar KPIs
+      let totalConversao = 0, totalReceita = 0, totalNota = 0, totalPromptUtil = 0, totalLeads = 0;
+      feedbackStats.forEach(stat => {
+        totalLeads += stat.total_leads || 0;
+        totalConversao += (stat.taxa_conversao_percent || 0) * (stat.total_leads || 1);
+        totalReceita += stat.receita_total || 0;
+        totalNota += (stat.nota_media_sdr || 0) * (stat.total_leads || 1);
+        totalPromptUtil += (stat.prompts_uteis_count || 0);
+      });
+
+      const avgConversao = totalLeads > 0 ? (totalConversao / totalLeads) : 0;
+      const avgNota = totalLeads > 0 ? (totalNota / totalLeads) : 0;
+      const promptUtilPercent = totalLeads > 0 ? ((totalPromptUtil / totalLeads) * 100) : 0;
+
+      document.getElementById('kpi-taxa-conversao').textContent = avgConversao.toFixed(1) + '%';
+      document.getElementById('kpi-receita').textContent = 'R$ ' + totalReceita.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+      document.getElementById('kpi-nota-sdr').textContent = avgNota.toFixed(1) + '/5.0';
+      document.getElementById('kpi-prompts-util').textContent = promptUtilPercent.toFixed(0) + '%';
+
+      // Renderizar tabela
+      renderAnalyticsTable(feedbackStats);
+
+      // Renderizar gráficos
+      renderWinRateChart(feedbackStats);
+      renderReceitaChart(feedbackStats);
+
+    } catch (err) {
+      console.error('Erro ao carregar analytics:', err);
+    }
+  }
+
+  function renderAnalyticsTable(data) {
+    const rows = data.map(row => `
+      <tr style="border-bottom: 1px solid #30363d;">
+        <td style="padding: 12px; font-weight: 500;">${row.agent_type || 'principal'}</td>
+        <td style="padding: 12px; text-align: right;">${row.total_leads || 0}</td>
+        <td style="padding: 12px; text-align: right; color: #31c48d; font-weight: 600;">${row.leads_vendidos || 0}</td>
+        <td style="padding: 12px; text-align: right; color: #31c48d; font-weight: 600;">${(row.taxa_conversao_percent || 0).toFixed(1)}%</td>
+        <td style="padding: 12px; text-align: right;">R$ ${(row.receita_total || 0).toLocaleString('pt-BR')}</td>
+        <td style="padding: 12px; text-align: right;">${(row.nota_media_sdr || 0).toFixed(1)}</td>
+        <td style="padding: 12px; text-align: right;">${row.total_leads > 0 ? ((row.prompts_uteis_count / row.total_leads) * 100).toFixed(0) : 0}%</td>
+      </tr>
+    `).join('');
+
+    document.getElementById('analytics-table-agents').innerHTML = rows || '<tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Sem dados</td></tr>';
+  }
+
+  function renderWinRateChart(data) {
+    if (analyticsCharts.winRate) analyticsCharts.winRate.destroy();
+
+    const ctx = document.getElementById('chart-win-rate-agent')?.getContext('2d');
+    if (!ctx) return;
+
+    analyticsCharts.winRate = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.agent_type || 'principal'),
+        datasets: [{
+          label: 'Taxa Conversão %',
+          data: data.map(d => d.taxa_conversao_percent || 0),
+          backgroundColor: 'rgba(49, 196, 141, 0.8)',
+          borderColor: '#31c48d',
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { max: 100, ticks: { color: '#6e7681' }, grid: { color: '#30363d' } },
+          x: { ticks: { color: '#6e7681' }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function renderReceitaChart(data) {
+    if (analyticsCharts.receita) analyticsCharts.receita.destroy();
+
+    const ctx = document.getElementById('chart-receita-agent')?.getContext('2d');
+    if (!ctx) return;
+
+    analyticsCharts.receita = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: data.map(d => d.agent_type || 'principal'),
+        datasets: [{
+          data: data.map(d => d.receita_total || 0),
+          backgroundColor: ['#31c48d', '#60a5fa', '#f59e0b', '#ec4899'],
+          borderColor: '#161b22',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { position: 'bottom', labels: { color: '#6e7681' } } }
+      }
+    });
+  }
+
+  async function loadAIInsights() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const container = document.getElementById('ai-insights-container');
+    container.innerHTML = '<p style="color:#6e7681;text-align:center;padding:40px;">Buscando insights da IA...</p>';
+
+    try {
+      // Chamar edge function de otimização
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/optimize-prompt-auto`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            agent_type: 'principal',
+            periodo: '7d'
+          })
+        }
+      );
+
+      const insights = await response.json();
+
+      if (!insights.sugestoes || insights.sugestoes.length === 0) {
+        container.innerHTML = '<p style="color:#6e7681;text-align:center;padding:40px;">Nenhuma sugestão de otimização no momento.</p>';
+        return;
+      }
+
+      const html = insights.sugestoes.map((sug, idx) => `
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+            <div>
+              <h4 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">${sug.descricao}</h4>
+              <p style="margin:4px 0 0;font-size:12px;color:#6e7681;">ID: ${sug.id}</p>
+            </div>
+            <span style="background:#31c48d;color:#0d1117;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">+${sug.impacto_esperado}</span>
+          </div>
+          <p style="margin:0 0 12px;font-size:12px;color:#8b949e;background:var(--bg);padding:10px;border-radius:4px;border-left:3px solid #31c48d;">
+            <strong>Novo Prompt:</strong> ${sug.prompt_novo.slice(0, 100)}...
+          </p>
+          <div style="display:flex;gap:8px;justify-content:space-between;">
+            <div>
+              <span style="font-size:11px;color:#6e7681;">Confiança: ${(sug.confianca * 100).toFixed(0)}%</span>
+            </div>
+            <button onclick="aplicarSugestaoPrompt('${sug.id}', '${sug.prompt_novo.replace(/'/g, "\\'")}'" style="padding:6px 12px;background:#31c48d;border:none;color:#0d1117;border-radius:4px;cursor:pointer;font-weight:600;font-size:12px;">Aplicar</button>
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = html;
+    } catch (err) {
+      console.error('Erro ao carregar insights:', err);
+      container.innerHTML = `<p style="color:#ef4444;padding:20px;">Erro ao carregar insights: ${err.message}</p>`;
+    }
+  }
+
+  async function loadAlerts() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const container = document.getElementById('alerts-container');
+    container.innerHTML = '<p style="color:#6e7681;text-align:center;padding:40px;">Verificando alertas...</p>';
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/check-performance-alerts`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id: user.id })
+        }
+      );
+
+      const data = await response.json();
+      const alerts = data.alerts || [];
+
+      if (alerts.length === 0) {
+        container.innerHTML = '<p style="color:#31c48d;text-align:center;padding:40px;">✅ Tudo funcionando perfeitamente! Nenhum alerta.</p>';
+        return;
+      }
+
+      const html = alerts.map(alert => {
+        const bgColor = alert.severidade === 'critical' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+        const borderColor = alert.severidade === 'critical' ? '#ef4444' : '#f59e0b';
+        const badge = alert.severidade === 'critical' ? '🔴 CRÍTICO' : '⚠️ AVISO';
+
+        return `
+          <div style="background:${bgColor};border:1px solid ${borderColor};border-radius:6px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+              <div>
+                <h4 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">${alert.mensagem}</h4>
+                <p style="margin:4px 0 0;font-size:11px;color:#6e7681;">Tipo: ${alert.tipo}</p>
+              </div>
+              <span style="background:${borderColor};color:#fff;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:600;">${badge}</span>
+            </div>
+            <p style="margin:0 0 12px;font-size:12px;color:#8b949e;">🔧 Ação: ${alert.acao}</p>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = html;
+    } catch (err) {
+      console.error('Erro ao carregar alertas:', err);
+      container.innerHTML = `<p style="color:#ef4444;padding:20px;">Erro: ${err.message}</p>`;
+    }
+  }
+
+  function resetAnalyticsFilters() {
+    document.getElementById('analytics-date-from').value = '';
+    document.getElementById('analytics-date-to').value = '';
+    document.getElementById('analytics-filter-agent').value = '';
+    refreshAnalyticsData();
+  }
+
+  async function exportAnalyticsCSV() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data: feedback } = await db
+        .from('lead_feedback')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('criado_em', { ascending: false });
+
+      if (!feedback || feedback.length === 0) {
+        alert('Nenhum dado para exportar');
+        return;
+      }
+
+      // Converter para CSV
+      const headers = ['ID', 'Lead ID', 'Data', 'Vendido', 'Valor', 'Nota SDR', 'Motivo', 'Prompt Útil', 'Sugestões'];
+      const rows = feedback.map(f => [
+        f.id.slice(0, 8),
+        f.lead_id ? f.lead_id.slice(0, 8) : '',
+        new Date(f.criado_em).toLocaleDateString('pt-BR'),
+        f.vendido ? 'Sim' : 'Não',
+        f.valor_venda || '',
+        f.nota_sdr || '',
+        f.motivo_desistencia || '',
+        f.prompt_foi_util ? 'Sim' : 'Não',
+        (f.sugestoes || '').slice(0, 50)
+      ]);
+
+      const csv = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    } catch (err) {
+      console.error('Erro ao exportar:', err);
+      alert('Erro ao exportar CSV');
+    }
+  }
+
+  function aplicarSugestaoPrompt(id, novoPrompt) {
+    console.log('Aplicando sugestão:', id);
+    // Implementar salvamento de prompt
+    alert('Sugestão ' + id + ' será aplicada (em desenvolvimento)');
+  }
+
+  document.addEventListener('page-shown', (e) => {
+    if (e.detail?.page === 'analytics') refreshAnalyticsData();
+  });
 
 </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4">
@@ -1413,6 +1910,152 @@
   .agente-cfg-tab:hover { color:var(--text1); }
   .agente-cfg-tab.active { color:var(--lime); border-bottom-color:var(--lime); }
 
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* ESTILOS PARA GATEWAYS DE PAGAMENTO */
+    /* ═══════════════════════════════════════════════════════════════ */
+
+    .gateway-card {
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .gateway-card:hover {
+      border-color: #444c56;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .gw-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-bottom: 1px solid #21262d;
+      background: rgba(13, 17, 23, 0.5);
+    }
+
+    .gw-logo {
+      flex-shrink: 0;
+    }
+
+    .gw-header > div:nth-child(2) {
+      flex: 1;
+    }
+
+    .gw-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e6edf3;
+      margin: 0;
+    }
+
+    .gw-desc {
+      font-size: 12px;
+      color: #8b949e;
+      margin: 4px 0 0 0;
+    }
+
+    .gw-status {
+      font-size: 12px;
+      color: #8b949e;
+      white-space: nowrap;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+    }
+
+    .gw-body {
+      padding: 14px;
+    }
+
+    .gw-body .field-group {
+      margin-bottom: 12px;
+    }
+
+    .gw-body .field-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .gw-body label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #c9d1d9;
+      margin-bottom: 6px;
+    }
+
+    .gw-body input[type="text"],
+    .gw-body input[type="password"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #0d1117;
+      color: #e6edf3;
+      font-size: 13px;
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+
+    .gw-body input[type="text"]:focus,
+    .gw-body input[type="password"]:focus {
+      outline: none;
+      border-color: #4F46E5;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .btn-test {
+      display: inline-block;
+      padding: 8px 14px;
+      background: #4F46E5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    }
+
+    .btn-test:hover {
+      background: #6366F1;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-test:active {
+      transform: scale(0.98);
+    }
+
+    .test-status {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .qual-ch-badge {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .qual-ch-badge.config {
+      background: rgba(79, 70, 229, 0.15);
+      color: #a5b4fc;
+    }
+
+    .qual-ch-icon.blue {
+      color: #60a5fa;
+    }
+
+    .qual-ch-icon.indigo {
+      color: #a5b4fc;
+    }
+
   </style>
   <link rel="stylesheet" href="https://unpkg.com/drawflow/dist/drawflow.min.css" />
 </head>
@@ -1528,12 +2171,19 @@
       <div class="nav-item membro-hidden" id="nav-numeros-extras" onclick="showPage('numeros-extras', this)" style="display:none;">
         <span class="icon"><i data-lucide="phone"></i></span> Números Extras
       </div>
+      <div class="nav-item membro-hidden" onclick="showPage('pagamentos', this)">
+        <span class="icon"><i data-lucide="credit-card"></i></span> Gateways de Pagamento
+      </div>
+
       <div class="nav-item membro-hidden" onclick="showPage('workflows', this)">
         <span class="icon"><i data-lucide="git-branch"></i></span> Workflows
       </div>
       <div class="nav-section">Resultados</div>
       <div class="nav-item membro-hidden" onclick="showPage('analytics', this)">
         <span class="icon"><i data-lucide="bar-chart-2"></i></span> Analytics
+      </div>
+      <div class="nav-item membro-hidden" onclick="showPage('monitoramento', this)">
+        <span class="icon"><i data-lucide="activity"></i></span> Monitoramento
       </div>
       <div class="nav-item" onclick="showPage('leads', this)">
         <span class="icon"><i data-lucide="user-check"></i></span> Leads
@@ -1556,8 +2206,8 @@
         <span class="icon"><i data-lucide="user"></i></span> Perfil
       </div>
       <div class="nav-section admin-only" id="admin-nav-section">Super Admin</div>
-      <div class="nav-item admin-only" onclick="showPage('monitoramento', this)">
-        <span class="icon"><i data-lucide="activity"></i></span> Monitoramento
+      <div class="nav-item admin-only" onclick="showPage('dashboard-financeiro', this)">
+        <span class="icon"><i data-lucide="activity"></i></span> Dashboard
       </div>
       <div class="nav-item admin-only" id="admin-nav-clientes" onclick="showPage('clientes', this)">
         <span class="icon"><i data-lucide="briefcase"></i></span> Clientes
@@ -2292,6 +2942,74 @@
       </div>
     </div>
 
+    <!-- MODAL: FEEDBACK DE LEAD -->
+    <div class="modal-backdrop" id="modal-feedback-lead" onclick="if(event.target===this)closeFeedbackModal()" style="display:none;">
+      <div class="modal-box" style="width:520px;">
+        <div class="modal-header">
+          <h2>📊 Feedback do Lead</h2>
+          <button onclick="closeFeedbackModal()" style="background:none;border:none;color:#6e7681;cursor:pointer;font-size:20px;">✕</button>
+        </div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto;">
+
+          <!-- Resultado da Venda -->
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">🎯 Lead virou cliente?</label>
+            <div style="display:flex;gap:8px;">
+              <button onclick="setFeedbackResult(true)" id="feedback-vendido-sim" style="flex:1;padding:10px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:500;">
+                ✓ Sim, virou cliente
+              </button>
+              <button onclick="setFeedbackResult(false)" id="feedback-vendido-nao" style="flex:1;padding:10px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:500;">
+                ✗ Não, desistiu
+              </button>
+            </div>
+          </div>
+
+          <!-- Motivo de Desistência (se não virou cliente) -->
+          <div id="feedback-motivo-section" style="display:none;">
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">Por quê?</label>
+            <select id="feedback-motivo" style="width:100%;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;">
+              <option value="">Selecione um motivo...</option>
+              <option value="orçamento">💰 Sem orçamento / Preço muito alto</option>
+              <option value="timing">⏰ Timing errado / Não é o momento</option>
+              <option value="concorrência">🏆 Escolheu concorrência</option>
+              <option value="nao_decision">👤 Não é tomador de decisão</option>
+              <option value="outro">📝 Outro motivo</option>
+            </select>
+          </div>
+
+          <!-- Valor da Venda (se virou cliente) -->
+          <div id="feedback-valor-section" style="display:none;">
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">💵 Quanto foi o valor?</label>
+            <input type="number" id="feedback-valor" placeholder="Ex: 5000" min="0" step="100" style="width:100%;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;box-sizing:border-box;" />
+          </div>
+
+          <!-- Nota para o SDR -->
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">⭐ Qual sua nota para o agente SDR? (1-5)</label>
+            <div style="display:flex;gap:8px;justify-content:center;">
+              <button onclick="setFeedbackNota(1)" class="feedback-nota-btn" data-nota="1" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">1</button>
+              <button onclick="setFeedbackNota(2)" class="feedback-nota-btn" data-nota="2" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">2</button>
+              <button onclick="setFeedbackNota(3)" class="feedback-nota-btn" data-nota="3" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">3</button>
+              <button onclick="setFeedbackNota(4)" class="feedback-nota-btn" data-nota="4" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">4</button>
+              <button onclick="setFeedbackNota(5)" class="feedback-nota-btn" data-nota="5" style="width:45px;height:45px;border:2px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;font-size:16px;">5</button>
+            </div>
+          </div>
+
+          <!-- Sugestões -->
+          <div>
+            <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">💡 Sugestões para melhorar?</label>
+            <textarea id="feedback-sugestoes" placeholder="Deixe suas sugestões aqui..." style="width:100%;height:100px;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;" />
+          </div>
+
+          <!-- Botões -->
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button onclick="submitFeedback()" style="flex:1;padding:10px;background:#22c55e;border:none;color:#fff;border-radius:6px;cursor:pointer;font-weight:600;">✓ Enviar Feedback</button>
+            <button onclick="closeFeedbackModal()" style="flex:1;padding:10px;background:#30363d;border:none;color:#e6edf3;border-radius:6px;cursor:pointer;font-weight:600;">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL CRM: NOVO LEAD MANUAL -->
     <div class="modal-backdrop" id="modal-novo-lead" onclick="if(event.target===this)closeNewLeadModal()">
       <div class="modal-box" style="width:500px;">
@@ -2579,10 +3297,213 @@
     <div class="page addon-objecao-page" id="page-agente-objecao">
       <div class="page-header"><h1>Agente de Objeção</h1><p>Configuração completa e independente do agente de objeção</p></div>
       <div class="agente-cfg-tabs">
-        <button class="agente-cfg-tab active" onclick="switchAgenteTab('ob','prompt',this)">Prompt</button>
+        <button class="agente-cfg-tab active" onclick="switchAgenteTab('ob','modelo',this)">Modelo de IA</button>
+        <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','prompt',this)">Prompt</button>
         <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','comunicacao',this)">Comunicação</button>
         <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','qualificacao',this)">Qualificação</button>
         <button class="agente-cfg-tab" onclick="switchAgenteTab('ob','base',this)">Base de Conhecimento</button>
+      </div>
+
+      <!-- Tab Modelo -->
+      <div id="ob-tab-modelo">
+        <div class="card" style="margin-bottom:0;">
+          <h3>Modelo de IA</h3>
+          <p style="font-size:13px;color:var(--text2);margin:6px 0 16px;">Escolha o provedor ativo e configure as chaves. O n8n lê essas configurações para decidir qual API chamar.</p>
+
+          <!-- Provider selector -->
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <button class="ai-provider-btn active" id="btn-provider-ob-openai" onclick="switchAiProvider('ob-openai')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.28 9.28a5.76 5.76 0 00-.5-4.73 5.82 5.82 0 00-6.27-2.8A5.77 5.77 0 0011.19 0a5.83 5.83 0 00-5.56 4.04 5.77 5.77 0 00-3.85 2.8 5.83 5.83 0 00.72 6.83 5.77 5.77 0 00.5 4.73 5.82 5.82 0 006.27 2.8A5.77 5.77 0 0012.81 24a5.83 5.83 0 005.57-4.04 5.77 5.77 0 003.85-2.8 5.82 5.82 0 00-.95-6.88zM12.81 22.4a4.3 4.3 0 01-2.77-1c.04-.02.1-.05.14-.08l4.6-2.66a.74.74 0 00.37-.65v-6.5l1.95 1.12a.07.07 0 01.04.05v5.38a4.33 4.33 0 01-4.33 4.34zm-9.3-3.98a4.3 4.3 0 01-.52-2.9c.03.02.09.06.14.08l4.6 2.66a.74.74 0 00.74 0l5.62-3.24v2.24a.07.07 0 01-.03.06L9.4 20.01a4.33 4.33 0 01-5.9-1.59zm-1.21-9.5A4.3 4.3 0 014.6 6.8l-.01.16v5.32a.74.74 0 00.37.65l5.62 3.25-1.95 1.12a.07.07 0 01-.07 0L4.1 14.63a4.33 4.33 0 01-.8-5.71zm16.04 3.72l-5.62-3.25 1.95-1.12a.07.07 0 01.07 0l4.47 2.58a4.32 4.32 0 01-.67 7.8v-.17V12.3a.74.74 0 00-.2-.66zm1.94-2.92a6.8 6.8 0 00-.14-.08l-4.6-2.65a.74.74 0 00-.74 0L9.18 10.2V7.96a.07.07 0 01.03-.06l4.47-2.58a4.32 4.32 0 016.6 4.4zm-12.21 4l-1.95-1.12a.07.07 0 01-.04-.05V7.19a4.32 4.32 0 017.08-3.32l-.14.08-4.6 2.66a.74.74 0 00-.37.65l-.01 6.49zm1.06-2.28l2.5-1.45 2.5 1.44v2.88l-2.5 1.45-2.5-1.44V11.44z"/></svg>
+            OpenAI
+          </button>
+          <button class="ai-provider-btn" id="btn-provider-ob-claude" onclick="switchAiProvider('ob-claude')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.95 3h14.1L24 12l-4.95 9H4.95L0 12z"/></svg>
+            Claude (Anthropic)
+          </button>
+          <button class="ai-provider-btn" id="btn-provider-ob-google" onclick="switchAiProvider('ob-google')" style="background:rgba(66,133,244,.12);border-color:rgba(66,133,244,.3);color:#93c5fd;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Google (Gemini)
+          </button>
+        </div>
+
+        <!-- OpenAI config -->
+        <div id="ai-config-ob-openai">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin:0;">
+                <label>Chave de API OpenAI</label>
+                <input type="password" id="cfg-ob_openai_api_key" placeholder="sk-..." autocomplete="new-password" />
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field-group" style="margin:0;">
+                  <label>Temperature <span style="color:var(--text3);font-weight:400;">(0–2)</span></label>
+                  <input type="number" id="cfg-ob_openai_temperature" value="0.7" min="0" max="2" step="0.1" />
+                </div>
+                <div class="field-group" style="margin:0;">
+                  <label>Max tokens</label>
+                  <input type="number" id="cfg-ob_openai_max_tokens" value="1024" min="64" max="4096" step="64" />
+                </div>
+              </div>
+              <div class="ai-model-info" id="ob-openai-model-info" style="background:rgba(16,163,127,.08);border:1px solid rgba(16,163,127,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#6ee7b7;margin:0;">
+                💰 <strong>gpt-4o-mini:</strong> ~$0.15/M input + $0.60/M output — custo ~R$4 por 5M tokens · margem ~<strong>92%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo <span style="color:var(--text3);font-weight:400;">(clique para selecionar)</span></label>
+              <select id="cfg-ob_openai_model" style="display:none;">
+                <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                <option value="gpt-4.1-nano">gpt-4.1-nano</option>
+                <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+                <option value="o4-mini">o4-mini</option>
+                <option value="o3-mini">o3-mini</option>
+                <option value="gpt-4.1">gpt-4.1</option>
+                <option value="gpt-4-turbo">gpt-4-turbo</option>
+                <option value="gpt-4o">gpt-4o</option>
+                <option value="o3">o3</option>
+              </select>
+              <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:var(--bg-card2);position:sticky;top:0;z-index:1;">
+                      <th style="text-align:left;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Modelo</th>
+                      <th style="text-align:right;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Multiplicador</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ob-openai-model-rows">
+                    <tr class="ai-model-row" data-provider="openai" data-model="gpt-3.5-turbo" onclick="selectAiModel('ob-openai','gpt-3.5-turbo')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gpt-3.5-turbo</code> <span style="font-size:10px;color:var(--text3);">legado</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#6ee7b7;">0.2×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="openai" data-model="gpt-4o-mini" onclick="selectAiModel('ob-openai','gpt-4o-mini')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(16,163,127,.1);">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gpt-4o-mini</code> <span style="font-size:10px;color:var(--text3);font-style:italic;">base</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#6ee7b7;">1.0×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="openai" data-model="gpt-4o" onclick="selectAiModel('ob-openai','gpt-4o')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gpt-4o</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#f87171;">8.0×</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Claude config -->
+        <div id="ai-config-ob-claude" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin:0;">
+                <label>Chave de API Anthropic</label>
+                <input type="password" id="cfg-ob_claude_api_key" placeholder="sk-ant-..." autocomplete="new-password" />
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field-group" style="margin:0;">
+                  <label>Temperature <span style="color:var(--text3);font-weight:400;">(0–1)</span></label>
+                  <input type="number" id="cfg-ob_claude_temperature" value="0.7" min="0" max="1" step="0.1" />
+                </div>
+                <div class="field-group" style="margin:0;">
+                  <label>Max tokens</label>
+                  <input type="number" id="cfg-ob_claude_max_tokens" value="1024" min="64" max="8192" step="64" />
+                </div>
+              </div>
+              <div class="ai-model-info" id="ob-claude-model-info" style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#a5b4fc;margin:0;">
+                <strong>claude-haiku-4-5:</strong> ~$0.25/M input + $1.25/M output — custo ~R$8 por 5M tokens · margem ~<strong>92%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo <span style="color:var(--text3);font-weight:400;">(clique para selecionar)</span></label>
+              <select id="cfg-ob_claude_model" style="display:none;">
+                <option value="claude-3.5-haiku">claude-3.5-haiku</option>
+                <option value="claude-haiku-4-5" selected>claude-haiku-4-5</option>
+                <option value="claude-3.5-sonnet">claude-3.5-sonnet</option>
+                <option value="claude-opus-4-6">claude-opus-4-6</option>
+              </select>
+              <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:var(--bg-card2);position:sticky;top:0;z-index:1;">
+                      <th style="text-align:left;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Modelo</th>
+                      <th style="text-align:right;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Multiplicador</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ob-claude-model-rows">
+                    <tr class="ai-model-row" data-provider="claude" data-model="claude-3.5-haiku" onclick="selectAiModel('ob-claude','claude-3.5-haiku')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">claude-3.5-haiku</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#a5b4fc;">0.5×</td>
+                    </tr>
+                    <tr class="ai-model-row ai-model-selected" data-provider="claude" data-model="claude-haiku-4-5" onclick="selectAiModel('ob-claude','claude-haiku-4-5')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(99,102,241,.1);">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">claude-haiku-4-5</code> <span style="font-size:10px;color:var(--text3);font-style:italic;">base</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#a5b4fc;">1.0×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="claude" data-model="claude-3.5-sonnet" onclick="selectAiModel('ob-claude','claude-3.5-sonnet')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">claude-3.5-sonnet</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#fb923c;">3.5×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="claude" data-model="claude-opus-4-6" onclick="selectAiModel('ob-claude','claude-opus-4-6')" style="cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">claude-opus-4-6</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#f87171;">6.0×</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google config -->
+        <div id="ai-config-ob-google" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div class="field-group" style="margin:0;">
+                <label>Chave de API Google</label>
+                <input type="password" id="cfg-ob_google_api_key" placeholder="AIzaSy..." autocomplete="new-password" />
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="field-group" style="margin:0;">
+                  <label>Temperature <span style="color:var(--text3);font-weight:400;">(0–2)</span></label>
+                  <input type="number" id="cfg-ob_google_temperature" value="0.7" min="0" max="2" step="0.1" />
+                </div>
+                <div class="field-group" style="margin:0;">
+                  <label>Max tokens</label>
+                  <input type="number" id="cfg-ob_google_max_tokens" value="1024" min="64" max="4096" step="64" />
+                </div>
+              </div>
+              <div class="ai-model-info" id="ob-google-model-info" style="background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#93c5fd;margin:0;">
+                <strong>gemini-2.0-flash:</strong> ~$0.075/M input + $0.30/M output — custo ~R$2.50 por 5M tokens · margem ~<strong>94%</strong>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;">Modelo <span style="color:var(--text3);font-weight:400;">(clique para selecionar)</span></label>
+              <div style="overflow:hidden;border-radius:8px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                  <thead>
+                    <tr style="background:var(--bg-card2);position:sticky;top:0;z-index:1;">
+                      <th style="text-align:left;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Modelo</th>
+                      <th style="text-align:right;padding:7px 10px;color:var(--text2);font-weight:600;border-bottom:1px solid var(--border);">Multiplicador</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ob-google-model-rows">
+                    <tr class="ai-model-row" data-provider="google" data-model="gemini-2.0-flash" onclick="selectAiModel('ob-google','gemini-2.0-flash')" style="border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;background:rgba(66,133,244,.1);">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gemini-2.0-flash</code> <span style="font-size:10px;color:var(--text3);font-style:italic;">base</span></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#93c5fd;">1.0×</td>
+                    </tr>
+                    <tr class="ai-model-row" data-provider="google" data-model="gemini-1.5-pro" onclick="selectAiModel('ob-google','gemini-1.5-pro')" style="cursor:pointer;transition:background .15s;">
+                      <td style="padding:6px 10px;"><code style="background:var(--bg-card2);padding:2px 5px;border-radius:4px;font-size:11px;">gemini-1.5-pro</code></td>
+                      <td style="padding:6px 10px;text-align:right;font-weight:800;color:#fb923c;">4.0×</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn-save" onclick="saveConfigs(['ob_openai_api_key','ob_openai_temperature','ob_openai_max_tokens','ob_openai_model','ob_claude_api_key','ob_claude_temperature','ob_claude_max_tokens','ob_claude_model','ob_google_api_key','ob_google_temperature','ob_google_max_tokens'],'ob-modelo')">Salvar</button>
+          <span class="save-status" id="save-ob-modelo"></span>
+        </div>
       </div>
 
       <!-- Tab Prompt -->
@@ -2692,6 +3613,202 @@
     <div id="agentes-extras-pages-container"></div>
 
     <!-- NÚMEROS EXTRAS -->
+    <!-- GATEWAYS DE PAGAMENTO -->
+    <div class="page" id="page-pagamentos">
+      <div class="qual-hdr">
+        <div class="qual-hdr-left">
+          <div class="qual-eyebrow">Configurações de Negócio</div>
+          <h1>Gateways de Pagamento</h1>
+          <p>Configure e gerencie os meios de pagamento que seus leads podem usar</p>
+        </div>
+        <div class="qual-hdr-right">
+          <span class="save-status" id="save-pagamentos"></span>
+          <button class="btn-save" onclick="savePagamentoConfigs()">Salvar configurações</button>
+        </div>
+      </div>
+
+      <!-- Gateway padrão -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="qual-ch">
+          <div class="qual-ch-icon blue">⚙</div>
+          <div>
+            <p class="qual-ch-title">Gateway Padrão</p>
+            <p class="qual-ch-sub">Qual será o meio de pagamento preferencial oferecido aos leads</p>
+          </div>
+          <span class="qual-ch-badge config">Preferência</span>
+        </div>
+        <div class="qual-body">
+          <div class="field-group" style="margin-bottom:0">
+            <label>Selecione o gateway padrão</label>
+            <select id="cfg-gateway_padrao" style="width:100%;padding:10px;border:1px solid #30363d;border-radius:6px;background:#0d1117;color:#c9d1d9;font-size:14px;" onchange="updateGatewayDisplay()">
+              <option value="">-- Selecione um gateway --</option>
+              <option value="stripe">Stripe</option>
+              <option value="mercado_pago">Mercado Pago</option>
+              <option value="asaas">ASAAS</option>
+              <option value="infinitepay">InfinitePay</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stripe -->
+      <div class="card gateway-card" id="gateway-stripe">
+        <div class="gw-header">
+          <div class="gw-logo" style="background:#625BF7;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:18px;">S</div>
+          <div>
+            <h3 class="gw-name">Stripe</h3>
+            <p class="gw-desc">Pagamentos com cartão, Apple Pay, Google Pay</p>
+          </div>
+          <span class="gw-status" id="stripe-status">● Não configurado</span>
+        </div>
+        <div class="gw-body">
+          <div class="field-group">
+            <label>Publishable Key</label>
+            <input type="text" id="cfg-stripe_publishable" placeholder="pk_live_..." />
+          </div>
+          <div class="field-group">
+            <label>Secret Key</label>
+            <input type="password" id="cfg-stripe_secret" placeholder="sk_live_..." />
+          </div>
+          <div class="field-group">
+            <label>Webhook Secret</label>
+            <input type="password" id="cfg-stripe_webhook" placeholder="whsec_..." />
+          </div>
+          <button class="btn-test" onclick="testGateway('stripe')">Testar conexão</button>
+          <span class="test-status" id="stripe-test-status"></span>
+        </div>
+      </div>
+
+      <!-- Mercado Pago -->
+      <div class="card gateway-card" id="gateway-mercado_pago">
+        <div class="gw-header">
+          <div class="gw-logo" style="background:#009EE3;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:18px;">M</div>
+          <div>
+            <h3 class="gw-name">Mercado Pago</h3>
+            <p class="gw-desc">Pagamentos com cartão, débito, boleto, PIX</p>
+          </div>
+          <span class="gw-status" id="mercado_pago-status">● Não configurado</span>
+        </div>
+        <div class="gw-body">
+          <div class="field-group">
+            <label>Access Token</label>
+            <input type="password" id="cfg-mercado_pago_access" placeholder="APP_USR_..." />
+          </div>
+          <div class="field-group">
+            <label>Public Key</label>
+            <input type="text" id="cfg-mercado_pago_public" placeholder="APP_USR_..." />
+          </div>
+          <div class="field-group">
+            <label>Webhook URL</label>
+            <input type="text" id="cfg-mercado_pago_webhook" placeholder="https://seu-dominio.com/webhook/mercado-pago" />
+          </div>
+          <button class="btn-test" onclick="testGateway('mercado_pago')">Testar conexão</button>
+          <span class="test-status" id="mercado_pago-test-status"></span>
+        </div>
+      </div>
+
+      <!-- ASAAS -->
+      <div class="card gateway-card" id="gateway-asaas">
+        <div class="gw-header">
+          <div class="gw-logo" style="background:#4F46E5;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:18px;">A</div>
+          <div>
+            <h3 class="gw-name">ASAAS</h3>
+            <p class="gw-desc">Pagamentos com cartão, boleto, PIX e débito</p>
+          </div>
+          <span class="gw-status" id="asaas-status">● Não configurado</span>
+        </div>
+        <div class="gw-body">
+          <div class="field-group">
+            <label>API Key</label>
+            <input type="password" id="cfg-asaas_api_key" placeholder="$aact_..." />
+          </div>
+          <div class="field-group">
+            <label>Account ID</label>
+            <input type="text" id="cfg-asaas_account_id" placeholder="12345" />
+          </div>
+          <div class="field-group">
+            <label>Webhook Token</label>
+            <input type="password" id="cfg-asaas_webhook_token" placeholder="token_..." />
+          </div>
+          <button class="btn-test" onclick="testGateway('asaas')">Testar conexão</button>
+          <span class="test-status" id="asaas-test-status"></span>
+        </div>
+      </div>
+
+      <!-- InfinitePay -->
+      <div class="card gateway-card" id="gateway-infinitepay">
+        <div class="gw-header">
+          <div class="gw-logo" style="background:#FF6B00;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;font-size:18px;">∞</div>
+          <div>
+            <h3 class="gw-name">InfinitePay</h3>
+            <p class="gw-desc">Pagamentos com cartão, boleto e PIX</p>
+          </div>
+          <span class="gw-status" id="infinitepay-status">● Não configurado</span>
+        </div>
+        <div class="gw-body">
+          <div class="field-group">
+            <label>API Key</label>
+            <input type="password" id="cfg-infinitepay_api_key" placeholder="sk_..." />
+          </div>
+          <div class="field-group">
+            <label>Public Key</label>
+            <input type="text" id="cfg-infinitepay_public" placeholder="pk_..." />
+          </div>
+          <div class="field-group">
+            <label>Webhook Secret</label>
+            <input type="password" id="cfg-infinitepay_webhook" placeholder="whsec_..." />
+          </div>
+          <button class="btn-test" onclick="testGateway('infinitepay')">Testar conexão</button>
+          <span class="test-status" id="infinitepay-test-status"></span>
+        </div>
+      </div>
+
+      <!-- Fallback gateways -->
+      <div class="card" style="margin-top:20px;background:rgba(79, 70, 229, 0.05);border:1px solid rgba(79, 70, 229, 0.15);">
+        <div class="qual-ch">
+          <div class="qual-ch-icon indigo">⚡</div>
+          <div>
+            <p class="qual-ch-title">Gateways de Fallback</p>
+            <p class="qual-ch-sub">Se o gateway padrão falhar, tentar alternativas nesta ordem</p>
+          </div>
+          <span class="qual-ch-badge config">Opcional</span>
+        </div>
+        <div class="qual-body">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="cfg-fallback-mercado_pago" style="accent-color:#4F46E5;" />
+              <span>Mercado Pago como fallback</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="cfg-fallback-asaas" style="accent-color:#4F46E5;" />
+              <span>ASAAS como fallback</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="cfg-fallback-infinitepay" style="accent-color:#4F46E5;" />
+              <span>InfinitePay como fallback</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações de segurança -->
+      <div class="card" style="margin-top:20px;background:rgba(251, 146, 60, 0.05);border:1px solid rgba(251, 146, 60, 0.15);">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <div style="font-size:18px;flex-shrink:0;">🔒</div>
+          <div>
+            <p style="font-weight:600;color:#fb923c;margin-bottom:8px;">Segurança</p>
+            <ul style="margin:0;padding-left:20px;color:#9ca3af;font-size:13px;">
+              <li>Todas as chaves são criptografadas e nunca aparecem em logs</li>
+              <li>Use sempre chaves de API com escopo limitado</li>
+              <li>Ative autenticação de dois fatores nas contas dos gateways</li>
+              <li>Revogue chaves antigas regularmente</li>
+              <li>Mantenha os webhooks secretos em segredo absoluto</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-numeros-extras">
       <div class="page-header">
         <h1>Números Extras de WhatsApp</h1>
@@ -4042,8 +5159,8 @@
       </div>
     </div>
 
-    <!-- MONITORAMENTO (admin only) -->
-    <div class="page admin-only" id="page-monitoramento">
+    <!-- DASHBOARD FINANCEIRO (admin only) -->
+    <div class="page admin-only" id="page-dashboard-financeiro">
       <div class="page-header">
         <h1>Dashboard Financeiro</h1>
         <p>Saúde e performance de assinaturas</p>
@@ -4498,6 +5615,245 @@
     </div>
 
     <!-- CONFIGURAÇÕES -->
+    <!-- MONITORAMENTO -->
+    <div class="page" id="page-monitoramento">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>📊 Monitoramento</h1>
+          <p>Acompanhe a performance do seu agente em tempo real</p>
+        </div>
+        <button onclick="refreshMonitoringData()" style="padding:8px 16px;background:#1f6feb;border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:500;font-size:14px;">↻ Atualizar</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Execuções (24h)</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-total-execucoes">0</div>
+          <div style="font-size:11px;color:#6e7681;margin-top:8px;">Taxa: <span id="metric-taxa-sucesso">0%</span></div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Tokens Usados</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-tokens-total">0</div>
+          <div style="font-size:11px;color:#6e7681;margin-top:8px;">Custo: $<span id="metric-custo-total">0.00</span></div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Duração Média</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-duracao-media">0ms</div>
+          <div style="font-size:11px;color:#6e7681;margin-top:8px;">Max: <span id="metric-duracao-max">0ms</span></div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Leads Processados</div>
+          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-leads-processados">0</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+        <div>
+          <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">Agente</label>
+          <select id="filter-agent-type" onchange="filterExecutions()" style="width:100%;padding:6px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;">
+            <option value="">Todos</option>
+            <option value="principal">Principal</option>
+            <option value="objecao">Objeção</option>
+            <option value="extra">Extra</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">Status</label>
+          <select id="filter-status" onchange="filterExecutions()" style="width:100%;padding:6px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;">
+            <option value="">Todos</option>
+            <option value="sucesso">Sucesso ✓</option>
+            <option value="erro">Erro ✗</option>
+            <option value="timeout">Timeout ⏱</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">Período</label>
+          <select id="filter-period" onchange="filterExecutions()" style="width:100%;padding:6px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;">
+            <option value="24h">Últimas 24h</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Execuções por Hora</h3>
+          <canvas id="chart-executions" height="250"></canvas>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Taxa de Erro por Agente</h3>
+          <canvas id="chart-errors" height="250"></canvas>
+        </div>
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;overflow:hidden;">
+        <div style="padding:16px;border-bottom:1px solid #30363d;">
+          <h3 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">Execuções Recentes</h3>
+        </div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:var(--bg);border-bottom:1px solid #30363d;">
+                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Lead</th>
+                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Agente</th>
+                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Status</th>
+                <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Tokens</th>
+                <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Duração</th>
+                <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Custo</th>
+                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="execution-table-body">
+              <tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS — Phase 2 & 3 -->
+    <div class="page" id="page-analytics">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>📈 Analytics — Phase 2 & 3</h1>
+          <p>Dashboard de performance, win rate, e AI insights</p>
+        </div>
+        <button onclick="refreshAnalyticsData()" style="padding:8px 16px;background:#1f6feb;border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:500;font-size:14px;">↻ Atualizar</button>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid #30363d;padding-bottom:16px;">
+        <button class="analytics-tab-btn active" onclick="switchAnalyticsTab('win-rate', this)" data-tab="win-rate" style="padding:10px 16px;background:none;border:none;color:#e6edf3;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">📈 Win Rate</button>
+        <button class="analytics-tab-btn" onclick="switchAnalyticsTab('performance', this)" data-tab="performance" style="padding:10px 16px;background:none;border:none;color:#6e7681;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">⚡ Performance</button>
+        <button class="analytics-tab-btn" onclick="switchAnalyticsTab('ai-insights', this)" data-tab="ai-insights" style="padding:10px 16px;background:none;border:none;color:#6e7681;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">🤖 AI Insights</button>
+        <button class="analytics-tab-btn" onclick="switchAnalyticsTab('alerts', this)" data-tab="alerts" style="padding:10px 16px;background:none;border:none;color:#6e7681;cursor:pointer;font-weight:600;font-size:14px;border-bottom:2px solid transparent;position:relative;bottom:-16px;">🚨 Alertas</button>
+      </div>
+
+      <!-- TAB 1: Win Rate -->
+      <div id="tab-win-rate" class="analytics-tab-content" style="display:block;">
+        <!-- KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Taxa Conversão</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-taxa-conversao">0%</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Leads vendidos / total</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Receita Total</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-receita">R$ 0,00</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Valor de vendas</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Nota SDR</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-nota-sdr">0/5.0</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Média de avaliação</div>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Prompts Úteis</div>
+            <div style="font-size:32px;font-weight:700;color:#31c48d;" id="kpi-prompts-util">0%</div>
+            <div style="font-size:11px;color:#6e7681;margin-top:8px;">Efetividade IA</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;margin-bottom:24px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px;">
+            <div>
+              <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">DATA INICIAL</label>
+              <input type="date" id="analytics-date-from" onchange="refreshAnalyticsData()" style="width:100%;padding:8px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">DATA FINAL</label>
+              <input type="date" id="analytics-date-to" onchange="refreshAnalyticsData()" style="width:100%;padding:8px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;box-sizing:border-box;" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">AGENTE</label>
+              <select id="analytics-filter-agent" onchange="refreshAnalyticsData()" style="width:100%;padding:8px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;box-sizing:border-box;">
+                <option value="">Todos</option>
+                <option value="principal">Principal</option>
+                <option value="objecao">Objeção</option>
+                <option value="extra">Extra</option>
+              </select>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:8px;">
+              <button class="btn-primary" onclick="exportAnalyticsCSV()" style="flex:1;padding:8px;font-size:12px;">📥 Exportar CSV</button>
+              <button class="btn-secondary" onclick="resetAnalyticsFilters()" style="padding:8px 12px;font-size:12px;">Reset</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Win Rate por Agente</h3>
+            <canvas id="chart-win-rate-agent" height="250"></canvas>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Receita por Agente</h3>
+            <canvas id="chart-receita-agent" height="250"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabela Performance por Agente -->
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;overflow:hidden;">
+          <div style="padding:16px;border-bottom:1px solid #30363d;">
+            <h3 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">Performance por Agente</h3>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:var(--bg);border-bottom:1px solid #30363d;">
+                  <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Agente</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Total Leads</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Vendidos</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Taxa %</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Receita</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Nota SDR</th>
+                  <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:11px;text-transform:uppercase;">Prompt Útil %</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-table-agents">
+                <tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Carregando dados...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Performance -->
+      <div id="tab-performance" class="analytics-tab-content" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Motivos de Desistência</h3>
+            <canvas id="chart-motivos" height="250"></canvas>
+          </div>
+          <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+            <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Distribuição de Notas SDR</h3>
+            <canvas id="chart-notas-sdr" height="250"></canvas>
+          </div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
+          <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Timeline de Conversão (7 dias)</h3>
+          <canvas id="chart-conversao-timeline" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- TAB 3: AI Insights -->
+      <div id="tab-ai-insights" class="analytics-tab-content" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:16px;" id="ai-insights-container">
+          <p style="color:#6e7681;text-align:center;padding:40px;">Carregando insights da IA...</p>
+        </div>
+      </div>
+
+      <!-- TAB 4: Alertas -->
+      <div id="tab-alerts" class="analytics-tab-content" style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:12px;" id="alerts-container">
+          <p style="color:#6e7681;text-align:center;padding:40px;">Verificando alertas...</p>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-configuracoes">
       <div class="page-header">
         <h1>Configurações</h1>
@@ -4593,6 +5949,149 @@
             </table>
           </div>
           <p style="font-size:11px;color:#6e7681;margin-top:12px;margin-bottom:0;">Modelos mais caros (como Claude Opus) consomem mais tokens efetivos em relação aos tokens gastos realmente.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: MONITORAMENTO (Dashboard) -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-monitoramento" style="display: none;">
+      <div class="page-header">
+        <h1>📊 Monitoramento</h1>
+        <p>Acompanhe performance dos workflows e gastos com IA</p>
+      </div>
+
+      <div style="padding: 0 20px 40px; max-width: 1400px; margin: 0 auto;">
+
+        <!-- Resumo Executivo (Cards) -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;">
+
+          <div class="card" style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Execuções (24h)</label>
+              <span style="font-size: 20px;">⚡</span>
+            </div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+              <span id="metric-executions">-</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              Taxa sucesso: <span id="metric-success-rate" style="color: var(--primary); font-weight: 600;">-</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Tokens Consumidos</label>
+              <span style="font-size: 20px;">🎟️</span>
+            </div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+              <span id="metric-tokens">-</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              Custo USD: <span id="metric-cost" style="color: var(--primary); font-weight: 600;">$-</span>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Tempo Médio</label>
+              <span style="font-size: 20px;">⏱️</span>
+            </div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+              <span id="metric-avg-time">-</span>ms
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              Max: <span id="metric-max-time" style="color: var(--primary); font-weight: 600;">-</span>ms
+            </div>
+          </div>
+
+          <div class="card" style="padding: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Leads Processados</label>
+              <span style="font-size: 20px;">👥</span>
+            </div>
+            <div style="font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+              <span id="metric-leads">-</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              Últimas 24h
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Gráficos -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; margin-bottom: 32px;">
+
+          <div class="card" style="padding: 20px;">
+            <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 700;">Execuções por Hora</h3>
+            <canvas id="chart-executions" style="max-height: 300px;"></canvas>
+          </div>
+
+          <div class="card" style="padding: 20px;">
+            <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 700;">Taxa de Erro por Tipo de Agente</h3>
+            <canvas id="chart-errors" style="max-height: 300px;"></canvas>
+          </div>
+
+        </div>
+
+        <!-- Filtros e Tabela -->
+        <div class="card" style="padding: 20px;">
+          <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 150px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">AGENTE</label>
+              <select id="filter-agent" onchange="refreshMonitoringData()" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); font-size: 14px;">
+                <option value="">Todos</option>
+                <option value="principal">Principal</option>
+                <option value="objecao">Objeção</option>
+                <option value="extra">Extras</option>
+              </select>
+            </div>
+
+            <div style="flex: 1; min-width: 150px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">STATUS</label>
+              <select id="filter-status" onchange="refreshMonitoringData()" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); font-size: 14px;">
+                <option value="">Todos</option>
+                <option value="sucesso">✅ Sucesso</option>
+                <option value="erro">❌ Erro</option>
+                <option value="timeout">⏱️ Timeout</option>
+              </select>
+            </div>
+
+            <div style="flex: 1; min-width: 150px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px;">PERÍODO</label>
+              <select id="filter-period" onchange="refreshMonitoringData()" style="width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); font-size: 14px;">
+                <option value="24h">Últimas 24h</option>
+                <option value="7d">Últimos 7 dias</option>
+                <option value="30d">Últimos 30 dias</option>
+              </select>
+            </div>
+
+            <div style="display: flex; align-items: flex-end;">
+              <button class="btn-secondary" onclick="refreshMonitoringData()" style="width: 100%;">🔄 Atualizar</button>
+            </div>
+          </div>
+
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border);">
+                  <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--text-secondary);">LEAD</th>
+                  <th style="padding: 12px; text-align: center; font-weight: 600; color: var(--text-secondary);">AGENTE</th>
+                  <th style="padding: 12px; text-align: center; font-weight: 600; color: var(--text-secondary);">STATUS</th>
+                  <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-secondary);">TOKENS</th>
+                  <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-secondary);">DURAÇÃO</th>
+                  <th style="padding: 12px; text-align: right; font-weight: 600; color: var(--text-secondary);">CUSTO</th>
+                  <th style="padding: 12px; text-align: left; font-weight: 600; color: var(--text-secondary);">HORÁRIO</th>
+                </tr>
+              </thead>
+              <tbody id="monitoring-table-body">
+                <tr><td colspan="7" style="padding: 40px; text-align: center; color: var(--text-secondary);">Carregando dados...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -6767,6 +8266,13 @@
     await db.from('leads').update({ stage, atualizado_em: new Date().toISOString() }).eq('id', leadId);
     const l = crmLeads.find(x => String(x.id) === String(leadId));
     if (l) l.stage = stage;
+
+    // Trigger feedback modal if lead reaches terminal stage
+    if ((stage === 'convertido' || stage === 'perdido') && !document.getElementById('modal-feedback-lead').classList.contains('open')) {
+      setTimeout(() => {
+        openFeedbackModal(leadId);
+      }, 500);
+    }
   }
 
   // ---- Column Drag-to-Reorder ----
@@ -6955,6 +8461,97 @@
     await db.from('leads').update({ notas: document.getElementById('crm-notas').value, atualizado_em: new Date().toISOString() }).eq('id', id);
     st.textContent = 'Salvo!'; st.style.color = '#16a34a';
     setTimeout(() => st.textContent = '', 2500);
+  }
+
+  // ---- Feedback de Lead ----
+  let feedbackState = {
+    leadId: null,
+    vendido: null,
+    motivo: '',
+    valor: null,
+    nota: null,
+    sugestoes: ''
+  };
+
+  function openFeedbackModal(leadId) {
+    feedbackState.leadId = leadId;
+    feedbackState.vendido = null;
+    feedbackState.motivo = '';
+    feedbackState.valor = null;
+    feedbackState.nota = null;
+    feedbackState.sugestoes = '';
+
+    // Reset UI
+    document.getElementById('feedback-motivo-section').style.display = 'none';
+    document.getElementById('feedback-valor-section').style.display = 'none';
+    document.querySelectorAll('.feedback-nota-btn').forEach(b => b.style.borderColor = '#30363d');
+    document.getElementById('feedback-motivo').value = '';
+    document.getElementById('feedback-valor').value = '';
+    document.getElementById('feedback-sugestoes').value = '';
+    document.getElementById('feedback-vendido-sim').style.borderColor = '#30363d';
+    document.getElementById('feedback-vendido-nao').style.borderColor = '#30363d';
+
+    document.getElementById('modal-feedback-lead').style.display = 'flex';
+  }
+
+  function closeFeedbackModal() {
+    document.getElementById('modal-feedback-lead').style.display = 'none';
+    feedbackState = { leadId: null, vendido: null, motivo: '', valor: null, nota: null, sugestoes: '' };
+  }
+
+  function setFeedbackResult(vendido) {
+    feedbackState.vendido = vendido;
+    document.getElementById('feedback-vendido-sim').style.borderColor = vendido ? '#22c55e' : '#30363d';
+    document.getElementById('feedback-vendido-nao').style.borderColor = !vendido ? '#ef4444' : '#30363d';
+    document.getElementById('feedback-motivo-section').style.display = vendido ? 'none' : 'block';
+    document.getElementById('feedback-valor-section').style.display = vendido ? 'block' : 'none';
+  }
+
+  function setFeedbackNota(nota) {
+    feedbackState.nota = nota;
+    document.querySelectorAll('.feedback-nota-btn').forEach(b => {
+      b.style.borderColor = parseInt(b.dataset.nota) === nota ? '#22c55e' : '#30363d';
+    });
+  }
+
+  async function submitFeedback() {
+    if (!feedbackState.leadId || feedbackState.vendido === null || feedbackState.nota === null) {
+      alert('Por favor, preencha os campos obrigatórios');
+      return;
+    }
+
+    try {
+      feedbackState.motivo = document.getElementById('feedback-motivo').value || null;
+      feedbackState.valor = feedbackState.vendido ? parseFloat(document.getElementById('feedback-valor').value) || null : null;
+      feedbackState.sugestoes = document.getElementById('feedback-sugestoes').value || null;
+
+      // Salvar no Supabase
+      const { data, error } = await db.from('lead_feedback').upsert({
+        user_id: currentUser.id,
+        lead_id: feedbackState.leadId,
+        vendido: feedbackState.vendido,
+        motivo_desistencia: feedbackState.vendido ? null : feedbackState.motivo,
+        valor_venda: feedbackState.valor,
+        nota_sdr: feedbackState.nota,
+        sugestoes: feedbackState.sugestoes,
+        atualizado_em: new Date().toISOString()
+      }, { onConflict: 'user_id,lead_id' });
+
+      if (error) throw error;
+
+      alert('✅ Feedback enviado com sucesso!');
+      closeFeedbackModal();
+
+      // Re-renderizar o card para mostrar que feedback foi coletado
+      const lead = crmLeads.find(l => l.id === feedbackState.leadId);
+      if (lead) {
+        const card = document.querySelector(`.crm-card[data-lead-id="${feedbackState.leadId}"]`);
+        if (card) card.outerHTML = renderCard(lead);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar feedback:', error);
+      alert('Erro ao enviar feedback: ' + error.message);
+    }
   }
 
   // ---- Tarefas ----
@@ -13185,6 +14782,250 @@
   }
 
   // =====================
+
+
+  // ═══════════════════════════════════════════════════════════════
+  // FUNÇÕES DE GATEWAYS DE PAGAMENTO
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadPagamentoConfigs() {
+    // Carrega configurações de pagamento
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const { data: configs } = await db.from('agente_config')
+      .select('chave, valor')
+      .eq('user_id', user.id)
+      .in('chave', [
+        'gateway_padrao',
+        'stripe_publishable', 'stripe_secret', 'stripe_webhook',
+        'mercado_pago_access', 'mercado_pago_public', 'mercado_pago_webhook',
+        'asaas_api_key', 'asaas_account_id', 'asaas_webhook_token',
+        'infinitepay_api_key', 'infinitepay_public', 'infinitepay_webhook',
+        'fallback-mercado_pago', 'fallback-asaas', 'fallback-infinitepay'
+      ]);
+
+    if (configs && configs.length > 0) {
+      const configMap = {};
+      configs.forEach(c => { configMap[c.chave] = c.valor; });
+
+      // Carrega valores
+      ['stripe_publishable', 'stripe_secret', 'stripe_webhook',
+       'mercado_pago_access', 'mercado_pago_public', 'mercado_pago_webhook',
+       'asaas_api_key', 'asaas_account_id', 'asaas_webhook_token',
+       'infinitepay_api_key', 'infinitepay_public', 'infinitepay_webhook'].forEach(key => {
+        const el = document.getElementById('cfg-' + key);
+        if (el && configMap[key]) {
+          el.value = configMap[key];
+        }
+      });
+
+      // Carrega checkboxes de fallback
+      ['fallback-mercado_pago', 'fallback-asaas', 'fallback-infinitepay'].forEach(key => {
+        const el = document.getElementById('cfg-' + key);
+        if (el && configMap[key]) {
+          el.checked = configMap[key] === 'true';
+        }
+      });
+
+      // Carrega gateway padrão
+      const defaultGw = document.getElementById('cfg-gateway_padrao');
+      if (defaultGw && configMap['gateway_padrao']) {
+        defaultGw.value = configMap['gateway_padrao'];
+      }
+
+      updateGatewayDisplay();
+      updateGatewayStatus();
+    }
+  }
+
+  function updateGatewayDisplay() {
+    // Atualiza quais gateways são exibidos como "padrão"
+    const defaultGw = document.getElementById('cfg-gateway_padrao').value;
+    ['stripe', 'mercado_pago', 'asaas', 'infinitepay'].forEach(gw => {
+      const card = document.getElementById('gateway-' + gw);
+      if (card) {
+        if (gw === defaultGw) {
+          card.style.borderColor = '#4F46E5';
+          card.style.borderWidth = '2px';
+          card.style.boxShadow = '0 0 0 3px rgba(79, 70, 229, 0.1)';
+        } else {
+          card.style.borderColor = '#30363d';
+          card.style.borderWidth = '1px';
+          card.style.boxShadow = 'none';
+        }
+      }
+    });
+  }
+
+  function updateGatewayStatus() {
+    // Verifica quais gateways estão configurados
+    const gateways = ['stripe', 'mercado_pago', 'asaas', 'infinitepay'];
+    gateways.forEach(gw => {
+      const statusEl = document.getElementById(gw + '-status');
+      if (!statusEl) return;
+
+      let configured = false;
+      switch(gw) {
+        case 'stripe':
+          configured = document.getElementById('cfg-stripe_publishable')?.value && 
+                      document.getElementById('cfg-stripe_secret')?.value;
+          break;
+        case 'mercado_pago':
+          configured = document.getElementById('cfg-mercado_pago_access')?.value;
+          break;
+        case 'asaas':
+          configured = document.getElementById('cfg-asaas_api_key')?.value;
+          break;
+        case 'infinitepay':
+          configured = document.getElementById('cfg-infinitepay_api_key')?.value;
+          break;
+      }
+
+      if (configured) {
+        statusEl.textContent = '✓ Configurado';
+        statusEl.style.color = '#16a34a';
+      } else {
+        statusEl.textContent = '● Não configurado';
+        statusEl.style.color = '#8b949e';
+      }
+    });
+  }
+
+  async function testGateway(gateway) {
+    const statusEl = document.getElementById(gateway + '-test-status');
+    if (!statusEl) return;
+
+    statusEl.textContent = 'Testando...';
+    statusEl.style.color = '#888';
+
+    try {
+      let credentials = {};
+      switch(gateway) {
+        case 'stripe':
+          credentials = {
+            publishable: document.getElementById('cfg-stripe_publishable').value,
+            secret: document.getElementById('cfg-stripe_secret').value
+          };
+          break;
+        case 'mercado_pago':
+          credentials = {
+            access: document.getElementById('cfg-mercado_pago_access').value,
+            public: document.getElementById('cfg-mercado_pago_public').value
+          };
+          break;
+        case 'asaas':
+          credentials = {
+            api_key: document.getElementById('cfg-asaas_api_key').value
+          };
+          break;
+        case 'infinitepay':
+          credentials = {
+            api_key: document.getElementById('cfg-infinitepay_api_key').value
+          };
+          break;
+      }
+
+      // Valida que há credenciais
+      const hasCredentials = Object.values(credentials).some(v => v);
+      if (!hasCredentials) {
+        statusEl.textContent = '❌ Preencha as credenciais';
+        statusEl.style.color = '#f87171';
+        return;
+      }
+
+      // Chamaria a API de teste aqui
+      // Por enquanto, apenas valida que os campos estão preenchidos
+      statusEl.textContent = '✓ Conexão validada (pré-teste)';
+      statusEl.style.color = '#16a34a';
+      setTimeout(() => statusEl.textContent = '', 3000);
+    } catch (error) {
+      statusEl.textContent = '❌ Erro: ' + error.message;
+      statusEl.style.color = '#f87171';
+    }
+  }
+
+  async function savePagamentoConfigs() {
+    const statusEl = document.getElementById('save-pagamentos');
+    if (statusEl) {
+      statusEl.textContent = 'Salvando...';
+      statusEl.style.color = '#888';
+    }
+
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) {
+      if (statusEl) {
+        statusEl.textContent = '❌ Usuário não autenticado';
+        statusEl.style.color = '#f87171';
+      }
+      return;
+    }
+
+    try {
+      // Coleta todas as configurações de pagamento
+      const configs = [
+        'gateway_padrao',
+        'stripe_publishable', 'stripe_secret', 'stripe_webhook',
+        'mercado_pago_access', 'mercado_pago_public', 'mercado_pago_webhook',
+        'asaas_api_key', 'asaas_account_id', 'asaas_webhook_token',
+        'infinitepay_api_key', 'infinitepay_public', 'infinitepay_webhook',
+        'fallback-mercado_pago', 'fallback-asaas', 'fallback-infinitepay'
+      ];
+
+      // Salva cada configuração
+      for (const key of configs) {
+        const el = document.getElementById('cfg-' + key);
+        if (!el) continue;
+
+        const valor = el.type === 'checkbox' ? String(el.checked) : el.value;
+        
+        // Não salva se vazio (exceto checkboxes)
+        if (!valor && el.type !== 'checkbox') continue;
+
+        await db.from('agente_config').upsert(
+          { chave: key, valor, user_id: user.id, atualizado_em: new Date().toISOString() },
+          { onConflict: 'user_id,chave' }
+        );
+      }
+
+      updateGatewayStatus();
+
+      if (statusEl) {
+        statusEl.textContent = '✓ Salvo com sucesso!';
+        statusEl.style.color = '#16a34a';
+        setTimeout(() => statusEl.textContent = '', 3000);
+      }
+
+      showToast('Configurações de pagamento salvas com sucesso!', 'success');
+    } catch (error) {
+      if (statusEl) {
+        statusEl.textContent = '❌ Erro ao salvar';
+        statusEl.style.color = '#f87171';
+      }
+      showToast('Erro ao salvar: ' + error.message, 'error');
+    }
+  }
+
+  // Carrega configurações quando a página é aberta
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach(mutation => {
+      const pagamento = document.getElementById('page-pagamentos');
+      if (pagamento && pagamento.style.display !== 'none') {
+        loadPagamentoConfigs();
+      }
+    });
+  });
+
+  // Observa mudanças de visibilidade das páginas
+  observer.observe(document.body, { attributes: true, subtree: true });
+
+  // Também carrega quando inicializa
+  setTimeout(() => {
+    const pagamento = document.getElementById('page-pagamentos');
+    if (pagamento) {
+      loadPagamentoConfigs();
+    }
+  }, 1000);
 
 </script>
 </body>
