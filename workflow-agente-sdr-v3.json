@@ -1,0 +1,2290 @@
+{
+  "name": "\ud83e\udd16 XPERT.IA \u2014 Agente SDR WhatsApp (v3 \u2014 completo)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-sdr",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook - Evolution API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        400
+      ],
+      "notes": "Configure este endpoint na Evolution API como webhook de mensagens recebidas."
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhook = $input.first().json;\nconst instanceName = webhook.instance||webhook.body?.instance||webhook.instanceName||webhook.body?.instanceName||webhook.data?.instance||webhook.instanceId||'';\nconst fromMe = webhook.fromMe||webhook.key?.fromMe||webhook.data?.key?.fromMe||webhook.body?.data?.key?.fromMe||false;\nif (fromMe===true) return [];\nconst remoteJid = webhook.sender||webhook.remoteJid||webhook.key?.remoteJid||webhook.data?.key?.remoteJid||webhook.body?.data?.key?.remoteJid||'';\nif (remoteJid.includes('@g.us')) return [];\nconst tipoMensagem = webhook.messageType||webhook.data?.messageType||webhook.body?.data?.messageType||'conversation';\nconst TIPOS_IGNORADOS=['senderKeyDistributionMessage','protocolMessage','reactionMessage','pollUpdateMessage'];\nif (TIPOS_IGNORADOS.includes(tipoMensagem)) return [];\nconst numero = remoteJid.replace('@s.whatsapp.net','');\nconst mensagem = webhook.conversation||webhook.text||webhook.body||webhook.data?.message?.conversation||webhook.data?.message?.extendedTextMessage?.text||webhook.body?.data?.message?.conversation||'';\nconst nomeContato = webhook.pushName||webhook.senderName||webhook.data?.pushName||webhook.body?.data?.pushName||'Lead';\nconst temArquivo = ['imageMessage','documentMessage','audioMessage','videoMessage','stickerMessage'].includes(tipoMensagem);\nconst ehAudio = tipoMensagem==='audioMessage';\nlet audioBase64=webhook.mediaBase64||null,audioUrl=webhook.mediaUrl||null,audioMimetype=webhook.mimetype||'audio/ogg',audioDuration=webhook.duration||0;\nlet ehImagem=tipoMensagem==='imageMessage',imagemUrl=webhook.mediaUrl||null,imagemBase64=webhook.mediaBase64||null,imagemMimetype=webhook.mimetype||'image/jpeg',imagemCaption=webhook.caption||'';\nlet ehDocumento=['documentMessage','documentWithCaptionMessage'].includes(tipoMensagem),docUrl=webhook.mediaUrl||null,docBase64=webhook.mediaBase64||null,docMimetype=webhook.mimetype||'application/octet-stream',docFileName=webhook.fileName||webhook.filename||'documento';\nif (!mensagem && !temArquivo) return [];\nreturn [{json:{numero,mensagem,nomeContato,tipoMensagem,temArquivo,ehAudio,audioBase64,audioUrl,audioMimetype,audioDuration,ehImagem,imagemUrl,imagemBase64,imagemMimetype,imagemCaption,ehDocumento,docUrl,docBase64,docMimetype,docFileName,mensagemOriginalAudio:ehAudio,instanceName,timestamp:new Date().toISOString()}}];"
+      },
+      "id": "node-normaliza",
+      "name": "Normaliza e filtra mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/profiles?evo_instance=eq.{{ $json.instanceName }}&select=id,evo_instance,display_name",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-resolve-cliente",
+      "name": "Resolve cliente pelo instanceName",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        400
+      ],
+      "notes": "Busca o user_id pelo instanceName da Evolution API."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/upsert_lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_numero_whatsapp: $('Normaliza e filtra mensagem').first().json.numero, p_user_id: ($('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id), p_stage: 'novo_contato' }) }}",
+        "options": {}
+      },
+      "id": "node-registra-contato",
+      "name": "Registra novo contato",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        400
+      ],
+      "notes": "Upsert minimo: garante que o lead existe."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/get_token_balance",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: ($('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id) }) }}",
+        "options": {}
+      },
+      "id": "node-verifica-saldo",
+      "name": "Verifica saldo de tokens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-bl",
+              "leftValue": "={{ ($('Verifica saldo de tokens').first().json?.[0]?.saldo_tokens || 0) <= 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-saldo",
+      "name": "Bloqueado por tokens?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Resolve cliente pelo instanceName').first().json[0]?.evo_instance + '/message/sendText' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "2ae3Y0xQFNxIcng27ufbAaHzioCDfReN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { number: $('Normaliza e filtra mensagem').first().json.numero, text: '\ud83d\udd0b Seus tokens acabaram! Adquira mais no Marketplace da XPERT.IA. Acesse: https://xpert.sevenxperts.com' } }}",
+        "options": {}
+      },
+      "id": "node-aviso-sem-tokens",
+      "name": "Envia aviso: sem tokens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-au",
+              "leftValue": "={{ $json.ehAudio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-eh-audio",
+      "name": "E audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $input.first().json;\nlet audioBase64 = dados.audioBase64;\nif (!audioBase64 && dados.audioUrl) {\n  try {\n    const response = await fetch(dados.audioUrl);\n    const arrayBuffer = await response.arrayBuffer();\n    const uint8 = new Uint8Array(arrayBuffer);\n    let binary = ''; uint8.forEach(b => binary += String.fromCharCode(b));\n    audioBase64 = btoa(binary);\n  } catch(e) { return [{ json: { ...dados, mensagem: '[Audio nao pode ser baixado]', ehAudio: false } }]; }\n}\nif (!audioBase64) return [{ json: { ...dados, mensagem: '[Audio sem conteudo]', ehAudio: false } }];\nreturn [{ json: { ...dados, audioBase64 } }];"
+      },
+      "id": "node-download-audio",
+      "name": "Download audio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $input.first().json;\nif (!dados.audioBase64) return [{ json: { ...dados, mensagem: '[Audio sem conteudo]' } }];\nconst response = await $helpers.request({\n  method: 'POST',\n  url: `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?action=whisper&user_id=${dados.instanceName}`,\n  headers: { 'Content-Type': 'application/json' },\n  body: JSON.stringify({ audio_base64: dados.audioBase64, filename: 'audio.ogg', language: 'pt' }),\n  responseType: 'json'\n});\nreturn [{ json: { ...dados, mensagem: response.text || '[Transcricao indisponivel]' } }];"
+      },
+      "id": "node-whisper",
+      "name": "Transcreve audio (Whisper)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        200
+      ],
+      "notes": "Transcreve audio via Whisper (llm-proxy). Custo: $0.006/min."
+    },
+    {
+      "parameters": {
+        "jsCode": "const orig = $('Normaliza e filtra mensagem').first().json;\nconst transcricao = $input.first().json.mensagem || '[Transcricao indisponivel]';\nreturn [{ json: { ...orig, ...$input.first().json, mensagem: transcricao, mensagemOriginalAudio: true } }];"
+      },
+      "id": "node-merge-audio",
+      "name": "Merge: audio -> texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-img",
+              "leftValue": "={{ $json.ehImagem }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-eh-imagem",
+      "name": "E imagem?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $input.first().json;\nconst imageContent = dados.imagemBase64\n  ? { type:'image_url', image_url:{ url:`data:${dados.imagemMimetype};base64,${dados.imagemBase64}`, detail:'high' } }\n  : dados.imagemUrl ? { type:'image_url', image_url:{ url:dados.imagemUrl, detail:'high' } } : null;\nif (!imageContent) {\n  const desc = dados.imagemCaption ? `Lead enviou imagem: \"${dados.imagemCaption}\"` : 'Lead enviou uma imagem';\n  return [{ json: { ...dados, mensagem: desc } }];\n}\nconst response = await $helpers.request({\n  method:'POST',\n  url:`https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${dados.instanceName}&model=gpt-4o`,\n  headers:{'Content-Type':'application/json'},\n  body:JSON.stringify({ messages:[{ role:'user', content:[\n    { type:'text', text: dados.imagemCaption ? `Imagem com legenda: \"${dados.imagemCaption}\". Descreva e analise.` : 'Descreva e analise esta imagem.' },\n    imageContent\n  ]}], system:'Voce descreve imagens enviadas por clientes. Seja objetivo e mencione documentos, contratos, comprovantes ou materiais relevantes.' }),\n  responseType:'json'\n});\nconst descricao = response.content || 'Imagem recebida mas nao foi possivel analisar.';\nreturn [{ json: { ...dados, mensagem: `\ud83d\udcf7 [Imagem]:\n${descricao}`, ehImagem:true } }];"
+      },
+      "id": "node-descreve-imagem",
+      "name": "Descreve imagem (Vision)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-doc",
+              "leftValue": "={{ $json.ehDocumento }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-eh-documento",
+      "name": "E documento?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $input.first().json;\nconst isPdf = dados.docMimetype?.includes('pdf');\nif (!dados.docBase64 && !dados.docUrl) {\n  return [{ json: { ...dados, mensagem: `\ud83d\udcc4 [Arquivo \"${dados.docFileName}\" recebido \u2014 sem conteudo legivel. Peca ao lead que descreva.]`, ehDocumento:true } }];\n}\nif (isPdf && dados.docBase64) {\n  const response = await $helpers.request({\n    method:'POST',\n    url:`https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=openai&user_id=${dados.instanceName}&model=gpt-4o`,\n    headers:{'Content-Type':'application/json'},\n    body:JSON.stringify({ messages:[{ role:'user', content:[\n      { type:'text', text:`Cliente enviou \"${dados.docFileName}\". Extraia e resuma o conteudo principal.` },\n      { type:'file', file:{ filename:dados.docFileName, file_data:`data:${dados.docMimetype};base64,${dados.docBase64}` } }\n    ]}], system:'Extraia e resuma documentos enviados por clientes. Inclua datas, nomes, valores relevantes.' }),\n    responseType:'json'\n  });\n  const texto = response.content || 'Nao foi possivel extrair.';\n  return [{ json: { ...dados, mensagem: `\ud83d\udcc4 [Arquivo \"${dados.docFileName}\"]:\n${texto}`, ehDocumento:true } }];\n}\nreturn [{ json: { ...dados, mensagem: `\ud83d\udcc4 [Arquivo \"${dados.docFileName}\" (${dados.docMimetype})] \u2014 Solicite o conteudo em texto.`, ehDocumento:true } }];"
+      },
+      "id": "node-extrai-doc",
+      "name": "Extrai texto documento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Unifica rotas: audio/imagem/documento/texto \u2014 mensagem ja pronta\nreturn [$input.first()];"
+      },
+      "id": "node-prepara-contexto",
+      "name": "Prepara contexto final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/agente_config?user_id=eq.${ ($('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id) }&chave=in.(sistema_prompt,objetivo,tonalidade,instrucoes_comunicacao,msg_qualificado,msg_desqualificado,responder_em_audio,criterios_qualificacao,numero_destino,grupo_destino,ai_provider,ai_model,web_urls_fixas,numero_atendente,web_search_enabled)&select=chave,valor` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-busca-all-config",
+      "name": "Busca todas configs (agente_config)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2420,
+        400
+      ],
+      "notes": "Busca TODA a config do cliente: prompt, tonalidade, criterios, AI model, destinos, URLs, atendente..."
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/message_history?user_id=eq.${ ($('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id) }&numero_whatsapp=eq.${ $('Normaliza e filtra mensagem').first().json.numero }&order=criado_em.asc&limit=20` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-busca-historico",
+      "name": "Busca historico da conversa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2640,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/message_history",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { user_id: ($('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id), numero_whatsapp: $('Normaliza e filtra mensagem').first().json.numero, sender: 'user', conteudo: $('Prepara contexto final').first().json.mensagem, tipo_mensagem: $('Normaliza e filtra mensagem').first().json.tipoMensagem || 'text' } }}",
+        "options": {}
+      },
+      "id": "node-salva-msg-cliente",
+      "name": "Salva mensagem do cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2860,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Monta system prompt COMPLETO a partir do agente_config (configurado no software)\n// Prompt NUNCA hardcoded \u2014 sempre do software via agente_config\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(row => { if (row && row.chave) configMap[row.chave] = row.valor; });\n\nconst clienteRaw = $('Resolve cliente pelo instanceName').first().json;\nconst cliente = Array.isArray(clienteRaw) ? clienteRaw[0] : clienteRaw;\nconst userId = cliente && cliente.id;\nconst evoInstance = cliente && cliente.evo_instance;\nconst dadosMsg = $('Prepara contexto final').first().json;\nconst numero = dadosMsg.numero;\nconst nomeContato = dadosMsg.nomeContato || 'Lead';\nconst mensagem = dadosMsg.mensagem;\nconst mensagemOriginalAudio = dadosMsg.mensagemOriginalAudio === true;\nconst responderEmAudio = configMap.responder_em_audio === 'true';\nconst aiProvider = configMap.ai_provider || 'openai';\nconst aiModel = configMap.ai_model || 'gpt-4o';\nconst webSearchEnabled = configMap.web_search_enabled !== 'false'; // default true\n\n// Base de conhecimento: chunks encontrados\nlet knowledgeSection = '';\ntry {\n  const kbRaw = $('Busca base de conhecimento').first().json || [];\n  const chunks = Array.isArray(kbRaw) ? kbRaw : [];\n  if (chunks.length > 0) {\n    const textos = chunks.map(c => `[${c.nome || 'Doc'}]\\n${c.conteudo}`).join('\\n---\\n');\n    knowledgeSection = '\\n\\nBASE DE CONHECIMENTO INTERNA (use estas informa\u00e7\u00f5es para responder com precis\u00e3o):\\n' + textos;\n  }\n} catch(e) {}\n\n// Web URLs configuradas NO SOFTWARE\nlet webUrlsSection = '';\ntry {\n  const urlsRaw = configMap.web_urls_fixas || '[]';\n  const urls = JSON.parse(urlsRaw);\n  if (Array.isArray(urls) && urls.length > 0) {\n    const lista = urls.map(u => '- ' + u.url + (u.desc ? ' (' + u.desc + ')' : '')).join('\\n');\n    webUrlsSection = '\\n\\nSITES DE REFER\u00caNCIA PRIORIT\u00c1RIOS (consulte estes ANTES de fazer busca web geral):\\n' + lista;\n  }\n} catch(e) {}\n\nconst partes = [\n  configMap.sistema_prompt || 'Voc\u00ea \u00e9 um assistente de vendas SDR profissional. Qualifique o cliente de forma consultiva e persuasiva.',\n  '',\n  configMap.objetivo ? ('OBJETIVO: ' + configMap.objetivo) : '',\n  configMap.tonalidade ? ('TONALIDADE: ' + configMap.tonalidade) : '',\n  configMap.instrucoes_comunicacao ? ('INSTRU\u00c7\u00d5ES DE COMUNICA\u00c7\u00c3O:\\n' + configMap.instrucoes_comunicacao) : '',\n  configMap.criterios_qualificacao ? ('CRIT\u00c9RIOS DE QUALIFICA\u00c7\u00c3O (cliente deve atender ao menos 3):\\n' + configMap.criterios_qualificacao) : '',\n  webUrlsSection,\n  knowledgeSection,\n  '',\n  'QUANDO O LEAD FOR QUALIFICADO:',\n  ('- Responda com: ' + (configMap.msg_qualificado || 'Perfeito! Vou encaminhar suas informa\u00e7\u00f5es para nosso time especializado.')),\n  '- Inclua no FINAL da mensagem EXATAMENTE este bloco JSON:',\n  '```json',\n  '{\"qualificado\":true,\"nome_completo\":\"Nome Sobrenome\",\"numero\":\"11999999999\",\"motivo_contato\":\"Resumo do que o lead quer\",\"tese\":\"Produto/servi\u00e7o de interesse\"}',\n  '```',\n  '',\n  'QUANDO O LEAD N\u00c3O FOR QUALIFICADO (e conversa encerrada):',\n  ('- Responda com: ' + (configMap.msg_desqualificado || 'Agradecemos o contato! Se mudar de ideia, estaremos aqui.')),\n  '- Inclua no FINAL:',\n  '```json',\n  '{\"qualificado\":false,\"fim_atendimento\":true,\"nome_completo\":\"Nome Sobrenome\",\"numero\":\"11999999999\",\"motivo_contato\":\"Resumo\",\"nao_qualificado_motivo\":\"Motivo da desqualifica\u00e7\u00e3o\"}',\n  '```',\n  '',\n  'PRIORIDADE DE BUSCA DE INFORMA\u00c7\u00d5ES:',\n  '1. Base de Conhecimento Interna (est\u00e1 acima)',\n  '2. Sites de Refer\u00eancia Priorit\u00e1rios (est\u00e1 acima)',\n  webSearchEnabled ? '3. Busca Web Geral (APENAS se a informa\u00e7\u00e3o n\u00e3o estiver nas fontes acima)' : '3. (Busca web desabilitada nesta conta)',\n  '',\n  'REGRAS:',\n  '- Fa\u00e7a UMA pergunta por vez',\n  '- Nunca prometa resultado ou vit\u00f3ria',\n  '- Seja conciso, claro e persuasivo',\n  '- Deixe o cliente falar (escute mais, fale menos)',\n  '- Se for fim de atendimento, despida-se gentilmente no JSON acima'\n].filter(Boolean);\n\nreturn [{ json: {\n  ...dadosMsg,\n  userId, evoInstance, numero, nomeContato, mensagem,\n  mensagemOriginalAudio, responderEmAudio, aiProvider, aiModel,\n  webSearchEnabled,\n  systemPrompt: partes.join('\\n'),\n  configMap\n} }];"
+      },
+      "id": "node-monta-system-prompt",
+      "name": "Monta system prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3740,
+        400
+      ],
+      "notes": "Assembla system prompt com configs do software + base de conhecimento + web URLs. Prompt NUNCA hardcoded."
+    },
+    {
+      "parameters": {
+        "jsCode": "const historico = $('Busca historico da conversa').first().json || [];\nconst arr = Array.isArray(historico) ? historico : [];\nconst ultimaMsgAgente = [...arr].reverse().find(m => m.sender === 'agent');\nconst agora = new Date();\nconst tempoMs = ultimaMsgAgente ? agora - new Date(ultimaMsgAgente.criado_em) : Infinity;\nconst tempoSeg = isFinite(tempoMs) ? Math.floor(tempoMs / 1000) : 999;\nreturn [{ json: { tempoDecorridoSeg: tempoSeg, deveEsperarSilencio: tempoSeg < 10, tempoRestanteSeg: Math.max(0, 10 - tempoSeg) } }];"
+      },
+      "id": "node-calcula-silencio",
+      "name": "Calcula silencio estrategico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3960,
+        400
+      ],
+      "notes": "Verifica tempo desde ultima msg do agente. Se < 10s, aguarda para nao parecer bot."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-sil",
+              "leftValue": "={{ $json.deveEsperarSilencio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-silencio",
+      "name": "Silencio estrategico?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        4180,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "unit": "seconds",
+        "amount": 10
+      },
+      "id": "node-aguarda-silencio",
+      "name": "Aguarda 10s (silencio)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4180,
+        580
+      ],
+      "notes": "Silencio estrategico SDR: aguarda 10s antes de responder."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=${ $('Monta system prompt').first().json.aiProvider }&user_id=${ $('Monta system prompt').first().json.userId }&model=${ $('Monta system prompt').first().json.aiModel }&web_search=${ $('Monta system prompt').first().json.webSearchEnabled === true ? 'true' : 'false' }` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => { const hist = ($('Busca historico da conversa').first().json || []).map(m => ({ role: m.sender === 'user' ? 'user' : 'assistant', content: m.conteudo })); const ctx = $('Monta system prompt').first().json; return JSON.stringify({ messages: [...hist, { role: 'user', content: ctx.mensagem }], system: ctx.systemPrompt }); })() }}",
+        "options": {}
+      },
+      "id": "node-chama-llm",
+      "name": "Chama LLM via llm-proxy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4400,
+        400
+      ],
+      "notes": "Chama LLM com system prompt do software. Web search ativado quando configurado. Suporta OpenAI/Claude/Gemini."
+    },
+    {
+      "parameters": {
+        "jsCode": "const r = $('Chama LLM via llm-proxy').first().json; const u = r.usage || {}; const tk = u.total_tokens || Math.ceil((($('Monta system prompt').first().json.mensagem || '').length + (r.content || '').length) / 4); return [{ json: { tokensUsados: tk, inputTokens: u.prompt_tokens||0, outputTokens: u.completion_tokens||0 } }];"
+      },
+      "id": "node-extrai-tokens",
+      "name": "Extrai tokens usados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4620,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/decrementar_tokens",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: $('Monta system prompt').first().json.userId, p_tokens: $('Extrai tokens usados').first().json.tokensUsados }) }}",
+        "options": {}
+      },
+      "id": "node-desconta-tokens",
+      "name": "Desconta tokens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4840,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/message_history",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { user_id: $('Monta system prompt').first().json.userId, numero_whatsapp: $('Monta system prompt').first().json.numero, sender: 'agent', conteudo: $('Chama LLM via llm-proxy').first().json.content, tipo_mensagem: 'text', tokens_usados: $('Extrai tokens usados').first().json.tokensUsados } }}",
+        "options": {}
+      },
+      "id": "node-salva-msg-ia",
+      "name": "Salva resposta da IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5060,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resposta = $('Chama LLM via llm-proxy').first().json.content || '';\nconst mensagemCliente = $('Monta system prompt').first().json.mensagem || '';\nconst conversaCompleta = mensagemCliente + ' ' + resposta;\nconst OBJECOES = {\n  preco: ['caro','preco','valor','investimento','custo','pagar','muito dinheiro'],\n  tempo: ['nao tenho tempo','depois','mais tarde','agora nao','ocupado','sem tempo'],\n  confianca: ['nao confio','duvida','suspeito','receio','nao sei se funciona','golpe'],\n  necessidade: ['nao preciso','nao tenho necessidade','ja tenho','duvido que funciona'],\n  concorrencia: ['outra empresa','ja tenho fornecedor','minha solucao atual']\n};\nlet tipoObjecao = null;\nfor (const [tipo,palavras] of Object.entries(OBJECOES)) {\n  for (const palavra of palavras) { if (conversaCompleta.toLowerCase().includes(palavra)) { tipoObjecao=tipo; break; } }\n  if (tipoObjecao) break;\n}\nreturn [{ json: { temObjecao: !!tipoObjecao, tipoObjecao: tipoObjecao||'nenhuma', conversaCompleta } }];"
+      },
+      "id": "node-detecta-objecao",
+      "name": "Detecta objecao",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5280,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-obj",
+              "leftValue": "={{ $json.temObjecao }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-objecao",
+      "name": "Tem objecao?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        5500,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider=${ $('Monta system prompt').first().json.aiProvider }&user_id=${ $('Monta system prompt').first().json.userId }&model=${ $('Monta system prompt').first().json.aiModel }` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messages: [{ role: 'user', content: 'OBJECAO: ' + $('Detecta objecao').first().json.tipoObjecao + '\\n\\nConversa:\\n' + $('Detecta objecao').first().json.conversaCompleta + '\\n\\nGere PLANO DE ACAO:\\n1. Estrategia\\n2. Argumento principal\\n3. Proximo passo' }], system: 'Voce e um estrategista de vendas. Gere planos de acao para contornar objecoes. Seja conciso e acionavel.' }) }}",
+        "options": {}
+      },
+      "id": "node-gera-plano-acao",
+      "name": "Gera plano de acao",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5500,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/lead_objections",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { user_id: $('Monta system prompt').first().json.userId, numero_whatsapp: $('Monta system prompt').first().json.numero, tipo_objecao: $('Detecta objecao').first().json.tipoObjecao, descricao: $('Detecta objecao').first().json.conversaCompleta, plano_acao: $('Gera plano de acao').first().json.content } }}",
+        "options": {}
+      },
+      "id": "node-salva-objecao",
+      "name": "Salva objecao",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5720,
+        580
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $('Monta system prompt').first().json.evoInstance, number: $('Monta system prompt').first().json.configMap.numero_destino || '', text: '\ud83d\udea8 OBJECAO DETECTADA\\n\\n\ud83d\udc64 Lead: ' + $('Monta system prompt').first().json.nomeContato + ' (' + $('Monta system prompt').first().json.numero + ')\\n\ud83c\udfaf Tipo: ' + $('Detecta objecao').first().json.tipoObjecao.toUpperCase() + '\\n\\n\ud83d\udccb PLANO DE ACAO:\\n' + $('Gera plano de acao').first().json.content } }}",
+        "options": {}
+      },
+      "id": "node-envia-plano-agente",
+      "name": "Envia plano ao agente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5940,
+        580
+      ],
+      "notes": "Envia plano de acao ao supervisor via WhatsApp."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-au-cfg",
+              "leftValue": "={{ $('Monta system prompt').first().json.responderEmAudio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            },
+            {
+              "id": "cond-au-orig",
+              "leftValue": "={{ $('Monta system prompt').first().json.mensagemOriginalAudio }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-audio-resp",
+      "name": "Responder em audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        5720,
+        400
+      ],
+      "notes": "Responde em audio SOMENTE se: (1) configurado no software E (2) cliente enviou audio."
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Monta system prompt').first().json;\nconst texto = $('Chama LLM via llm-proxy').first().json.content || '';\nconst response = await $helpers.request({ method: 'POST', url: `https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?action=tts&user_id=${ctx.userId}`, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: texto, voice: 'nova', model: 'tts-1' }), responseType: 'json' });\nreturn [{ json: { ...ctx, textoResposta: texto, audio_base64: response.audio_base64 || '' } }];"
+      },
+      "id": "node-gera-tts",
+      "name": "Gera audio TTS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5940,
+        240
+      ],
+      "notes": "Converte resposta em audio MP3 via TTS (voz: nova). Custo: $0.015/1K chars."
+    },
+    {
+      "parameters": {
+        "jsCode": "const dados = $input.first().json;\nif (!dados.audio_base64) return [{ json: { ...dados, enviarComoAudio: false } }];\nreturn [{ json: { ...dados, audioResposta: `data:audio/mp3;base64,${dados.audio_base64}`, enviarComoAudio: true } }];"
+      },
+      "id": "node-prepara-audio-envio",
+      "name": "Prepara audio para envio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6160,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ `https://evo.sevenxperts.solutions/message/sendWhatsAppAudio/${ $('Monta system prompt').first().json.evoInstance }` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "2ae3Y0xQFNxIcng27ufbAaHzioCDfReN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { number: $('Monta system prompt').first().json.numero, audio: $json.audioResposta } }}",
+        "options": {}
+      },
+      "id": "node-envia-audio-lead",
+      "name": "Envia audio ao lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6380,
+        240
+      ],
+      "notes": "Envia audio via Evolution API sendWhatsAppAudio."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $('Monta system prompt').first().json.evoInstance, number: $('Monta system prompt').first().json.numero, text: $('Chama LLM via llm-proxy').first().json.content } }}",
+        "options": {}
+      },
+      "id": "node-envia-resposta",
+      "name": "Envia texto ao lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        5940,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const respostaLLM = $('Chama LLM via llm-proxy').first().json.content || '';\nconst ctx = $('Monta system prompt').first().json;\nconst match = respostaLLM.match(/```json\\s*([\\s\\S]*?)\\s*```/);\nif (match) { try { const dados = JSON.parse(match[1]); return [{ json: { qualificado: dados.qualificado===true, dadosQualificacao: dados, userId: ctx.userId, numero: ctx.numero, nomeContato: ctx.nomeContato, evoInstance: ctx.evoInstance } }]; } catch(e) {} }\nreturn [{ json: { qualificado: false, dadosQualificacao: null, userId: ctx.userId, numero: ctx.numero, nomeContato: ctx.nomeContato, evoInstance: ctx.evoInstance } }];"
+      },
+      "id": "node-qualifica-lead",
+      "name": "Analisa qualificacao do lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6160,
+        400
+      ],
+      "notes": "Parseia bloco JSON na resposta do LLM. System prompt instrui incluir {qualificado:true/false,...}."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/upsert_lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_numero_whatsapp: $json.numero, p_user_id: $json.userId, p_nome: $json.dadosQualificacao && $json.dadosQualificacao.nome || '', p_celular: $json.dadosQualificacao && $json.dadosQualificacao.celular || '', p_tese: $json.dadosQualificacao && $json.dadosQualificacao.tese || '', p_resumo: ($json.dadosQualificacao && ($json.dadosQualificacao.resumo || $json.dadosQualificacao.motivo)) || '', p_qualificado: $json.qualificado, p_stage: $json.qualificado ? 'qualificado' : ($json.dadosQualificacao && $json.dadosQualificacao.motivo ? 'nao_qualificado' : 'em_atendimento') }) }}",
+        "options": {}
+      },
+      "id": "node-atualiza-stage",
+      "name": "Atualiza lead (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6380,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-qual",
+              "leftValue": "={{ $json.qualificado }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-qualificado",
+      "name": "Lead qualificado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        6600,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ `https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/agente_config?user_id=eq.${ $('Monta system prompt').first().json.userId }&chave=in.(numero_destino,grupo_destino)&select=chave,valor` }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-busca-config-relatorio",
+      "name": "Busca config: destino relatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        6820,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const configRel = $('Busca config: destino relatorio').first().json || [];\nconst cmap = {}; (Array.isArray(configRel)?configRel:[]).forEach(c=>{ cmap[c.chave]=c.valor; });\nconst dadosQ = $('Analisa qualificacao do lead').first().json;\nconst ctx = $('Monta system prompt').first().json;\nconst llmContent = $('Chama LLM via llm-proxy').first().json.content || '';\nconst nome = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.nome) || ctx.nomeContato || 'Lead';\nconst celular = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.celular) || ctx.numero;\nconst tese = (dadosQ.dadosQualificacao && dadosQ.dadosQualificacao.tese) || 'Nao especificado';\nconst resumo = (dadosQ.dadosQualificacao && (dadosQ.dadosQualificacao.resumo || dadosQ.dadosQualificacao.motivo)) || llmContent.substring(0,300);\nconst relatorio = `\ud83d\udcca RELATORIO DE QUALIFICACAO\\n\\n\ud83d\udc64 Nome: ${nome}\\n\ud83d\udcf1 Numero: ${celular}\\n\ud83c\udfaf Interesse: ${tese}\\n\\n\ud83d\udccb Resumo:\\n${resumo}\\n\\n\u23f0 ${new Date().toLocaleString('pt-BR')}`;\nconst numeroDestino = cmap.numero_destino || '';\nconst grupoDestino = cmap.grupo_destino || '';\nreturn [{ json: { relatorio, numeroDestino, grupoDestino, enviarParaNumero: !!numeroDestino, enviarParaGrupo: !!grupoDestino, evoInstance: ctx.evoInstance } }];"
+      },
+      "id": "node-formata-relatorio",
+      "name": "Formata relatorio de qualificacao",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        7040,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-reln",
+              "leftValue": "={{ $json.enviarParaNumero }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-tipo-relatorio",
+      "name": "Enviar para numero ou grupo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        7260,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $json.evoInstance, number: $json.numeroDestino, text: $json.relatorio } }}",
+        "options": {}
+      },
+      "id": "node-envia-relatorio-numero",
+      "name": "Envia relatorio ao numero",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7480,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $json.evoInstance, number: $json.grupoDestino, text: $json.relatorio } }}",
+        "options": {}
+      },
+      "id": "node-envia-relatorio-grupo",
+      "name": "Envia relatorio ao grupo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        7480,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {}
+      },
+      "id": "node-webhook-ok",
+      "name": "Responde 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        6820,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msg = $('Normaliza e filtra mensagem').first().json.mensagem || '';\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\n// \u26a1 S\u00d3 VERIFICA TRANSFER\u00caNCIA SE ESTIVER HABILITADO NO SOFTWARE (drawflow)\n// O campo numero_atendente deve ser preenchido na config do agente no painel\nconst numeroAtendente = configMap.numero_atendente || '';\nif (\\!numeroAtendente) {\n  // Transfer\u00eancia n\u00e3o configurada \u2014 encerra aqui sem transferir\n  return [{ json: { querTransferir: false, motivo: 'sem_config', mensagem: msg } }];\n}\n\nconst msgLower = msg.toLowerCase();\nconst KEYWORDS_TRANSFER = [\n  'quero falar com', 'falar com humano', 'falar com pessoa', 'quero atendente',\n  'preciso de um atendente', 'atendente humano', 'falar com alguem', 'falar com algu\u00e9m',\n  'quero uma pessoa', 'me passa para', 'me conecta com', 'suporte humano',\n  'nao quero falar com robo', 'n\u00e3o quero falar com rob\u00f4', 'me transfere', 'transferir'\n];\n\nconst querTransferir = KEYWORDS_TRANSFER.some(kw => msgLower.includes(kw));\nreturn [{ json: { querTransferir, numeroAtendente, mensagem: msg } }];"
+      },
+      "id": "node-detecta-transferencia",
+      "name": "Detecta pedido de transferencia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3080,
+        400
+      ],
+      "notes": "Detecta se o lead quer ser transferido para um atendente humano."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "cond-transfer",
+              "leftValue": "={{ $json.querTransferir }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-if-transferencia",
+      "name": "Quer atendente humano?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $('Resolve cliente pelo instanceName').first().json[0]?.evo_instance, number: $('Normaliza e filtra mensagem').first().json.numero, text: '\ud83d\udc64 Entendido! Aguarde um momento, vou conectar voc\u00ea com um de nossos atendentes. Em breve algu\u00e9m estar\u00e1 em contato!' } }}",
+        "options": {}
+      },
+      "id": "node-avisa-lead-transfer",
+      "name": "Avisa lead: transferindo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        200
+      ],
+      "notes": "Informa ao lead que sera transferido para atendente humano."
+    },
+    {
+      "parameters": {
+        "jsCode": "const cliente = $('Resolve cliente pelo instanceName').first().json;\nconst dadosVerif = $('Verifica se precisa transferir').first().json;\nconst contato = $('Normaliza e filtra mensagem').first().json;\n\nconst nomeCompleto = dadosVerif.nome_completo || contato.nomeContato || 'Contato desconhecido';\nconst numero = contato.numero || 'N/A';\nconst motivo = dadosVerif.motivo_contato || 'N\u00e3o informado';\nconst motTransf = dadosVerif.motivo === 'nao_qualificado' \n  ? 'N\u00e3o qualificado: ' + (dadosVerif.nao_qualificado_motivo || 'motivo n\u00e3o informado')\n  : 'Fim de atendimento';\n\nconst relatorio = `\n\ud83d\udccb RELAT\u00d3RIO DE ATENDIMENTO\n\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\ud83d\udc64 Nome: ${nomeCompleto}\n\ud83d\udcf1 Celular: ${numero}\n\ud83c\udfaf Motivo do Contato: ${motivo}\n\u274c Motivo da Transfer\u00eancia: ${motTransf}\n\n\ud83d\udcac Aguardando atendimento do agente...\n`.trim();\n\nreturn [{\n  json: {\n    evoInstance: cliente.evo_instance,\n    numeroAtendente: dadosVerif.numeroAtendente,\n    relatorio,\n    nomeCompleto,\n    numero,\n    motivo,\n    motTransf\n  }\n}];"
+      },
+      "id": "node-monta-notif-transfer",
+      "name": "Monta notificacao de transferencia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/evo-proxy",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { action: 'send-text', instance: $json.evoInstance, number: $json.numeroAtendente, text: $json.relatorio } }}",
+        "options": {}
+      },
+      "id": "node-notifica-atendente",
+      "name": "Notifica atendente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3740,
+        200
+      ],
+      "notes": "Envia alerta de transferencia para o numero do atendente (configurado no software)."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/buscar_conhecimento",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: ($('Resolve cliente pelo instanceName').first().json[0]?.id || $('Resolve cliente pelo instanceName').first().json?.id), p_query: $('Normaliza e filtra mensagem').first().json.mensagem, p_limit: 3 }) }}",
+        "options": {}
+      },
+      "id": "node-busca-conhecimento",
+      "name": "Busca base de conhecimento",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3520,
+        400
+      ],
+      "notes": "Busca full-text na base de conhecimento do cliente (documentos, PDFs e URLs indexados). Injeta no system prompt."
+    },
+    {
+      "id": "extrai_dados_estruturados",
+      "name": "Extrai dados estruturados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        2200
+      ],
+      "parameters": {
+        "jsCode": "const respLLM = $('Chama LLM via llm-proxy').first().json;\nconst content = respLLM.content || '';\n\n// Tenta extrair JSON da resposta (LLM pode retornar JSON estruturado)\nlet metadata = {\n  qualificado: null,\n  fim_atendimento: false,\n  nome_completo: null,\n  motivo_contato: null,\n  nao_qualificado_motivo: null\n};\n\ntry {\n  const jsonMatch = content.match(/\\{[^{}]*\"qualificado\"[^{}]*\\}/);\n  if (jsonMatch) {\n    const parsed = JSON.parse(jsonMatch[0]);\n    metadata = { ...metadata, ...parsed };\n  }\n} catch (e) {\n  // Sem JSON estruturado \u2014 LLM retornou s\u00f3 texto\n}\n\nreturn [{\n  json: {\n    content,\n    qualificado: metadata.qualificado,\n    fim_atendimento: metadata.fim_atendimento,\n    nome_completo: metadata.nome_completo,\n    motivo_contato: metadata.motivo_contato,\n    nao_qualificado_motivo: metadata.nao_qualificado_motivo\n  }\n}];"
+      }
+    },
+    {
+      "id": "verifica_se_precisa_transferir",
+      "name": "Verifica se precisa transferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        2800
+      ],
+      "parameters": {
+        "jsCode": "const dados = $('Extrai dados estruturados').first().json;\nconst configRaw = $('Busca todas configs (agente_config)').first().json || [];\nconst configMap = {};\n(Array.isArray(configRaw) ? configRaw : []).forEach(r => { if (r && r.chave) configMap[r.chave] = r.valor; });\n\nconst numeroAtendente = configMap.numero_atendente || '';\n\n// Transfere se: (n\u00e3o qualificado OU fim atendimento) E tem numero_atendente\nconst deveTransferir = (\n  (dados.qualificado === false || dados.fim_atendimento === true) &&\n  !!numeroAtendente\n);\n\nreturn [{\n  json: {\n    deveTransferir,\n    motivo: dados.qualificado === false ? 'nao_qualificado' : (dados.fim_atendimento ? 'fim_atendimento' : 'continua'),\n    nome_completo: dados.nome_completo,\n    motivo_contato: dados.motivo_contato,\n    nao_qualificado_motivo: dados.nao_qualificado_motivo,\n    numeroAtendente\n  }\n}];"
+      }
+    },
+    {
+      "name": "Busca a\u00e7\u00f5es customiz\u00e1veis",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3000
+      ],
+      "typeVersion": 1,
+      "id": "43774709-64a2-42e7-b1c2-df3711427c42",
+      "parameters": {
+        "mode": "raw",
+        "query": "SELECT * FROM public.buscar_acoes_workflow($1)",
+        "params": [
+          "{{ $json.user_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "IF qualificado?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3100
+      ],
+      "typeVersion": 1,
+      "id": "6acd95a6-42c4-417b-9673-fc388520c1dc",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "string",
+              "value": "{{ $json.qualificado }}",
+              "operation": "equals",
+              "truthy": "true"
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa criar tarefa CRM?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3200
+      ],
+      "typeVersion": 1,
+      "id": "9213608b-ae13-4aba-b2c2-c9a50d8e5e41",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.criar_tarefa_crm }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Cria tarefa CRM",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3300
+      ],
+      "typeVersion": 1,
+      "id": "fb8f25f7-a6d7-4475-a8c1-898ca335481a",
+      "parameters": {
+        "mode": "raw",
+        "query": "INSERT INTO public.lead_tarefas (lead_id, descricao, data_vencimento, concluida)\nVALUES ($1, 'Follow-up autom\u00e1tico da conversa', NOW() + INTERVAL '{{ $json.dias_follow_up }} days', false)",
+        "params": [
+          "{{ $json.lead_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa agendar follow-up?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3400
+      ],
+      "typeVersion": 1,
+      "id": "ca20604b-e95c-46cd-9191-64513ed77bad",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.agendar_follow_up }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Agenda follow-up",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3500
+      ],
+      "typeVersion": 1,
+      "id": "9f25d555-5bc8-4e7e-a66f-b2ee3f48a26e",
+      "parameters": {
+        "mode": "raw",
+        "query": "INSERT INTO public.lead_tarefas (lead_id, descricao, data_vencimento, concluida)\nVALUES ($1, 'Follow-up autom\u00e1tico - Lead qualificado', NOW() + INTERVAL '{{ $json.dias_follow_up }} days', false)",
+        "params": [
+          "{{ $json.lead_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa adicionar tag qualificado?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3600
+      ],
+      "typeVersion": 1,
+      "id": "23f7a8e5-8df5-4862-a6d6-e25b84458ca5",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.adicionar_tag_qualificado && $json.tag_qualificado }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Adiciona tag qualificado",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        3700
+      ],
+      "typeVersion": 1,
+      "id": "fcd2935e-a0f3-4d22-961e-e9315f7c993b",
+      "parameters": {
+        "mode": "raw",
+        "query": "SELECT public.adicionar_tag_lead($1, $2)",
+        "params": [
+          "{{ $json.lead_id }}",
+          "{{ $json.tag_qualificado }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "IF encerramento?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        3900
+      ],
+      "typeVersion": 1,
+      "id": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.fim_atendimento === true || $json.qualificado === false }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa remover de lista ativa?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        4000
+      ],
+      "typeVersion": 1,
+      "id": "854e7fdf-6e94-46e6-b02d-eaca51b47230",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.remover_lista_ativa }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Remove de lista ativa",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        4100
+      ],
+      "typeVersion": 1,
+      "id": "7bd9d09e-c438-4130-9d9c-c8790116692a",
+      "parameters": {
+        "mode": "raw",
+        "query": "UPDATE public.leads SET ativo = false WHERE id = $1",
+        "params": [
+          "{{ $json.lead_id }}"
+        ]
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa enviar pesquisa?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        4200
+      ],
+      "typeVersion": 1,
+      "id": "1bdb04b0-086f-4965-b735-4fd0d11db42d",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.enviar_pesquisa_satisfacao }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Envia pesquisa satisfa\u00e7\u00e3o",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1200,
+        4300
+      ],
+      "typeVersion": 4.1,
+      "id": "07a1c8dd-2de7-4b47-a803-06917beb5899",
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/functions/v1/send-satisfaction-survey",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer {{ $env.SUPABASE_SERVICE_ROLE }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "user_id": "{{ $json.user_id }}",
+          "lead_id": "{{ $json.lead_id }}",
+          "numero_whatsapp": "{{ $json.numero_whatsapp }}"
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Precisa adicionar tag encerramento?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1200,
+        4400
+      ],
+      "typeVersion": 1,
+      "id": "2ff389b9-3259-4a75-91cb-e65dde1152ac",
+      "parameters": {
+        "conditions": {
+          "default": [
+            {
+              "type": "boolean",
+              "value": "{{ $json.adicionar_tag_encerramento && $json.tag_encerramento }}",
+              "operation": "equals",
+              "truthy": true
+            }
+          ]
+        }
+      },
+      "disabled": false
+    },
+    {
+      "name": "Adiciona tag encerramento",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1200,
+        4500
+      ],
+      "typeVersion": 1,
+      "id": "a7485476-6829-4c8d-b41b-9fda851972c0",
+      "parameters": {
+        "mode": "raw",
+        "query": "SELECT public.adicionar_tag_lead($1, $2)",
+        "params": [
+          "{{ $json.lead_id }}",
+          "{{ $json.tag_encerramento }}"
+        ]
+      },
+      "disabled": false
+    }
+  ],
+  "connections": {
+    "Webhook - Evolution API": {
+      "main": [
+        [
+          {
+            "node": "Normaliza e filtra mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normaliza e filtra mensagem": {
+      "main": [
+        [
+          {
+            "node": "Resolve cliente pelo instanceName",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve cliente pelo instanceName": {
+      "main": [
+        [
+          {
+            "node": "Registra novo contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registra novo contato": {
+      "main": [
+        [
+          {
+            "node": "Verifica saldo de tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica saldo de tokens": {
+      "main": [
+        [
+          {
+            "node": "Bloqueado por tokens?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bloqueado por tokens?": {
+      "main": [
+        [
+          {
+            "node": "E audio?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envia aviso: sem tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E audio?": {
+      "main": [
+        [
+          {
+            "node": "Download audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "E imagem?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download audio": {
+      "main": [
+        [
+          {
+            "node": "Transcreve audio (Whisper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcreve audio (Whisper)": {
+      "main": [
+        [
+          {
+            "node": "Merge: audio -> texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge: audio -> texto": {
+      "main": [
+        [
+          {
+            "node": "Prepara contexto final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E imagem?": {
+      "main": [
+        [
+          {
+            "node": "Descreve imagem (Vision)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "E documento?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descreve imagem (Vision)": {
+      "main": [
+        [
+          {
+            "node": "Prepara contexto final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E documento?": {
+      "main": [
+        [
+          {
+            "node": "Extrai texto documento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepara contexto final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai texto documento": {
+      "main": [
+        [
+          {
+            "node": "Prepara contexto final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara contexto final": {
+      "main": [
+        [
+          {
+            "node": "Busca todas configs (agente_config)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca todas configs (agente_config)": {
+      "main": [
+        [
+          {
+            "node": "Busca historico da conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca historico da conversa": {
+      "main": [
+        [
+          {
+            "node": "Salva mensagem do cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva mensagem do cliente": {
+      "main": [
+        [
+          {
+            "node": "Busca base de conhecimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Busca base de conhecimento": {
+      "main": [
+        [
+          {
+            "node": "Monta system prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta system prompt": {
+      "main": [
+        [
+          {
+            "node": "Calcula silencio estrategico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcula silencio estrategico": {
+      "main": [
+        [
+          {
+            "node": "Silencio estrategico?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Silencio estrategico?": {
+      "main": [
+        [
+          {
+            "node": "Aguarda 10s (silencio)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chama LLM via llm-proxy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguarda 10s (silencio)": {
+      "main": [
+        [
+          {
+            "node": "Chama LLM via llm-proxy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chama LLM via llm-proxy": {
+      "main": [
+        [
+          {
+            "node": "Extrai dados estruturados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai tokens usados": {
+      "main": [
+        [
+          {
+            "node": "Desconta tokens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Desconta tokens": {
+      "main": [
+        [
+          {
+            "node": "Salva resposta da IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salva resposta da IA": {
+      "main": [
+        [
+          {
+            "node": "Responder em audio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder em audio?": {
+      "main": [
+        [
+          {
+            "node": "Gera audio TTS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envia texto ao lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gera audio TTS": {
+      "main": [
+        [
+          {
+            "node": "Prepara audio para envio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepara audio para envio": {
+      "main": [
+        [
+          {
+            "node": "Envia audio ao lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia audio ao lead": {
+      "main": [
+        [
+          {
+            "node": "Verifica se precisa transferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envia texto ao lead": {
+      "main": [
+        [
+          {
+            "node": "Verifica se precisa transferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quer atendente humano?": {
+      "main": [
+        [
+          {
+            "node": "Avisa lead: transferindo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisa lead: transferindo": {
+      "main": [
+        [
+          {
+            "node": "Monta notificacao de transferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta notificacao de transferencia": {
+      "main": [
+        [
+          {
+            "node": "Notifica atendente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai dados estruturados": {
+      "main": [
+        [
+          {
+            "node": "Extrai tokens usados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verifica se precisa transferir": {
+      "main": [
+        [
+          {
+            "node": "Avisa lead: transferindo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responde 200 OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "43774709-64a2-42e7-b1c2-df3711427c42": {
+      "main": [
+        [
+          {
+            "node": "6acd95a6-42c4-417b-9673-fc388520c1dc",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "6acd95a6-42c4-417b-9673-fc388520c1dc": {
+      "main": [
+        [
+          {
+            "node": "9213608b-ae13-4aba-b2c2-c9a50d8e5e41",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "9213608b-ae13-4aba-b2c2-c9a50d8e5e41": {
+      "main": [
+        [
+          {
+            "node": "fb8f25f7-a6d7-4475-a8c1-898ca335481a",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "ca20604b-e95c-46cd-9191-64513ed77bad",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "fb8f25f7-a6d7-4475-a8c1-898ca335481a": {
+      "main": [
+        [
+          {
+            "node": "ca20604b-e95c-46cd-9191-64513ed77bad",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "ca20604b-e95c-46cd-9191-64513ed77bad": {
+      "main": [
+        [
+          {
+            "node": "9f25d555-5bc8-4e7e-a66f-b2ee3f48a26e",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "23f7a8e5-8df5-4862-a6d6-e25b84458ca5",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "9f25d555-5bc8-4e7e-a66f-b2ee3f48a26e": {
+      "main": [
+        [
+          {
+            "node": "23f7a8e5-8df5-4862-a6d6-e25b84458ca5",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "23f7a8e5-8df5-4862-a6d6-e25b84458ca5": {
+      "main": [
+        [
+          {
+            "node": "fcd2935e-a0f3-4d22-961e-e9315f7c993b",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "fcd2935e-a0f3-4d22-961e-e9315f7c993b": {
+      "main": [
+        [
+          {
+            "node": "76cde21c-ab1f-4b87-bb26-e5a8eee73cca",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "76cde21c-ab1f-4b87-bb26-e5a8eee73cca": {
+      "main": [
+        [
+          {
+            "node": "854e7fdf-6e94-46e6-b02d-eaca51b47230",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "verifica_se_precisa_transferir",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "854e7fdf-6e94-46e6-b02d-eaca51b47230": {
+      "main": [
+        [
+          {
+            "node": "7bd9d09e-c438-4130-9d9c-c8790116692a",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "1bdb04b0-086f-4965-b735-4fd0d11db42d",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "7bd9d09e-c438-4130-9d9c-c8790116692a": {
+      "main": [
+        [
+          {
+            "node": "1bdb04b0-086f-4965-b735-4fd0d11db42d",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "1bdb04b0-086f-4965-b735-4fd0d11db42d": {
+      "main": [
+        [
+          {
+            "node": "07a1c8dd-2de7-4b47-a803-06917beb5899",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "2ff389b9-3259-4a75-91cb-e65dde1152ac",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "07a1c8dd-2de7-4b47-a803-06917beb5899": {
+      "main": [
+        [
+          {
+            "node": "2ff389b9-3259-4a75-91cb-e65dde1152ac",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "2ff389b9-3259-4a75-91cb-e65dde1152ac": {
+      "main": [
+        [
+          {
+            "node": "a7485476-6829-4c8d-b41b-9fda851972c0",
+            "branch": 0,
+            "slot": 0
+          }
+        ],
+        [
+          {
+            "node": "verifica_se_precisa_transferir",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    },
+    "a7485476-6829-4c8d-b41b-9fda851972c0": {
+      "main": [
+        [
+          {
+            "node": "verifica_se_precisa_transferir",
+            "branch": 0,
+            "slot": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    "SDR",
+    "WhatsApp",
+    "XPERT.IA",
+    "v3"
+  ]
+}

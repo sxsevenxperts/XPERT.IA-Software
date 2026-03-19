@@ -11,6 +11,3 @@ node_modules/
 
 # Supabase local
 .supabase/
-
-# Claude Code local files
-.claude/
