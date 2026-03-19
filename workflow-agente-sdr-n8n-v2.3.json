@@ -8,7 +8,7 @@
         "responseMode": "onReceived",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000001",
+      "id": "node-01",
       "name": "Webhook WhatsApp",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -17,9 +17,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// ========================================================\n// PARSE MESSAGE — Extrai dados do webhook Evolution API\n// ========================================================\nconst body = $input.first().json.body || $input.first().json;\n\n// Ignora mensagens enviadas por nós (fromMe)\nif (body.data?.key?.fromMe === true) return [];\n\n// Ignora eventos que não são mensagens\nconst event = body.event || '';\nif (event && !event.includes('messages')) return [];\n\n// Extrai instance name\nconst instance = body.instance || body.instanceName || '';\n\n// Extrai número do remetente\nconst remoteJid = body.data?.key?.remoteJid || '';\nconst phone = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '').replace(/\\D/g, '');\n\n// Ignora grupos\nif (remoteJid.includes('@g.us')) return [];\n\n// Extrai texto da mensagem\nconst message = body.data?.message;\nlet text = '';\nif (message?.conversation) text = message.conversation;\nelse if (message?.extendedTextMessage?.text) text = message.extendedTextMessage.text;\nelse if (message?.imageMessage?.caption) text = message.imageMessage.caption;\nelse if (message?.videoMessage?.caption) text = message.videoMessage.caption;\n\nconst messageType = body.data?.messageType || 'conversation';\nlet media_type = null;\nif (messageType === 'imageMessage') media_type = 'image';\nelse if (messageType === 'audioMessage') media_type = 'audio';\nelse if (messageType === 'videoMessage') media_type = 'video';\nelse if (messageType === 'documentMessage') media_type = 'document';\n\n// Se não tem texto nem mídia, ignorar\nif (!text && !media_type) return [];\n\nreturn [{ json: { instance, phone, remoteJid, text: text || '[mídia recebida]', media_type, messageType, timestamp: new Date().toISOString() } }];"
+        "jsCode": "// PARSE MESSAGE — Evolution API webhook\n// Suporta: texto, áudio (ogg/ptt), imagem, documento/PDF, vídeo\nconst body = $input.first().json.body || $input.first().json;\n\nif (body.data?.key?.fromMe === true) return [];\nconst event = body.event || '';\nif (event && !event.includes('messages')) return [];\n\nconst instance = body.instance || body.instanceName || '';\nconst remoteJid = body.data?.key?.remoteJid || '';\nconst phone = remoteJid.replace('@s.whatsapp.net','').replace('@g.us','').replace(/\\D/g,'');\nif (remoteJid.includes('@g.us')) return [];\n\nconst messageType = body.data?.messageType || 'conversation';\nconst message = body.data?.message || {};\n\n// Texto\nlet text = message.conversation || message.extendedTextMessage?.text\n  || message.imageMessage?.caption || message.videoMessage?.caption\n  || message.documentMessage?.caption || '';\n\n// Mídia\nlet media_type = null, media_base64 = null, media_mimetype = null;\nif (messageType === 'audioMessage' || messageType === 'pttMessage') {\n  media_type = 'audio';\n  media_base64 = message.audioMessage?.base64 || message.pttMessage?.base64 || null;\n  media_mimetype = message.audioMessage?.mimetype || 'audio/ogg; codecs=opus';\n} else if (messageType === 'imageMessage') {\n  media_type = 'image';\n  media_base64 = message.imageMessage?.base64 || null;\n  media_mimetype = message.imageMessage?.mimetype || 'image/jpeg';\n} else if (messageType === 'documentMessage') {\n  media_type = 'document';\n  media_base64 = message.documentMessage?.base64 || null;\n  media_mimetype = message.documentMessage?.mimetype || 'application/pdf';\n} else if (messageType === 'videoMessage') {\n  media_type = 'video';\n  media_base64 = message.videoMessage?.base64 || null;\n  media_mimetype = message.videoMessage?.mimetype || 'video/mp4';\n}\n\nif (!text && !media_type) return [];\n\nreturn [{ json: { instance, phone, remoteJid, text: text || '', media_type, media_base64, media_mimetype, messageType, timestamp: new Date().toISOString() } }];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000002",
+      "id": "node-02",
       "name": "Parse Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -30,19 +30,17 @@
         "method": "POST",
         "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_find_user",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_instance: $json.instance }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000003",
+      "id": "node-03",
       "name": "Find User",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -50,9 +48,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Valida se encontrou usuário\nconst result = $('Find User').first().json;\nconst users = Array.isArray(result) ? result : [result];\nconst phone = $('Parse Message').first().json.phone;\nconst instance = $('Parse Message').first().json.instance;\n\nif (!users.length || !users[0]?.user_id) {\n  return [{ json: { error: true, message: 'Nenhum usuário para instância: ' + instance } }];\n}\nconst user = users[0];\nif (user.active === false) {\n  return [{ json: { error: true, message: 'Usuário desativado' } }];\n}\nreturn [{ json: { error: false, user_id: user.user_id, display_name: user.display_name, evo_instance: user.evo_instance, phone, instance } }];"
+        "jsCode": "const result = $('Find User').first().json;\nconst users = Array.isArray(result) ? result : [result];\nconst phone = $('Parse Message').first().json.phone;\nconst instance = $('Parse Message').first().json.instance;\nif (!users.length || !users[0]?.user_id) return [{ json: { error: true, message: 'Sem usuário para: ' + instance } }];\nconst u = users[0];\nif (u.active === false) return [{ json: { error: true, message: 'Usuário desativado' } }];\nreturn [{ json: { error: false, user_id: u.user_id, display_name: u.display_name, evo_instance: u.evo_instance, phone, instance } }];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000004",
+      "id": "node-04",
       "name": "Validate User",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -67,7 +65,7 @@
         },
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000005",
+      "id": "node-05",
       "name": "User Valid?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
@@ -78,19 +76,17 @@
         "method": "POST",
         "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_get_subscription",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_user_id: $('Validate User').first().json.user_id }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000006",
+      "id": "node-06",
       "name": "Get Subscription",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -101,19 +97,17 @@
         "method": "POST",
         "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_find_or_create_lead",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_user_id: $('Validate User').first().json.user_id, p_phone: $('Parse Message').first().json.phone, p_first_message: $('Parse Message').first().json.text }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000007",
+      "id": "node-07",
       "name": "Find or Create Lead",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -121,9 +115,9 @@
     },
     {
       "parameters": {
-        "jsCode": "// Combina dados de subscription + lead + detecta tipo de agente\nconst subRaw = $('Get Subscription').first().json;\nconst leadRaw = $('Find or Create Lead').first().json;\nconst userData = $('Validate User').first().json;\n\nconst sub = Array.isArray(subRaw) ? subRaw[0] || {} : subRaw || {};\nconst lead = Array.isArray(leadRaw) ? leadRaw[0] || {} : leadRaw || {};\n\nconst stage = lead.stage || 'novo_contato';\nconst fluxo_id = lead.fluxo_id || '';\nconst objecoes_count = lead.objecoes_count || 0;\n\nlet agent_type = 'principal';\nlet agent_index = 0;\nif ((stage === 'objecoes' || objecoes_count > 2) && sub.addon_objecao) {\n  agent_type = 'objecao';\n} else if (stage === 'prospecao' || (fluxo_id && fluxo_id.includes && fluxo_id.includes('prospec'))) {\n  agent_type = 'prospec';\n} else if (sub.agentes_extras > 0 && fluxo_id && fluxo_id.match && fluxo_id.match(/ae(\\d)/)) {\n  agent_type = 'extra';\n  agent_index = parseInt(fluxo_id.match(/ae(\\d)/)[1]);\n}\n\nreturn [{ json: {\n  user_id: userData.user_id,\n  lead_id: lead.lead_id,\n  lead_nome: lead.nome,\n  is_new_lead: lead.is_new || false,\n  stage, agent_type, agent_index,\n  evo_instance: userData.evo_instance,\n  phone: userData.phone,\n  sub_status: sub.status,\n  creditos: sub.creditos_tokens || 0\n} }];"
+        "jsCode": "// Combina sub + lead + detecta tipo de agente\nconst subRaw = $('Get Subscription').first().json;\nconst leadRaw = $('Find or Create Lead').first().json;\nconst userData = $('Validate User').first().json;\nconst sub = (Array.isArray(subRaw) ? subRaw[0] : subRaw) || {};\nconst lead = (Array.isArray(leadRaw) ? leadRaw[0] : leadRaw) || {};\nconst stage = lead.stage || 'novo_contato';\nconst fluxo_id = lead.fluxo_id || '';\nconst objecoes_count = lead.objecoes_count || 0;\nlet agent_type = 'principal', agent_index = 0;\nif ((stage === 'objecoes' || objecoes_count > 2) && sub.addon_objecao) agent_type = 'objecao';\nelse if (stage === 'prospecao' || fluxo_id.includes?.('prospec')) agent_type = 'prospec';\nelse if (sub.agentes_extras > 0 && fluxo_id.match?.(/ae(\\d)/)) { agent_type = 'extra'; agent_index = parseInt(fluxo_id.match(/ae(\\d)/)[1]); }\nreturn [{ json: { user_id: userData.user_id, lead_id: lead.lead_id, lead_nome: lead.nome, is_new_lead: lead.is_new || false, stage, agent_type, agent_index, evo_instance: userData.evo_instance, phone: userData.phone, creditos: sub.creditos_tokens || 0 } }];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000008",
+      "id": "node-08",
       "name": "Process Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -131,88 +125,97 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "id": "cm1", "leftValue": "={{ $('Parse Message').first().json.media_type !== null && $('Parse Message').first().json.media_type !== undefined && $('Parse Message').first().json.media_base64 !== null }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-09",
+      "name": "Has Media?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1760, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?action={{ $('Parse Message').first().json.media_type === 'audio' ? 'whisper' : 'vision' }}&user_id={{ $('Process Data').first().json.user_id }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MzM1OCwiZXhwIjoyMDg3NjI5MzU4fQ.vfKzD4QpwFw2VQtA1v7XHD1kOFuX6ax6Wf71wxZ__w8" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify( $('Parse Message').first().json.media_type === 'audio' ? { audio_base64: $('Parse Message').first().json.media_base64, language: 'pt' } : { image_base64: $('Parse Message').first().json.media_base64, mimetype: $('Parse Message').first().json.media_mimetype, prompt: 'Descreva detalhadamente o conteúdo desta ' + ($('Parse Message').first().json.media_type === 'document' ? 'documento/PDF' : 'imagem') + ' em português. Se houver texto, transcreva na íntegra.' } ) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "node-10",
+      "name": "Process Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Resolve o texto final: transcrição/descrição OU texto original\nconst parsed = $('Parse Message').first().json;\nconst media_type = parsed.media_type;\nlet final_text = parsed.text || '';\nconst hasMedia = media_type !== null && media_type !== undefined && parsed.media_base64 !== null;\n\nif (hasMedia) {\n  try {\n    const api = $('Process Media').first().json;\n    const result = api.text || api.content || '';\n    if (result) {\n      if (media_type === 'audio') final_text = result;\n      else if (media_type === 'image') final_text = (final_text ? final_text + '\\n\\n' : '') + '[Imagem]\\n' + result;\n      else if (media_type === 'document') final_text = (final_text ? final_text + '\\n\\n' : '') + '[PDF/Documento]\\n' + result;\n      else final_text = (final_text ? final_text + '\\n\\n' : '') + '[Vídeo] ' + result;\n    } else {\n      const label = { audio: '[Áudio não transcrito]', image: '[Imagem recebida]', document: '[Documento recebido]', video: '[Vídeo recebido]' };\n      final_text = (final_text || '') + (label[media_type] || '[Mídia recebida]');\n    }\n  } catch(e) { final_text = final_text || '[Mídia recebida]'; }\n}\n\nreturn [{ json: { final_text: final_text || '[mensagem vazia]', media_type } }];"
+      },
+      "id": "node-11",
+      "name": "Resolve Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 480]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_get_configs",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_user_id: $json.user_id }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: $('Process Data').first().json.user_id }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000009",
+      "id": "node-12",
       "name": "Get Configs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1760, 240]
+      "position": [2200, 240]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_get_history",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_user_id: $('Process Data').first().json.user_id, p_lead_id: $('Process Data').first().json.lead_id, p_limit: 10 }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000010",
+      "id": "node-13",
       "name": "Get History",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1760, 440]
+      "position": [2200, 440]
     },
     {
       "parameters": {
-        "jsCode": "// ========================================================\n// BUILD PROMPT — Monta prompt + histórico + seleciona modelo\n// ========================================================\nconst configRaw = $('Get Configs').first().json;\nconst configs = Array.isArray(configRaw) ? configRaw : [];\nconst configMap = {};\nconfigs.forEach(item => { if (item.chave && item.valor !== undefined) configMap[item.chave] = item.valor; });\n\nconst agentData = $('Process Data').first().json;\nconst prefix = agentData.agent_type === 'principal' ? '' : agentData.agent_type === 'prospec' ? 'prospec_' : agentData.agent_type === 'objecao' ? 'ob_' : `ae${agentData.agent_index}_`;\n\nfunction cfg(key, fb) { return configMap[`${prefix}${key}`] || configMap[key] || fb || ''; }\n\n// PROMPT\nlet prompt = cfg('sistema_prompt', 'Você é um assistente de vendas profissional. Qualifique leads com base nos critérios definidos. Seja educado, persuasivo e objetivo.');\nconst objetivo = cfg('objetivo');\nif (objetivo) prompt = `OBJETIVO: ${objetivo}\\n\\n${prompt}`;\nconst tonalidade = cfg('tonalidade');\nif (tonalidade) prompt += `\\n\\nTONALIDADE: ${tonalidade}`;\nconst criterios = cfg('criterios_qualificacao');\nif (criterios) prompt += `\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n${criterios}`;\nconst instrucoes = cfg('instrucoes_comunicacao');\nif (instrucoes) prompt += `\\n\\nINSTRUÇÕES DE COMUNICAÇÃO:\\n${instrucoes}`;\nprompt += '\\n\\nTAGS ESPECIAIS (use quando apropriado):';\nprompt += '\\n- [LEAD_QUALIFICADO] — quando o lead atende todos os critérios';\nprompt += '\\n- [LEAD_DESQUALIFICADO] — quando o lead não tem perfil';\nprompt += '\\n- [INICIAR_PAGAMENTO] — quando o lead quer pagar';\nprompt += '\\n\\nIMPORTANTE: Mensagens curtas e naturais, como WhatsApp real. Máximo 3 parágrafos.';\n\n// PROVIDER / MODELO\nconst provider = cfg('ai_provider', 'openai');\nlet model, temperature, max_tokens;\nif (provider === 'claude') {\n  model = cfg('claude_model', 'claude-haiku-4-5');\n  temperature = parseFloat(cfg('claude_temperature', '0.7'));\n  max_tokens = parseInt(cfg('claude_max_tokens', '1024'));\n} else if (provider === 'google') {\n  model = cfg('google_model', 'gemini-2.0-flash');\n  temperature = parseFloat(cfg('google_temperature', '0.7'));\n  max_tokens = parseInt(cfg('google_max_tokens', '1024'));\n} else {\n  model = cfg('openai_model', 'gpt-4o-mini');\n  temperature = parseFloat(cfg('openai_temperature', '0.7'));\n  max_tokens = parseInt(cfg('openai_max_tokens', '1024'));\n}\n\n// HISTÓRICO\nconst histRaw = $('Get History').first().json;\nconst history = Array.isArray(histRaw) ? histRaw : [];\nconst messages = [{ role: 'system', content: prompt }];\n[...history].reverse().forEach(msg => {\n  messages.push({ role: msg.sender === 'assistant' ? 'assistant' : 'user', content: msg.conteudo });\n});\nmessages.push({ role: 'user', content: $('Parse Message').first().json.text });\n\nreturn [{ json: {\n  provider, model, temperature, max_tokens, messages,\n  user_id: agentData.user_id,\n  msg_qualificado: cfg('msg_qualificado', 'Parabéns! Você foi qualificado.'),\n  msg_desqualificado: cfg('msg_desqualificado', 'Obrigado pelo contato!'),\n  responder_em_audio: cfg('responder_em_audio', 'false'),\n  numero_destino: cfg('numero_destino'),\n  grupo_destino: cfg('grupo_destino'),\n  notif_destino: configMap['notif_destino'] || 'numero'\n} }];"
+        "jsCode": "// BUILD PROMPT — configs + histórico + mensagem (texto ou mídia transcrita)\nconst configRaw = $('Get Configs').first().json;\nconst configs = Array.isArray(configRaw) ? configRaw : [];\nconst cm = {};\nconfigs.forEach(i => { if (i.chave && i.valor !== undefined) cm[i.chave] = i.valor; });\n\nconst ag = $('Process Data').first().json;\nconst px = ag.agent_type === 'principal' ? '' : ag.agent_type === 'prospec' ? 'prospec_' : ag.agent_type === 'objecao' ? 'ob_' : `ae${ag.agent_index}_`;\nconst cfg = (k, fb) => cm[`${px}${k}`] || cm[k] || fb || '';\n\n// Prompt base\nlet prompt = cfg('sistema_prompt', 'Você é um assistente de vendas profissional. Qualifique leads com base nos critérios definidos. Seja educado, persuasivo e objetivo.');\nconst obj = cfg('objetivo'); if (obj) prompt = `OBJETIVO: ${obj}\\n\\n${prompt}`;\nconst ton = cfg('tonalidade'); if (ton) prompt += `\\n\\nTONALIDADE: ${ton}`;\nconst crit = cfg('criterios_qualificacao'); if (crit) prompt += `\\n\\nCRITÉRIOS DE QUALIFICAÇÃO:\\n${crit}`;\nconst inst = cfg('instrucoes_comunicacao'); if (inst) prompt += `\\n\\nINSTRUÇÕES DE COMUNICAÇÃO:\\n${inst}`;\nprompt += '\\n\\nTAGS ESPECIAIS:\\n- [LEAD_QUALIFICADO] — quando o lead atende todos os critérios\\n- [LEAD_DESQUALIFICADO] — quando não tem perfil\\n- [INICIAR_PAGAMENTO] — quando quer pagar\\n\\nIMPORTANTE: Mensagens curtas e naturais como WhatsApp. Máximo 3 parágrafos.';\n\n// Provider / modelo\nconst provider = cfg('ai_provider', 'openai');\nlet model = 'gpt-4o-mini', temperature = 0.7, max_tokens = 1024;\nif (provider === 'claude') { model = cfg('claude_model','claude-haiku-4-5'); temperature = parseFloat(cfg('claude_temperature','0.7')); max_tokens = parseInt(cfg('claude_max_tokens','1024')); }\nelse if (provider === 'google') { model = cfg('google_model','gemini-2.0-flash'); temperature = parseFloat(cfg('google_temperature','0.7')); max_tokens = parseInt(cfg('google_max_tokens','1024')); }\nelse { model = cfg('openai_model','gpt-4o-mini'); temperature = parseFloat(cfg('openai_temperature','0.7')); max_tokens = parseInt(cfg('openai_max_tokens','1024')); }\n\n// Histórico\nconst hist = Array.isArray($('Get History').first().json) ? $('Get History').first().json : [];\nconst messages = [{ role: 'system', content: prompt }];\n[...hist].reverse().forEach(m => messages.push({ role: m.sender === 'assistant' ? 'assistant' : 'user', content: m.conteudo }));\n\n// Texto final (transcrito se era áudio/imagem, ou texto direto)\nconst final_text = $('Resolve Text').first().json.final_text;\nmessages.push({ role: 'user', content: final_text });\n\nreturn [{ json: {\n  provider, model, temperature, max_tokens, messages, user_id: ag.user_id,\n  msg_qualificado: cfg('msg_qualificado','Parabéns! Você foi qualificado.'),\n  msg_desqualificado: cfg('msg_desqualificado','Obrigado pelo contato!'),\n  responder_em_audio: cfg('responder_em_audio','false'),\n  numero_destino: cfg('numero_destino'),\n  notif_destino: cm['notif_destino'] || 'numero'\n} }];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000011",
+      "id": "node-14",
       "name": "Build Prompt",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1980, 340]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider={{ $json.provider }}&user_id={{ $json.user_id }}&model={{ $json.model }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MzM1OCwiZXhwIjoyMDg3NjI5MzU4fQ.vfKzD4QpwFw2VQtA1v7XHD1kOFuX6ax6Wf71wxZ__w8" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ provider: $json.provider, model: $json.model, temperature: $json.temperature, max_tokens: $json.max_tokens, messages: $json.messages, user_id: $json.user_id }) }}",
-        "options": { "timeout": 60000 }
-      },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000012",
-      "name": "LLM Call",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2200, 340]
-    },
-    {
-      "parameters": {
-        "jsCode": "// ========================================================\n// PROCESS RESPONSE — Detecta qualificação, objeções, limpa tags\n// ========================================================\nconst llm = $('LLM Call').first().json;\nconst response = llm.content || llm.choices?.[0]?.message?.content || '';\nconst promptData = $('Build Prompt').first().json;\nconst userText = ($('Parse Message').first().json.text || '').toLowerCase();\nconst agentData = $('Process Data').first().json;\n\nconst qualified = response.includes('[LEAD_QUALIFICADO]');\nconst disqualified = response.includes('[LEAD_DESQUALIFICADO]');\nconst payment = response.includes('[INICIAR_PAGAMENTO]');\n\nconst objWords = ['não posso','muito caro','não sei','concorrente','depois','não tenho','sem interesse','tá caro','está caro'];\nlet has_objection = false, objection_type = '';\nfor (const kw of objWords) {\n  if (userText.includes(kw)) {\n    has_objection = true;\n    objection_type = kw.includes('caro') || kw.includes('não tenho') ? 'preco' : kw.includes('depois') ? 'timing' : kw.includes('concorrente') ? 'concorrente' : 'outro';\n    break;\n  }\n}\n\nlet clean = response.replace(/\\[LEAD_QUALIFICADO\\]/g,'').replace(/\\[LEAD_DESQUALIFICADO\\]/g,'').replace(/\\[INICIAR_PAGAMENTO\\]/g,'').trim();\n\nlet new_stage = agentData.stage;\nif (qualified) new_stage = 'qualificado';\nelse if (disqualified) new_stage = 'nao_qualificado';\nelse if (agentData.stage === 'novo_contato') new_stage = 'em_atendimento';\n\nreturn [{ json: {\n  response_text: clean, qualified, disqualified, payment_intent: payment,\n  has_objection, objection_type, new_stage,\n  tokens_used: llm.deducted_tokens || 0,\n  numero_destino: promptData.numero_destino,\n  notif_destino: promptData.notif_destino\n} }];"
-      },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000013",
-      "name": "Process Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [2420, 340]
@@ -220,102 +223,193 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://evo.sevenxperts.solutions/message/sendText/{{ $('Process Data').first().json.evo_instance }}",
+        "url": "=https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?provider={{ $json.provider }}&user_id={{ $json.user_id }}&model={{ $json.model }}",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MzM1OCwiZXhwIjoyMDg3NjI5MzU4fQ.vfKzD4QpwFw2VQtA1v7XHD1kOFuX6ax6Wf71wxZ__w8" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Parse Message').first().json.phone, text: $json.response_text }) }}",
-        "options": { "timeout": 15000 }
+        "jsonBody": "={{ JSON.stringify({ provider: $json.provider, model: $json.model, temperature: $json.temperature, max_tokens: $json.max_tokens, messages: $json.messages, user_id: $json.user_id }) }}",
+        "options": { "timeout": 60000 }
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000014",
-      "name": "Send WhatsApp",
+      "id": "node-15",
+      "name": "LLM Call",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [2640, 340]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_save_response",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_user_id: $('Process Data').first().json.user_id, p_lead_id: $('Process Data').first().json.lead_id, p_phone: $('Parse Message').first().json.phone, p_user_message: $('Parse Message').first().json.text, p_assistant_message: $('Process Response').first().json.response_text, p_tokens_used: $('Process Response').first().json.tokens_used, p_new_stage: $('Process Response').first().json.new_stage, p_agent_type: $('Process Data').first().json.agent_type }) }}",
-        "options": {}
+        "jsCode": "// PROCESS RESPONSE — detecta qualificação, objeções, limpa tags\nconst llm = $('LLM Call').first().json;\nconst response = llm.content || llm.choices?.[0]?.message?.content || '';\nconst promptData = $('Build Prompt').first().json;\nconst userText = ($('Resolve Text').first().json.final_text || '').toLowerCase();\nconst ag = $('Process Data').first().json;\n\nconst qualified = response.includes('[LEAD_QUALIFICADO]');\nconst disqualified = response.includes('[LEAD_DESQUALIFICADO]');\nconst payment = response.includes('[INICIAR_PAGAMENTO]');\n\nconst objWords = ['não posso','muito caro','não sei','concorrente','depois','não tenho','sem interesse','tá caro','está caro'];\nlet has_objection = false, objection_type = '';\nfor (const kw of objWords) {\n  if (userText.includes(kw)) {\n    has_objection = true;\n    objection_type = kw.includes('caro') || kw.includes('não tenho') ? 'preco' : kw.includes('depois') ? 'timing' : kw.includes('concorrente') ? 'concorrente' : 'outro';\n    break;\n  }\n}\n\nlet clean = response.replace(/\\[LEAD_QUALIFICADO\\]/g,'').replace(/\\[LEAD_DESQUALIFICADO\\]/g,'').replace(/\\[INICIAR_PAGAMENTO\\]/g,'').trim();\n\nlet new_stage = ag.stage;\nif (qualified) new_stage = 'qualificado';\nelse if (disqualified) new_stage = 'nao_qualificado';\nelse if (ag.stage === 'novo_contato') new_stage = 'em_atendimento';\n\nreturn [{ json: {\n  response_text: clean, qualified, disqualified, payment_intent: payment,\n  has_objection, objection_type, new_stage,\n  tokens_used: llm.deducted_tokens || 0,\n  responder_em_audio: promptData.responder_em_audio === 'true',\n  numero_destino: promptData.numero_destino,\n  notif_destino: promptData.notif_destino\n} }];"
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000015",
-      "name": "Save & Update",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2860, 240]
+      "id": "node-16",
+      "name": "Process Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2860, 340]
     },
     {
       "parameters": {
         "conditions": {
           "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
-          "conditions": [{ "id": "c2", "leftValue": "={{ $('Process Response').first().json.qualified }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "conditions": [{ "id": "ca1", "leftValue": "={{ $json.responder_em_audio }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
           "combinator": "and"
         },
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000016",
-      "name": "Qualified?",
+      "id": "node-17",
+      "name": "Audio Response?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2860, 440]
+      "position": [3080, 340]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/functions/v1/llm-proxy?action=tts&user_id={{ $('Process Data').first().json.user_id }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjA1MzM1OCwiZXhwIjoyMDg3NjI5MzU4fQ.vfKzD4QpwFw2VQtA1v7XHD1kOFuX6ax6Wf71wxZ__w8" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Process Response').first().json.response_text, voice: 'nova' }) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "node-18",
+      "name": "Generate TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3300, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evo.sevenxperts.solutions/message/sendWhatsAppAudio/{{ $('Process Data').first().json.evo_instance }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Parse Message').first().json.phone, audio: $('Generate TTS').first().json.audio_base64, encoding: true }) }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "node-19",
+      "name": "Send Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3520, 200]
     },
     {
       "parameters": {
         "method": "POST",
         "url": "=https://evo.sevenxperts.solutions/message/sendText/{{ $('Process Data').first().json.evo_instance }}",
         "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Process Response').first().json.numero_destino, text: '🎯 LEAD QUALIFICADO!\\n\\nNúmero: ' + $('Parse Message').first().json.phone + '\\nNome: ' + ($('Process Data').first().json.lead_nome || $('Parse Message').first().json.phone) + '\\nÚltima msg: ' + $('Parse Message').first().json.text }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Parse Message').first().json.phone, text: $('Process Response').first().json.response_text }) }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "node-20",
+      "name": "Send Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3300, 480]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vyvdrbkcrvklcaombjqu.supabase.co/rest/v1/rpc/workflow_save_response",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5dmRyYmtjcnZrbGNhb21ianF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTMzNTgsImV4cCI6MjA4NzYyOTM1OH0.vmIYb6BGgsksaNGN2XPCm6I_mj02NSa49bLWXlTLQeY" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_user_id: $('Process Data').first().json.user_id, p_lead_id: $('Process Data').first().json.lead_id, p_phone: $('Parse Message').first().json.phone, p_user_message: $('Resolve Text').first().json.final_text, p_assistant_message: $('Process Response').first().json.response_text, p_tokens_used: $('Process Response').first().json.tokens_used, p_new_stage: $('Process Response').first().json.new_stage, p_agent_type: $('Process Data').first().json.agent_type }) }}",
         "options": {}
       },
-      "id": "a1b2c3d4-1111-4aaa-bbbb-000000000017",
+      "id": "node-21",
+      "name": "Save & Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3740, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [{ "id": "cq1", "leftValue": "={{ $('Process Response').first().json.qualified }}", "rightValue": true, "operator": { "type": "boolean", "operation": "equals" } }],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-22",
+      "name": "Qualified?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3740, 520]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://evo.sevenxperts.solutions/message/sendText/{{ $('Process Data').first().json.evo_instance }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "32AEB8FC2DE4-4F79-A823-E620A11C224F" },
+          { "name": "Content-Type", "value": "application/json" }
+        ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Process Response').first().json.numero_destino, text: '🎯 LEAD QUALIFICADO!\\n\\nNúmero: ' + $('Parse Message').first().json.phone + '\\nNome: ' + ($('Process Data').first().json.lead_nome || $('Parse Message').first().json.phone) + '\\nÚltima mensagem: ' + $('Resolve Text').first().json.final_text }) }}",
+        "options": {}
+      },
+      "id": "node-23",
       "name": "Notify Supervisor",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [3080, 380]
+      "position": [3960, 460]
     }
   ],
   "connections": {
-    "Webhook WhatsApp": { "main": [[{ "node": "Parse Message", "type": "main", "index": 0 }]] },
-    "Parse Message": { "main": [[{ "node": "Find User", "type": "main", "index": 0 }]] },
-    "Find User": { "main": [[{ "node": "Validate User", "type": "main", "index": 0 }]] },
-    "Validate User": { "main": [[{ "node": "User Valid?", "type": "main", "index": 0 }]] },
-    "User Valid?": { "main": [[{ "node": "Get Subscription", "type": "main", "index": 0 }, { "node": "Find or Create Lead", "type": "main", "index": 0 }], []] },
-    "Get Subscription": { "main": [[{ "node": "Process Data", "type": "main", "index": 0 }]] },
-    "Find or Create Lead": { "main": [[{ "node": "Process Data", "type": "main", "index": 0 }]] },
-    "Process Data": { "main": [[{ "node": "Get Configs", "type": "main", "index": 0 }, { "node": "Get History", "type": "main", "index": 0 }]] },
-    "Get Configs": { "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]] },
-    "Get History": { "main": [[{ "node": "Build Prompt", "type": "main", "index": 0 }]] },
-    "Build Prompt": { "main": [[{ "node": "LLM Call", "type": "main", "index": 0 }]] },
-    "LLM Call": { "main": [[{ "node": "Process Response", "type": "main", "index": 0 }]] },
-    "Process Response": { "main": [[{ "node": "Send WhatsApp", "type": "main", "index": 0 }]] },
-    "Send WhatsApp": { "main": [[{ "node": "Save & Update", "type": "main", "index": 0 }, { "node": "Qualified?", "type": "main", "index": 0 }]] },
-    "Qualified?": { "main": [[{ "node": "Notify Supervisor", "type": "main", "index": 0 }], []] }
+    "Webhook WhatsApp":    { "main": [[{ "node": "Parse Message",        "type": "main", "index": 0 }]] },
+    "Parse Message":       { "main": [[{ "node": "Find User",             "type": "main", "index": 0 }]] },
+    "Find User":           { "main": [[{ "node": "Validate User",         "type": "main", "index": 0 }]] },
+    "Validate User":       { "main": [[{ "node": "User Valid?",           "type": "main", "index": 0 }]] },
+    "User Valid?":         { "main": [[{ "node": "Get Subscription", "type": "main", "index": 0 }, { "node": "Find or Create Lead", "type": "main", "index": 0 }], []] },
+    "Get Subscription":    { "main": [[{ "node": "Process Data",          "type": "main", "index": 0 }]] },
+    "Find or Create Lead": { "main": [[{ "node": "Process Data",          "type": "main", "index": 0 }]] },
+    "Process Data":        { "main": [[{ "node": "Has Media?",            "type": "main", "index": 0 }]] },
+    "Has Media?":          { "main": [
+      [{ "node": "Process Media", "type": "main", "index": 0 }],
+      [{ "node": "Resolve Text",  "type": "main", "index": 0 }]
+    ]},
+    "Process Media":       { "main": [[{ "node": "Resolve Text",          "type": "main", "index": 0 }]] },
+    "Resolve Text":        { "main": [[{ "node": "Get Configs", "type": "main", "index": 0 }, { "node": "Get History", "type": "main", "index": 0 }]] },
+    "Get Configs":         { "main": [[{ "node": "Build Prompt",          "type": "main", "index": 0 }]] },
+    "Get History":         { "main": [[{ "node": "Build Prompt",          "type": "main", "index": 0 }]] },
+    "Build Prompt":        { "main": [[{ "node": "LLM Call",              "type": "main", "index": 0 }]] },
+    "LLM Call":            { "main": [[{ "node": "Process Response",      "type": "main", "index": 0 }]] },
+    "Process Response":    { "main": [[{ "node": "Audio Response?",       "type": "main", "index": 0 }]] },
+    "Audio Response?":     { "main": [
+      [{ "node": "Generate TTS", "type": "main", "index": 0 }],
+      [{ "node": "Send Text",    "type": "main", "index": 0 }]
+    ]},
+    "Generate TTS":        { "main": [[{ "node": "Send Audio",            "type": "main", "index": 0 }]] },
+    "Send Audio":          { "main": [[{ "node": "Save & Update", "type": "main", "index": 0 }, { "node": "Qualified?", "type": "main", "index": 0 }]] },
+    "Send Text":           { "main": [[{ "node": "Save & Update", "type": "main", "index": 0 }, { "node": "Qualified?", "type": "main", "index": 0 }]] },
+    "Qualified?":          { "main": [[{ "node": "Notify Supervisor",     "type": "main", "index": 0 }], []] }
   },
   "settings": {
     "saveManualExecutions": true,
