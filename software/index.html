@@ -6826,11 +6826,19 @@
     if (name === 'agente-objecao') { loadAgenteConfigs('ob'); }
     if (name === 'agente-prospecao') { loadAgenteConfigs('prospec'); }
     if (name === 'crm') {
-      loadCRM();  // Executa em background, erro tratado dentro da função
+      loadCRM().catch(err => {
+        console.error('❌ Erro ao carregar CRM:', err);
+        const board = document.getElementById('crm-board');
+        if (board) board.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
       setTimeout(checkReminders, 500);
     }
     if (name === 'historico-leads') {
-      loadHistorico();  // Executa em background, erro tratado dentro da função
+      loadHistorico().catch(err => {
+        console.error('❌ Erro ao carregar histórico:', err);
+        const container = document.getElementById('historico-list');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
     }
     if (name === 'pdfs') loadPDFList();
     if (name === 'analytics') loadDashboard();
@@ -8275,14 +8283,15 @@
   let crmFluxos = [];          // lista de fluxos do usuário
   let crmFluxoFilter = 'all';  // 'all' ou UUID do fluxo
 
-  async function loadCRM() {
+  function loadCRM() {
     const board = document.getElementById('crm-board');
 
     // Mostra estrutura vazia IMEDIATAMENTE (sem esperar nada)
     board.innerHTML = '<div style="display:flex;gap:14px;min-height:560px;width:max-content;align-items:center;color:#6e7681;padding:40px;"><div style="min-width:280px;background:#0d1117;border-radius:8px;padding:16px;">⏳ Carregando...</div></div>';
 
-    // Carrega dados EM BACKGROUND (não bloqueia a página)
-    (async () => {
+    // Retorna uma Promise para que showPage possa tratar erros
+    return new Promise((resolve, reject) => {
+      (async () => {
       try {
         console.log('🔵 loadCRM: carregando dados em background');
 
@@ -8323,11 +8332,14 @@
         crmLeads = data;
         console.log('✅ CRM renderizando', data.length, 'leads');
         renderKanban(data);
+        resolve();
       } catch (err) {
         console.error('❌ Erro final em loadCRM:', err);
         board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
+        reject(err);
       }
-    })();  // Executa em background, sem await
+      })();  // Executa em background com Promise handling
+    });
   }
 
   async function loadCRMFluxos() {
@@ -14841,25 +14853,32 @@
   // =====================
   // HISTÓRICO DE LEADS
   // =====================
-  async function loadHistorico() {
+  function loadHistorico() {
     const list = document.getElementById('historico-list');
     list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">⏳ Carregando...</div>';
+    console.log('📋 loadHistorico: Iniciando carregamento');
 
-    // Carrega em background
-    (async () => {
+    // Retorna uma Promise para que showPage possa tratar erros
+    return new Promise((resolve, reject) => {
+      (async () => {
       try {
-        if (!await ensureUser()) {
-          list.innerHTML = '<div style="padding:40px;color:#6e7681;">Faça login</div>';
+        console.log('📋 loadHistorico: Verificando autenticação...');
+        const user = await ensureUser();
+        if (!user) {
+          console.error('❌ loadHistorico: Usuário não autenticado');
+          list.innerHTML = '<div style="padding:40px;color:#dc2626;">❌ Erro: Não autenticado. Faça login.</div>';
           return;
         }
+        console.log('✅ loadHistorico: Usuário autenticado:', user.id);
 
         const dateFrom = document.getElementById('hist-date-from')?.value || '';
         const dateTo = document.getElementById('hist-date-to')?.value || '';
 
+        console.log('📋 loadHistorico: Buscando dados do Supabase...');
         let query = db.from('leads')
           .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
           .in('stage', ['convertido', 'perdido'])
-          .eq('user_id', _effectiveUserId || currentUser.id)
+          .eq('user_id', _effectiveUserId || user.id)
           .order('atualizado_em', { ascending: false });
 
         if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
@@ -14867,13 +14886,20 @@
 
         const { data, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ loadHistorico: Erro no Supabase:', error);
+          throw error;
+        }
+        console.log('✅ loadHistorico: Dados recebidos:', data?.length || 0, 'registros');
+        
         if (!data || data.length === 0) {
+          console.log('⚠️ loadHistorico: Nenhum dado encontrado');
           list.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum contato</div>';
           return;
         }
 
         // RENDERIZAR AQUI, DENTRO DA IIFE
+        console.log('📋 loadHistorico: Renderizando', data.length, 'registros...');
         list.innerHTML = data.map(lead => {
       const dt = new Date(lead.atualizado_em);
       const dtStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -14910,11 +14936,15 @@
         </div>
       `;
       }).join('');
+        console.log('✅ loadHistorico: Renderização concluída. HTML injetado no DOM.');
+        resolve();
       } catch (err) {
-        console.error('❌ Erro loadHistorico:', err);
+        console.error('❌ Erro loadHistorico:', err.message, err.stack);
         list.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
+        reject(err);
       }
-    })();
+      })();
+    });
   }
 
   async function exportHistoricoCSV() {
