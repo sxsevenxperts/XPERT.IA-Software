@@ -2181,12 +2181,13 @@
         </div>
       </div>
 
-      <!-- AGENTE DE PROSPECÇÃO GROUP -->
-      <div class="nav-group membro-hidden" id="nav-group-prospecao">
+      <!-- AGENTE EXTRA DE IA GROUP -->
+      <div class="nav-group membro-hidden" id="nav-group-prospecao" style="display:none;">
         <div class="nav-group-header" onclick="toggleNavGroup(this)">
           <span class="chevron">▼</span>
-          <span class="icon" style="font-size:14px;"><i data-lucide="search"></i></span>
-          <span>Agente de Prospecção</span>
+          <span class="icon" style="font-size:14px;"><i data-lucide="brain-circuit"></i></span>
+          <span>Agente Extra de IA</span>
+          <span class="lock-icon" id="lock-prospecao" style="margin-left:auto;font-size:13px;">🔒</span>
         </div>
         <div class="nav-group-items">
           <div class="nav-subitem" onclick="navigateToAgentTab('prospec', 'modelo', this)">Modelo de IA</div>
@@ -3680,7 +3681,7 @@
 
     <!-- AGENTE DE PROSPECÇÃO -->
     <div class="page" id="page-agente-prospecao">
-      <div class="page-header"><h1>Agente de Prospecção</h1><p>Configuração completa e independente do agente de prospecção de leads</p></div>
+      <div class="page-header"><h1>Agente Extra de IA</h1><p>Agente adicional configurável — disponível mediante aquisição no marketplace</p></div>
       <div class="agente-cfg-tabs">
         <button class="agente-cfg-tab active" onclick="switchAgenteTab('prospec','modelo',this)">Modelo de IA</button>
         <button class="agente-cfg-tab" onclick="switchAgenteTab('prospec','prompt',this)">Prompt</button>
@@ -7691,7 +7692,7 @@
       const canEdit = limit > agentIndex;
       return {
         canEdit,
-        reason: canEdit ? null : `🔒 Edição bloqueada — Limite de Agentes Extras atingido`
+        reason: canEdit ? null : `Adquira um <strong style="color:#a3e635">Agente Extra de IA</strong> no marketplace para desbloquear este agente.`
       };
     }
 
@@ -7793,7 +7794,7 @@
     // Determinar agentType para checkSubscription
     let checkType = agentType === 'principal' ? 'main'
                   : agentType === 'ob' ? 'objecao'
-                  : agentType === 'prospec' ? 'main'
+                  : agentType === 'prospec' ? 'extra'
                   : 'extra';
 
     // Verificar subscription
@@ -7878,6 +7879,20 @@
           el.classList.remove('disabled');
         });
       }
+    }
+
+    // Agente Extra de IA (prospec) — desbloqueado se agentes_extras >= 1
+    const prospecGroup = document.getElementById('nav-group-prospecao');
+    if (prospecGroup) {
+      prospecGroup.style.display = 'block';
+      const agentesExtras = assinatura?.agentes_extras || 0;
+      const hasProspec = agentesExtras >= 1;
+      const lockProspec = document.getElementById('lock-prospecao');
+      if (lockProspec) lockProspec.style.display = hasProspec ? 'none' : 'inline';
+      prospecGroup.querySelectorAll('.nav-subitem').forEach(el => {
+        if (hasProspec) el.classList.remove('disabled');
+        else el.classList.add('disabled');
+      });
     }
 
     // Dinâmico: Agentes Extras
