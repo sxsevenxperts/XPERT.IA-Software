@@ -8468,60 +8468,57 @@
 
   async function loadCRM() {
     const board = document.getElementById('crm-board');
-    console.log('🔵 loadCRM iniciado');
 
-    // Placeholder imediato
-    board.innerHTML = `<div style="padding:40px;text-align:center;color:#6e7681;">
-      <div style="font-size:14px;margin-bottom:10px;">⏳ Carregando CRM...</div>
-      <button onclick="loadCRM()" style="margin-top:10px;padding:8px 16px;background:#30363d;border:1px solid #444;border-radius:6px;color:#e6edf3;cursor:pointer;font-size:12px;">↻ Retry</button>
-    </div>`;
+    // Mostra estrutura vazia IMEDIATAMENTE (sem esperar nada)
+    board.innerHTML = '<div style="display:flex;gap:14px;min-height:560px;width:max-content;align-items:center;color:#6e7681;padding:40px;"><div style="min-width:280px;background:#0d1117;border-radius:8px;padding:16px;">⏳ Carregando...</div></div>';
 
-    try {
-      console.log('📦 Carregando stages e fluxos...');
+    // Carrega dados EM BACKGROUND (não bloqueia a página)
+    (async () => {
+      try {
+        console.log('🔵 loadCRM: carregando dados em background');
 
-      // Timeout agressivo de 8 segundos
-      const loadPromise = Promise.all([
-        !scoringRules ? (async () => {
-          console.log('📥 loadScoringRulesFromDB start');
-          const r = await loadScoringRulesFromDB();
-          scoringRules = r;
-          console.log('✅ loadScoringRulesFromDB done:', r?.length);
-        })() : (console.log('✓ scoringRules já existe'), Promise.resolve()),
-        (async () => { console.log('📥 loadCRMStages start'); await loadCRMStages(); console.log('✅ loadCRMStages done'); })(),
-        (async () => { console.log('📥 loadCRMFluxos start'); await loadCRMFluxos(); console.log('✅ loadCRMFluxos done'); })()
-      ]);
+        // Carrega tudo em paralelo, com timeout curto
+        const loadPromise = Promise.all([
+          !scoringRules ? loadScoringRulesFromDB().then(r => { scoringRules = r; return r; }).catch(e => { console.warn('⚠️ scoringRules falhou:', e); return null; }) : Promise.resolve(scoringRules),
+          loadCRMStages().catch(e => { console.warn('⚠️ loadCRMStages falhou:', e); }),
+          loadCRMFluxos().catch(e => { console.warn('⚠️ loadCRMFluxos falhou:', e); })
+        ]);
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout: levou mais de 8 segundos')), 8000)
-      );
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 5000)
+        );
 
-      await Promise.race([loadPromise, timeoutPromise]);
-      console.log('✅ Stages/fluxos carregados, agora carregando leads...');
+        // Tenta em paralelo, timeout mata qualquer uma que demora
+        await Promise.race([loadPromise, timeoutPromise]).catch(() => {
+          console.warn('⚠️ Algumas funções demoraram, continuando mesmo assim');
+        });
 
-      // Carrega leads
-      let query = db.from('leads').select('*, lead_tarefas(id, concluida, descricao, data_vencimento)').order('atualizado_em', { ascending: false });
-      if (crmFluxoFilter !== 'all') query = query.eq('fluxo_id', crmFluxoFilter);
+        // Carrega leads - com ou sem os dados anteriores
+        const query = db.from('leads')
+          .select('*, lead_tarefas(id, concluida, descricao, data_vencimento)')
+          .order('atualizado_em', { ascending: false });
 
-      console.log('📥 Query leads iniciada');
-      const { data, error } = await query;
-      console.log('✅ Query leads completa:', { hasData: !!data, hasError: !!error, errorMsg: error?.message });
+        const { data, error } = await query;
 
-      if (error) throw error;
-      if (!data) throw new Error('Nenhum dado retornado');
+        if (error) {
+          console.error('❌ Erro ao carregar leads:', error.message);
+          board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + error.message + '</div>';
+          return;
+        }
 
-      crmLeads = data;
-      console.log('📊 Renderizando kanban com', data.length, 'leads');
-      renderKanban(data);
-      console.log('✅ CRM carregado com sucesso');
-    } catch (err) {
-      console.error('❌ Erro em loadCRM:', err);
-      const msg = err.message || String(err);
-      board.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">
-        <strong>❌ Erro ao carregar CRM</strong>
-        <div style="font-size:11px;margin-top:8px;font-family:monospace;word-break:break-all;color:#fca5a5;">${msg}</div>
-        <button onclick="loadCRM()" style="margin-top:12px;padding:8px 16px;background:#7f1d1d;border:1px solid #dc2626;border-radius:6px;color:#fca5a5;cursor:pointer;font-size:12px;">↻ Retry</button>
-      </div>`;
-    }
+        if (!data || data.length === 0) {
+          board.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum lead no pipeline</div>';
+          return;
+        }
+
+        crmLeads = data;
+        console.log('✅ CRM renderizando', data.length, 'leads');
+        renderKanban(data);
+      } catch (err) {
+        console.error('❌ Erro final em loadCRM:', err);
+        board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
+      }
+    })();  // Executa em background, sem await
   }
 
   async function loadCRMFluxos() {
@@ -15037,44 +15034,47 @@
   // =====================
   async function loadHistorico() {
     const list = document.getElementById('historico-list');
-    list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Carregando...</div>';
 
-    try {
-      if (!await ensureUser()) {
-        list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Faça login para ver o histórico</div>';
-        return;
+    // Mostra placeholder IMEDIATAMENTE
+    list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">⏳ Carregando histórico...</div>';
+
+    // Carrega em background, sem bloquear
+    (async () => {
+      try {
+        if (!await ensureUser()) {
+          list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Faça login para ver o histórico</div>';
+          return;
+        }
+
+        const dateFrom = document.getElementById('hist-date-from').value;
+        const dateTo = document.getElementById('hist-date-to').value;
+
+        let query = db.from('leads')
+          .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
+          .in('stage', ['convertido', 'perdido'])
+          .eq('user_id', _effectiveUserId || currentUser.id)
+          .order('atualizado_em', { ascending: false });
+
+        if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
+        if (dateTo) query = query.lte('atualizado_em', dateTo + 'T23:59:59');
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Erro Histórico:', error);
+          list.innerHTML = '<div style="padding:40px;color:#dc2626;font-size:14px;text-align:center;">❌ Erro: ' + error.message + '</div>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Nenhum contato finalizado neste período</div>';
+          return;
+        }
+      } catch (err) {
+        console.error('Erro em loadHistorico:', err);
+        list.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;"><strong>❌ Erro ao carregar histórico</strong><br><small style="font-size:11px;margin-top:8px;display:block;font-family:monospace;">' + err.message + '</small></div>';
       }
-
-      // Filtros de data
-      const dateFrom = document.getElementById('hist-date-from').value;
-      const dateTo = document.getElementById('hist-date-to').value;
-
-      let query = db.from('leads')
-        .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
-        .in('stage', ['convertido', 'perdido'])
-        .eq('user_id', _effectiveUserId || currentUser.id)
-        .order('atualizado_em', { ascending: false });
-
-      if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
-      if (dateTo) query = query.lte('atualizado_em', dateTo + 'T23:59:59');
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro Histórico:', error);
-        list.innerHTML = '<div style="padding:40px;color:#dc2626;font-size:14px;text-align:center;">❌ Erro: ' + error.message + '</div>';
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Nenhum contato finalizado neste período</div>';
-        return;
-      }
-    } catch (err) {
-      console.error('Erro em loadHistorico:', err);
-      list.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;"><strong>❌ Erro ao carregar histórico</strong><br><small style="font-size:11px;margin-top:8px;display:block;font-family:monospace;">' + err.message + '</small></div>';
-      return;
-    }
+    })(); // Executa em background
     
     list.innerHTML = data.map(lead => {
       const dt = new Date(lead.atualizado_em);
