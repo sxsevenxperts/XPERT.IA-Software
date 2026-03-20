@@ -2099,7 +2099,7 @@
 <div id="login-page">
   <div class="login-box">
     <div style="text-align:center;margin-bottom:24px;">
-      <img src="logo-banner.png" alt="XPERT.IA" style="width:320px;height:auto;display:block;margin:0 auto 4px;" />
+      <img src="logo-wide.png" alt="XPERT.IA" style="width:320px;height:auto;display:block;margin:0 auto 4px;" />
     </div>
     <p style="text-align:center;">Painel de administração do agente IA</p>
     <div class="form-group">
@@ -2132,7 +2132,7 @@
   <div class="sidebar" id="sidebar-main">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;">
       <div class="logo" style="flex:1;">
-        <img src="logo-banner.png" alt="XPERT.IA" style="width:100%;max-width:190px;height:auto;display:block;margin-bottom:8px;" />
+        <img src="logo-wide.png" alt="XPERT.IA" style="width:100%;max-width:190px;height:auto;display:block;margin-bottom:8px;" />
         <div style="font-size:10px;color:rgba(255,255,255,0.45);font-weight:500;letter-spacing:.4px;text-transform:uppercase;margin-bottom:2px;">Painel de Administração</div>
         <div class="logo-company" id="sidebar-company-name"></div>
       </div>
@@ -16181,6 +16181,169 @@
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initVerticalTabs, 200);
   });
+
+  // ═══════════════════════════════════════════════════════════════
+  // DATE RANGE FILTERING — For Dashboard, Analytics, Monitoring
+  // ═══════════════════════════════════════════════════════════════
+  function getDateRange(periodo) {
+    const hoje = new Date();
+    let dataInicio, dataFim = new Date(hoje);
+    
+    switch(periodo) {
+      case 'hoje':
+        dataInicio = new Date(hoje);
+        dataInicio.setHours(0, 0, 0, 0);
+        dataFim.setHours(23, 59, 59, 999);
+        break;
+      case 'ontem':
+        dataInicio = new Date(hoje);
+        dataInicio.setDate(dataInicio.getDate() - 1);
+        dataInicio.setHours(0, 0, 0, 0);
+        dataFim = new Date(hoje);
+        dataFim.setDate(dataFim.getDate() - 1);
+        dataFim.setHours(23, 59, 59, 999);
+        break;
+      case 'semana':
+        dataInicio = new Date(hoje);
+        dataInicio.setDate(dataInicio.getDate() - dataInicio.getDay());
+        dataInicio.setHours(0, 0, 0, 0);
+        dataFim = new Date(hoje);
+        dataFim.setHours(23, 59, 59, 999);
+        break;
+      case 'mes':
+        dataInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        dataFim = new Date(hoje);
+        dataFim.setHours(23, 59, 59, 999);
+        break;
+      case '90dias':
+        dataInicio = new Date(hoje);
+        dataInicio.setDate(dataInicio.getDate() - 90);
+        dataInicio.setHours(0, 0, 0, 0);
+        dataFim = new Date(hoje);
+        dataFim.setHours(23, 59, 59, 999);
+        break;
+      default:
+        dataInicio = new Date(hoje);
+        dataInicio.setDate(dataInicio.getDate() - 30);
+        dataFim = new Date(hoje);
+    }
+    
+    return {
+      inicio: dataInicio.toISOString(),
+      fim: dataFim.toISOString(),
+      inicioDate: dataInicio,
+      fimDate: dataFim
+    };
+  }
+
+  function renderDateRangeFilter(containerId, onChangeCallback) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="periodo-btn active" data-periodo="hoje" onclick="aplicarPeriodo(this, '${containerId}', ${onChangeCallback})">Hoje</button>
+      <button class="periodo-btn" data-periodo="ontem" onclick="aplicarPeriodo(this, '${containerId}', ${onChangeCallback})">Ontem</button>
+      <button class="periodo-btn" data-periodo="semana" onclick="aplicarPeriodo(this, '${containerId}', ${onChangeCallback})">Esta semana</button>
+      <button class="periodo-btn" data-periodo="mes" onclick="aplicarPeriodo(this, '${containerId}', ${onChangeCallback})">Este mês</button>
+      <button class="periodo-btn" data-periodo="90dias" onclick="aplicarPeriodo(this, '${containerId}', ${onChangeCallback})">90 dias</button>
+      <button class="periodo-btn" data-periodo="custom" onclick="abrirModalDataCustomizada('${containerId}', ${onChangeCallback})">Personalizado</button>
+    </div>`;
+    
+    // Add CSS for buttons if not already present
+    if (!document.getElementById('periodo-btn-styles')) {
+      const style = document.createElement('style');
+      style.id = 'periodo-btn-styles';
+      style.textContent = `
+        .periodo-btn {
+          padding: 8px 16px;
+          background: var(--bg-card2);
+          border: 1px solid var(--border);
+          color: var(--text2);
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+        .periodo-btn:hover {
+          background: var(--bg-card);
+          color: var(--text1);
+          border-color: var(--border-hover);
+        }
+        .periodo-btn.active {
+          background: var(--lime);
+          color: #000;
+          border-color: var(--lime);
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  function aplicarPeriodo(btn, containerId, callback) {
+    const periodo = btn.getAttribute('data-periodo');
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    if (callback) callback(periodo);
+  }
+
+  function abrirModalDataCustomizada(containerId, callback) {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;z-index:1000;min-width:300px;box-shadow:0 10px 40px rgba(0,0,0,0.3);';
+    modal.innerHTML = `
+      <h3 style="margin:0 0 16px;color:var(--text1);">Período Personalizado</h3>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">Data Inicial</label>
+          <input type="date" id="custom-data-inicio" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;" />
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px;">Data Final</label>
+          <input type="date" id="custom-data-fim" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);box-sizing:border-box;" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn-primary" style="flex:1;padding:8px;" onclick="confirmarDataCustomizada('${containerId}', ${callback})">Aplicar</button>
+          <button class="btn-secondary" style="flex:1;padding:8px;" onclick="this.closest('div').style.display='none';this.closest('[style*=fixed]').remove();">Cancelar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const backdrop = document.createElement('div');
+    backdrop.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999;';
+    backdrop.onclick = () => { backdrop.remove(); modal.remove(); };
+    document.body.appendChild(backdrop);
+  }
+
+  function confirmarDataCustomizada(containerId, callback) {
+    const dataInicio = document.getElementById('custom-data-inicio').value;
+    const dataFim = document.getElementById('custom-data-fim').value;
+    
+    if (!dataInicio || !dataFim) {
+      showToast('Selecione ambas as datas', 'error');
+      return;
+    }
+    
+    if (new Date(dataInicio) > new Date(dataFim)) {
+      showToast('Data inicial não pode ser depois da data final', 'error');
+      return;
+    }
+    
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
+      const customBtn = container.querySelector('[data-periodo="custom"]');
+      if (customBtn) customBtn.classList.add('active');
+    }
+    
+    document.querySelectorAll('[style*="position:fixed"][style*="z-index:1000"]').forEach(el => el.remove());
+    document.querySelectorAll('[style*="z-index:999"]').forEach(el => el.remove());
+    
+    if (callback) callback('custom', dataInicio, dataFim);
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // SIDEBAR TOGGLE — Collapse/Expand Sidebar
