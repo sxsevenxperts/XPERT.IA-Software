@@ -8469,21 +8469,37 @@
   async function loadCRM() {
     const board = document.getElementById('crm-board');
     board.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;">Carregando...</div>';
-    // Carrega scoring, stages e fluxos em paralelo
-    await Promise.all([
-      !scoringRules ? loadScoringRulesFromDB().then(r => { scoringRules = r; }) : Promise.resolve(),
-      loadCRMStages(),
-      loadCRMFluxos()
-    ]);
-    // Carrega leads (com filtro de fluxo se ativo)
-    let query = db.from('leads').select('*, lead_tarefas(id, concluida, descricao, data_vencimento)').order('atualizado_em', { ascending: false });
-    if (crmFluxoFilter !== 'all') {
-      query = query.eq('fluxo_id', crmFluxoFilter);
+
+    try {
+      // Timeout de 15 segundos para não ficar carregando eternamente
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: carregamento muito lento')), 15000)
+      );
+
+      const loadPromise = Promise.all([
+        !scoringRules ? loadScoringRulesFromDB().then(r => { scoringRules = r; }).catch(e => { console.warn('Erro loadScoringRulesFromDB:', e); }) : Promise.resolve(),
+        loadCRMStages().catch(e => { console.warn('Erro loadCRMStages:', e); }),
+        loadCRMFluxos().catch(e => { console.warn('Erro loadCRMFluxos:', e); })
+      ]);
+
+      await Promise.race([loadPromise, timeoutPromise]);
+
+      // Carrega leads (com filtro de fluxo se ativo)
+      let query = db.from('leads').select('*, lead_tarefas(id, concluida, descricao, data_vencimento)').order('atualizado_em', { ascending: false });
+      if (crmFluxoFilter !== 'all') {
+        query = query.eq('fluxo_id', crmFluxoFilter);
+      }
+      const { data, error } = await query;
+      if (error || !data) {
+        board.innerHTML = '<div style="padding:40px;color:#ef4444;">❌ Erro ao carregar CRM: ' + (error?.message || 'Nenhum dado') + '</div>';
+        return;
+      }
+      crmLeads = data;
+      renderKanban(data);
+    } catch (err) {
+      console.error('Erro em loadCRM:', err);
+      board.innerHTML = '<div style="padding:40px;color:#ef4444;text-align:center;"><strong>❌ Erro ao carregar CRM</strong><br><small style="font-size:11px;margin-top:8px;display:block;font-family:monospace;">' + (err.message || err) + '</small></div>';
     }
-    const { data, error } = await query;
-    if (error || !data) { board.innerHTML = '<div style="padding:40px;color:#ef4444;">Erro ao carregar CRM</div>'; return; }
-    crmLeads = data;
-    renderKanban(data);
   }
 
   async function loadCRMFluxos() {
@@ -15001,25 +15017,40 @@
     const list = document.getElementById('historico-list');
     list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Carregando...</div>';
 
-    if (!await ensureUser()) { list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Faça login para ver o histórico</div>'; return; }
-    
-    // Filtros de data
-    const dateFrom = document.getElementById('hist-date-from').value;
-    const dateTo = document.getElementById('hist-date-to').value;
-    
-    let query = db.from('leads')
-      .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
-      .in('stage', ['convertido', 'perdido'])
-      .eq('user_id', _effectiveUserId || currentUser.id)
-      .order('atualizado_em', { ascending: false });
-    
-    if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
-    if (dateTo) query = query.lte('atualizado_em', dateTo + 'T23:59:59');
-    
-    const { data, error } = await query;
-    
-    if (error || !data || data.length === 0) {
-      list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Nenhum contato finalizado neste período</div>';
+    try {
+      if (!await ensureUser()) {
+        list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Faça login para ver o histórico</div>';
+        return;
+      }
+
+      // Filtros de data
+      const dateFrom = document.getElementById('hist-date-from').value;
+      const dateTo = document.getElementById('hist-date-to').value;
+
+      let query = db.from('leads')
+        .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
+        .in('stage', ['convertido', 'perdido'])
+        .eq('user_id', _effectiveUserId || currentUser.id)
+        .order('atualizado_em', { ascending: false });
+
+      if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
+      if (dateTo) query = query.lte('atualizado_em', dateTo + 'T23:59:59');
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro Histórico:', error);
+        list.innerHTML = '<div style="padding:40px;color:#dc2626;font-size:14px;text-align:center;">❌ Erro: ' + error.message + '</div>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Nenhum contato finalizado neste período</div>';
+        return;
+      }
+    } catch (err) {
+      console.error('Erro em loadHistorico:', err);
+      list.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;"><strong>❌ Erro ao carregar histórico</strong><br><small style="font-size:11px;margin-top:8px;display:block;font-family:monospace;">' + err.message + '</small></div>';
       return;
     }
     
