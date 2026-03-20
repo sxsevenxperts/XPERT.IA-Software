@@ -7032,8 +7032,11 @@
       setTimeout(checkReminders, 500);
     }
     if (name === 'historico-leads') {
-      loadHistorico().catch(err => {
-        console.error('❌ Erro ao carregar histórico:', err);
+      console.log('🔍 showPage: Chamando loadHistorico');
+      loadHistorico().then(() => {
+        console.log('✅ showPage: loadHistorico completou');
+      }).catch(err => {
+        console.error('❌ showPage: Erro ao carregar histórico:', err);
         const container = document.getElementById('historico-list');
         if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
       });
@@ -8497,8 +8500,8 @@
     // Retorna uma Promise para que showPage possa tratar erros
     return new Promise((resolve, reject) => {
       (async () => {
-      try {
-        console.log('🔵 loadCRM: carregando dados em background');
+        try {
+          console.log('🔵 loadCRM: carregando dados em background');
 
         // Carrega tudo em paralelo, com timeout curto
         const loadPromise = Promise.all([
@@ -8511,38 +8514,40 @@
           setTimeout(() => reject(new Error('Timeout')), 5000)
         );
 
-        // Tenta em paralelo, timeout mata qualquer uma que demora
-        await Promise.race([loadPromise, timeoutPromise]).catch(() => {
-          console.warn('⚠️ Algumas funções demoraram, continuando mesmo assim');
-        });
+          // Tenta em paralelo, timeout mata qualquer uma que demora
+          await Promise.race([loadPromise, timeoutPromise]).catch(() => {
+            console.warn('⚠️ Algumas funções demoraram, continuando mesmo assim');
+          });
 
-        // Carrega leads - com ou sem os dados anteriores
-        const query = db.from('leads')
-          .select('*, lead_tarefas(id, concluida, descricao, data_vencimento)')
-          .order('atualizado_em', { ascending: false });
+          // Carrega leads - com ou sem os dados anteriores
+          const query = db.from('leads')
+            .select('*, lead_tarefas(id, concluida, descricao, data_vencimento)')
+            .order('atualizado_em', { ascending: false });
 
-        const { data, error } = await query;
+          const { data, error } = await query;
 
-        if (error) {
-          console.error('❌ Erro ao carregar leads:', error.message);
-          board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + error.message + '</div>';
-          return;
+          if (error) {
+            console.error('❌ Erro ao carregar leads:', error.message);
+            board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + error.message + '</div>';
+            reject(error);
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            board.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum lead no pipeline</div>';
+            resolve();
+            return;
+          }
+
+          crmLeads = data;
+          console.log('✅ CRM renderizando', data.length, 'leads');
+          renderKanban(data);
+          resolve();
+        } catch (err) {
+          console.error('❌ Erro final em loadCRM:', err);
+          board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
+          reject(err);
         }
-
-        if (!data || data.length === 0) {
-          board.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum lead no pipeline</div>';
-          return;
-        }
-
-        crmLeads = data;
-        console.log('✅ CRM renderizando', data.length, 'leads');
-        renderKanban(data);
-        resolve();
-      } catch (err) {
-        console.error('❌ Erro final em loadCRM:', err);
-        board.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
-        reject(err);
-      }
       })();  // Executa em background com Promise handling
     });
   }
@@ -15066,88 +15071,90 @@
     // Retorna uma Promise para que showPage possa tratar erros
     return new Promise((resolve, reject) => {
       (async () => {
-      try {
-        console.log('📋 loadHistorico: Verificando autenticação...');
-        const user = await ensureUser();
-        if (!user) {
-          console.error('❌ loadHistorico: Usuário não autenticado');
-          list.innerHTML = '<div style="padding:40px;color:#dc2626;">❌ Erro: Não autenticado. Faça login.</div>';
-          return;
-        }
-        console.log('✅ loadHistorico: Usuário autenticado:', user.id);
+        try {
+          console.log('📋 loadHistorico: Verificando autenticação...');
+          const user = await ensureUser();
+          if (!user) {
+            console.error('❌ loadHistorico: Usuário não autenticado');
+            list.innerHTML = '<div style="padding:40px;color:#dc2626;">❌ Erro: Não autenticado. Faça login.</div>';
+            reject(new Error('Usuário não autenticado'));
+            return;
+          }
+          console.log('✅ loadHistorico: Usuário autenticado:', user.id);
 
-        const dateFrom = document.getElementById('hist-date-from')?.value || '';
-        const dateTo = document.getElementById('hist-date-to')?.value || '';
+          const dateFrom = document.getElementById('hist-date-from')?.value || '';
+          const dateTo = document.getElementById('hist-date-to')?.value || '';
 
-        console.log('📋 loadHistorico: Buscando dados do Supabase...');
-        let query = db.from('leads')
-          .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
-          .in('stage', ['convertido', 'perdido'])
-          .eq('user_id', _effectiveUserId || user.id)
-          .order('atualizado_em', { ascending: false });
+          console.log('📋 loadHistorico: Buscando dados do Supabase...');
+          let query = db.from('leads')
+            .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
+            .in('stage', ['convertido', 'perdido'])
+            .eq('user_id', _effectiveUserId || user.id)
+            .order('atualizado_em', { ascending: false });
 
-        if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
-        if (dateTo) query = query.lte('atualizado_em', dateTo + 'T23:59:59');
+          if (dateFrom) query = query.gte('atualizado_em', dateFrom + 'T00:00:00');
+          if (dateTo) query = query.lte('atualizado_em', dateTo + 'T23:59:59');
 
-        const { data, error } = await query;
+          const { data, error } = await query;
 
-        if (error) {
-          console.error('❌ loadHistorico: Erro no Supabase:', error);
-          throw error;
-        }
-        console.log('✅ loadHistorico: Dados recebidos:', data?.length || 0, 'registros');
-        
-        if (!data || data.length === 0) {
-          console.log('⚠️ loadHistorico: Nenhum dado encontrado');
-          list.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum contato</div>';
-          return;
-        }
+          if (error) {
+            console.error('❌ loadHistorico: Erro no Supabase:', error);
+            throw error;
+          }
+          console.log('✅ loadHistorico: Dados recebidos:', data?.length || 0, 'registros');
+          
+          if (!data || data.length === 0) {
+            console.log('⚠️ loadHistorico: Nenhum dado encontrado');
+            list.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum contato</div>';
+            resolve();
+            return;
+          }
 
-        // RENDERIZAR AQUI, DENTRO DA IIFE
-        console.log('📋 loadHistorico: Renderizando', data.length, 'registros...');
-        list.innerHTML = data.map(lead => {
-      const dt = new Date(lead.atualizado_em);
-      const dtStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const stageLabel = { convertido: 'Convertido', perdido: 'Perdido' }[lead.stage] || lead.stage;
-      const stageColor = { convertido: '#16a34a', perdido: '#dc2626' }[lead.stage] || '#6e7681';
-      const phone = lead.celular || lead.numero_whatsapp || '—';
-      
-      return `
-        <div style="border:1px solid #30363d;border-radius:10px;padding:16px;background:#0d1117;border-left:4px solid ${stageColor};">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px;">
-            <div>
-              <h3 style="margin:0 0 4px;color:#e6edf3;font-weight:700;font-size:15px;">${escapeHtml(lead.nome || phone)}</h3>
-              <div style="display:flex;gap:8px;font-size:12px;color:#6e7681;margin-bottom:8px;">
-                <span>${escapeHtml(phone)}</span>
-                ${lead.email ? `<span>${escapeHtml(lead.email)}</span>` : ''}
+          // RENDERIZAR AQUI, DENTRO DA IIFE
+          console.log('📋 loadHistorico: Renderizando', data.length, 'registros...');
+          list.innerHTML = data.map(lead => {
+            const dt = new Date(lead.atualizado_em);
+            const dtStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const stageLabel = { convertido: 'Convertido', perdido: 'Perdido' }[lead.stage] || lead.stage;
+            const stageColor = { convertido: '#16a34a', perdido: '#dc2626' }[lead.stage] || '#6e7681';
+            const phone = lead.celular || lead.numero_whatsapp || '—';
+            
+            return `
+              <div style="border:1px solid #30363d;border-radius:10px;padding:16px;background:#0d1117;border-left:4px solid ${stageColor};">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:12px;">
+                  <div>
+                    <h3 style="margin:0 0 4px;color:#e6edf3;font-weight:700;font-size:15px;">${escapeHtml(lead.nome || phone)}</h3>
+                    <div style="display:flex;gap:8px;font-size:12px;color:#6e7681;margin-bottom:8px;">
+                      <span>${escapeHtml(phone)}</span>
+                      ${lead.email ? `<span>${escapeHtml(lead.email)}</span>` : ''}
+                    </div>
+                  </div>
+                  <span style="background:${stageColor}20;color:${stageColor};border:1px solid ${stageColor}40;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;">${stageLabel}</span>
+                </div>
+                
+                ${lead.resumo ? `
+                  <div style="background:#161b22;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #6366f1;">
+                    <p style="margin:0;color:#c9d1d9;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${escapeHtml(lead.resumo)}</p>
+                  </div>
+                ` : `
+                  <div style="background:#161b22;border-radius:8px;padding:12px;margin-bottom:10px;color:#6e7681;font-size:13px;font-style:italic;">
+                    Sem resumo registrado
+                  </div>
+                `}
+                
+                <div style="color:#6e7681;font-size:12px;">
+                  ${dtStr}
+                </div>
               </div>
-            </div>
-            <span style="background:${stageColor}20;color:${stageColor};border:1px solid ${stageColor}40;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;white-space:nowrap;">${stageLabel}</span>
-          </div>
-          
-          ${lead.resumo ? `
-            <div style="background:#161b22;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #6366f1;">
-              <p style="margin:0;color:#c9d1d9;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${escapeHtml(lead.resumo)}</p>
-            </div>
-          ` : `
-            <div style="background:#161b22;border-radius:8px;padding:12px;margin-bottom:10px;color:#6e7681;font-size:13px;font-style:italic;">
-              Sem resumo registrado
-            </div>
-          `}
-          
-          <div style="color:#6e7681;font-size:12px;">
-            ${dtStr}
-          </div>
-        </div>
-      `;
-      }).join('');
-        console.log('✅ loadHistorico: Renderização concluída. HTML injetado no DOM.');
-        resolve();
-      } catch (err) {
-        console.error('❌ Erro loadHistorico:', err.message, err.stack);
-        list.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
-        reject(err);
-      }
+            `;
+          }).join('');
+          console.log('✅ loadHistorico: Renderização concluída. HTML injetado no DOM.');
+          resolve();
+        } catch (err) {
+          console.error('❌ Erro loadHistorico:', err.message, err.stack);
+          list.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
+          reject(err);
+        }
       })();
     });
   }
