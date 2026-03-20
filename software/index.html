@@ -745,7 +745,8 @@
 
     /* DASHBOARD */
     #dashboard-page { display: none; min-height: 100vh; }
-    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; z-index: 100; }
+    .main-content { position: relative; z-index: 1; }
     .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar .logo .logo-brand { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
     .sidebar .logo .logo-img { width:44px; height:44px; object-fit:contain; flex-shrink:0; border-radius:8px; }
@@ -7871,9 +7872,16 @@
     // Verificar subscription em background (overlay só se bloqueado)
     let checkType = agentType === 'principal' ? 'main'
                   : agentType === 'ob' ? 'objecao' : 'extra';
+    // Guarda a página ativa no momento da verificação
+    const pageAtCheck = 'page-' + (agentType === 'principal' ? 'agente'
+                      : agentType === 'ob' ? 'agente-objecao'
+                      : `agente-extra-${agentIndex || ''}`);
     checkSubscriptionForAgent(checkType, agentIndex).then(({ canEdit, reason }) => {
       document.querySelectorAll('.locked-page-overlay').forEach(el => el.remove());
-      if (!canEdit) {
+      // Só cria overlay se o usuário ainda está na página do agente
+      const stillOnAgentPage = document.querySelector('.page.active')?.id === pageAtCheck
+        || document.querySelector('.page.active')?.id?.startsWith('page-agente');
+      if (!canEdit && stillOnAgentPage) {
         const overlay = document.createElement('div');
         overlay.className = 'locked-page-overlay';
         overlay.innerHTML = `
