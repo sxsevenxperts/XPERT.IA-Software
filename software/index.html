@@ -5814,7 +5814,7 @@
       </div>
 
       <!-- Cards de conexão -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px;">
         <!-- Google Calendar -->
         <div class="card" style="padding:20px;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -5863,6 +5863,31 @@
             <button class="btn-save" onclick="agendaConectarApple()" style="width:100%;background:rgba(255,255,255,.1);color:#e6edf3;border:1px solid rgba(255,255,255,.15);">Entrar com Apple</button>
           </div>
           <button class="btn-secondary" id="agenda-btn-apple-disconnect" onclick="agendaDesconectarApple()" style="display:none;width:100%;color:#fca5a5;border-color:rgba(239,68,68,.3);">Desconectar</button>
+        </div>
+
+        <!-- Calendly -->
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(0,107,186,.12);border:1px solid rgba(0,107,186,.25);display:flex;align-items:center;justify-content:center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect width="18" height="18" x="3" y="3" rx="4" fill="rgba(0,107,186,.3)"/><path d="M8 11h8M8 14h5" stroke="#006BBA" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="7.5" r="1.2" fill="#006BBA"/><circle cx="16" cy="7.5" r="1.2" fill="#006BBA"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">Calendly</div>
+              <div id="agenda-calendly-status-text" style="font-size:12px;color:var(--text2);">Não conectado</div>
+            </div>
+            <span id="agenda-calendly-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(107,114,128,.15);border:1px solid #30363d;color:#6b7280;">–</span>
+          </div>
+          <div id="agenda-calendly-info" style="display:none;font-size:12px;color:#93c5fd;background:rgba(0,107,186,.06);border:1px solid rgba(0,107,186,.2);border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+            Link: <a id="agenda-calendly-link" href="#" target="_blank" style="color:#a3e635;word-break:break-all;"></a>
+          </div>
+          <div id="agenda-calendly-form">
+            <div style="margin-bottom:8px;">
+              <input type="text" id="agenda-calendly-key" placeholder="API Key do Calendly (Bearer Token)" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-input,var(--bg-secondary));color:var(--text);font-size:13px;box-sizing:border-box;" autocomplete="off" />
+              <div style="font-size:11px;color:var(--text2);margin-top:5px;">Obtenha em <a href="https://calendly.com/integrations/api_webhooks" target="_blank" style="color:#a3e635;">calendly.com/integrations</a> → API & Webhooks</div>
+            </div>
+            <button class="btn-save" onclick="agendaConectarCalendly()" style="width:100%;background:rgba(0,107,186,.85);">Conectar Calendly</button>
+          </div>
+          <button class="btn-secondary" id="agenda-btn-calendly-disconnect" onclick="agendaDesconectarCalendly()" style="display:none;width:100%;color:#fca5a5;border-color:rgba(239,68,68,.3);">Desconectar</button>
         </div>
       </div>
 
@@ -7068,7 +7093,11 @@
         if (adminBanner) adminBanner.style.display = 'flex';
       }
     }
-    if (name === 'equipe') loadEquipePage();
+    if (name === 'equipe') loadEquipePage().catch(err => {
+      console.error('Erro loadEquipePage:', err);
+      const grid = document.getElementById('equipe-grid');
+      if (grid) grid.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">❌ Erro ao carregar equipe: ${err.message}</div>`;
+    });
     if (name === 'calendario') loadCalendario();
     if (name === 'conta') loadPageConta();
     if (name === 'integracoes') loadIntegracoes();
@@ -10394,28 +10423,44 @@
   }
 
   async function loadLeads() {
-    if (!scoringRules) scoringRules = await loadScoringRulesFromDB();
-    const { data } = await db.from('leads').select('*').order('criado_em', { ascending: false });
     const el = document.getElementById('leads-table');
-    if (!data || !data.length) {
-      el.innerHTML = '<p class="empty-state">Nenhum lead registrado ainda.</p>'; return;
+    if (!el) return;
+    el.innerHTML = '<p class="loading">Carregando...</p>';
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) { el.innerHTML = '<p class="empty-state">Faça login para ver os leads.</p>'; return; }
+      const uid = _effectiveUserId || user.id;
+      if (!scoringRules) scoringRules = await loadScoringRulesFromDB();
+      const { data, error } = await db.from('leads').select('*').eq('user_id', uid)
+        .order('atualizado_em', { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      if (!data || !data.length) {
+        el.innerHTML = '<p class="empty-state">Nenhum lead registrado ainda.</p>'; return;
+      }
+      el.innerHTML = renderLeadsTable(data);
+    } catch(err) {
+      console.error('❌ loadLeads:', err);
+      el.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">❌ Erro: ${err.message}</div>`;
     }
-    el.innerHTML = renderLeadsTable(data);
   }
 
   function renderLeadsTable(data) {
-    const rules = scoringRules || DEFAULT_SCORING_RULES;
     return `<table><thead><tr>
-      <th>Data</th><th>Nome</th><th>Celular</th><th>Produto/Serviço</th><th>Status</th><th style="text-align:right;">Score</th>
+      <th>Nome</th><th>Número</th><th>Último atendimento</th><th>Assunto</th><th>Status</th>
     </tr></thead><tbody>${data.map(l => {
-      const sc = calcLeadScore(l, rules);
-      return `<tr>
-        <td>${l.criado_em ? new Date(l.criado_em).toLocaleString('pt-BR') : '—'}</td>
-        <td>${l.nome || l.numero_whatsapp || '—'}</td>
-        <td>${l.celular || '—'}</td>
-        <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${l.tese || l.resumo || '—'}</td>
+      const numero = l.numero_whatsapp || l.celular || '—';
+      const ultimaConversa = l.atualizado_em
+        ? new Date(l.atualizado_em).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+        : l.criado_em
+          ? new Date(l.criado_em).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })
+          : '—';
+      const assunto = l.tese || l.resumo || l.produto_servico || '—';
+      return `<tr onclick="openLeadDetails('${l.id}')" style="cursor:pointer;" title="Ver detalhes">
+        <td><strong>${escapeHtml(l.nome || numero)}</strong></td>
+        <td style="white-space:nowrap;">${escapeHtml(numero)}</td>
+        <td style="white-space:nowrap;">${ultimaConversa}</td>
+        <td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(assunto)}">${escapeHtml(assunto)}</td>
         <td><span class="badge ${l.qualificado ? 'badge-green' : 'badge-red'}">${l.qualificado ? 'Qualificado' : 'Não qualificado'}</span></td>
-        <td style="text-align:right;">${scoreHTML(sc)}</td>
       </tr>`;
     }).join('')}</tbody></table>`;
   }
@@ -13226,9 +13271,13 @@
   let agendaAppleConectado = false;
 
   async function loadAgendaPage() {
-    await Promise.all([agendaCheckGCal(), agendaCheckApple()]);
-    agendaRenderPeriodo();
-    agendaCarregarEventos();
+    try {
+      await Promise.all([agendaCheckGCal(), agendaCheckApple(), agendaCheckCalendly()]);
+      agendaRenderPeriodo();
+      agendaCarregarEventos();
+    } catch(err) {
+      console.error('❌ loadAgendaPage:', err);
+    }
   }
 
   async function agendaCheckGCal() {
@@ -13326,6 +13375,71 @@
     agendaCarregarEventos();
   }
 
+  let agendaCalendlyConectado = false;
+
+  async function agendaCheckCalendly() {
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      const { data } = await db.from('agente_config')
+        .select('valor').eq('user_id', user.id).eq('chave', 'calendly_api_key').maybeSingle();
+      agendaCalendlyConectado = !!data?.valor;
+      const badge  = document.getElementById('agenda-calendly-badge');
+      const info   = document.getElementById('agenda-calendly-info');
+      const form   = document.getElementById('agenda-calendly-form');
+      const btnOff = document.getElementById('agenda-btn-calendly-disconnect');
+      const txt    = document.getElementById('agenda-calendly-status-text');
+      if (agendaCalendlyConectado) {
+        if (badge) { badge.textContent = 'Conectado'; badge.style.cssText += ';background:rgba(163,230,53,.12);border-color:rgba(163,230,53,.3);color:#a3e635;'; }
+        if (form) form.style.display = 'none';
+        if (btnOff) btnOff.style.display = 'block';
+        if (txt) txt.textContent = 'Conectado';
+        // Busca scheduling link via Calendly API
+        try {
+          const res = await fetch('https://api.calendly.com/users/me', {
+            headers: { Authorization: `Bearer ${data.valor}`, 'Content-Type': 'application/json' }
+          });
+          const json = await res.json();
+          const link = json?.resource?.scheduling_url;
+          if (link && info) {
+            info.style.display = 'block';
+            const a = document.getElementById('agenda-calendly-link');
+            if (a) { a.href = link; a.textContent = link; }
+          }
+        } catch(_) {}
+      } else {
+        if (badge) badge.textContent = 'Desconectado';
+        if (txt) txt.textContent = 'Não conectado';
+      }
+    } catch(_) {}
+  }
+
+  async function agendaConectarCalendly() {
+    const key = document.getElementById('agenda-calendly-key').value.trim();
+    if (!key) { alert('Informe a API Key do Calendly.'); return; }
+    try {
+      // Valida a chave
+      const res = await fetch('https://api.calendly.com/users/me', {
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }
+      });
+      if (!res.ok) { alert('API Key inválida. Verifique e tente novamente.'); return; }
+      const { data: { user } } = await db.auth.getUser();
+      await db.from('agente_config').upsert([
+        { user_id: user.id, chave: 'calendly_api_key', valor: key }
+      ], { onConflict: 'user_id,chave' });
+      await agendaCheckCalendly();
+      agendaCarregarEventos();
+    } catch(e) { alert('Erro: ' + e.message); }
+  }
+
+  async function agendaDesconectarCalendly() {
+    if (!confirm('Desconectar Calendly?')) return;
+    const { data: { user } } = await db.auth.getUser();
+    await db.from('agente_config').delete().eq('user_id', user.id).eq('chave', 'calendly_api_key');
+    agendaCalendlyConectado = false;
+    await agendaCheckCalendly();
+  }
+
   function agendaSetView(v, btn) {
     agendaView = v;
     document.querySelectorAll('.cal-view-btn').forEach(b => b.classList.remove('active'));
@@ -13411,6 +13525,28 @@
       } catch(_) {}
     }
 
+    // Busca Calendly
+    if (agendaCalendlyConectado) {
+      try {
+        const { data: cfg } = await db.from('agente_config')
+          .select('valor').eq('chave', 'calendly_api_key').maybeSingle();
+        if (cfg?.valor) {
+          const res = await fetch(`https://api.calendly.com/scheduled_events?min_start_time=${dataIni.toISOString()}&max_start_time=${dataFim.toISOString()}&count=100`, {
+            headers: { Authorization: `Bearer ${cfg.valor}`, 'Content-Type': 'application/json' }
+          });
+          const json = await res.json();
+          if (json?.collection) {
+            agendaEventos.push(...json.collection.map(e => ({
+              title: e.name,
+              start: e.start_time,
+              end: e.end_time,
+              fonte: 'calendly'
+            })));
+          }
+        }
+      } catch(_) {}
+    }
+
     // Ordena por data
     agendaEventos.sort((a, b) => new Date(a.start) - new Date(b.start));
     agendaRenderCorpo(dataIni, dataFim);
@@ -13443,7 +13579,7 @@
         const evDia = agendaEventos.filter(e => (e.start ?? '').slice(0,10) === dStr);
         html += `<div style="border-right:1px solid var(--border);padding:8px 6px;min-height:200px;${isHoje ? 'background:rgba(163,230,53,.03);' : ''}">`;
         evDia.forEach(ev => {
-          const cor = ev.fonte === 'google' ? '#4285F4' : '#c9d1d9';
+          const cor = ev.fonte === 'google' ? '#4285F4' : ev.fonte === 'calendly' ? '#006BBA' : '#c9d1d9';
           const hora = ev.start ? new Date(ev.start).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : '';
           html += `<div style="background:${ev.fonte === 'google' ? 'rgba(66,133,244,.15)' : 'rgba(255,255,255,.06)'};border-left:3px solid ${cor};border-radius:5px;padding:5px 7px;margin-bottom:5px;cursor:pointer;" title="${ev.title ?? ''}">
             <div style="font-size:11px;font-weight:700;color:${cor};">${hora}</div>
@@ -13478,12 +13614,12 @@
           </div>
           <div style="flex:1;">`;
         grupos[dStr].forEach(ev => {
-          const cor = ev.fonte === 'google' ? '#4285F4' : '#c9d1d9';
+          const cor = ev.fonte === 'google' ? '#4285F4' : ev.fonte === 'calendly' ? '#006BBA' : '#c9d1d9';
           const hora = ev.start ? new Date(ev.start).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' }) : 'O dia todo';
           html += `<div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:${ev.fonte === 'google' ? 'rgba(66,133,244,.08)' : 'rgba(255,255,255,.04)'};border-left:3px solid ${cor};border-radius:6px;margin-bottom:6px;">
             <div style="width:44px;font-size:12px;font-weight:700;color:${cor};flex-shrink:0;">${hora}</div>
             <div style="font-size:13px;font-weight:600;color:var(--text);">${ev.title ?? 'Sem título'}</div>
-            <div style="margin-left:auto;font-size:10px;color:var(--text2);">${ev.fonte === 'google' ? 'Google' : 'Apple'}</div>
+            <div style="margin-left:auto;font-size:10px;color:var(--text2);">${ev.fonte === 'google' ? 'Google' : ev.fonte === 'calendly' ? 'Calendly' : 'Apple'}</div>
           </div>`;
         });
         html += '</div></div>';
@@ -13582,8 +13718,41 @@
   let _calTasks = [];              // cache de lead_tarefas
 
   async function loadCalendario() {
-    await _calFetchTasks();
-    renderCal();
+    const body = document.getElementById('cal-body');
+    if (!body) return;
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:#6e7681;">⏳ Carregando tarefas...</div>';
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) { body.innerHTML = '<div style="padding:40px;text-align:center;color:#6e7681;">Faça login para ver o calendário.</div>'; return; }
+      const uid = _effectiveUserId || user.id;
+
+      // 1. Busca IDs dos leads do usuário
+      const { data: leads, error: leadsErr } = await db.from('leads').select('id, nome').eq('user_id', uid);
+      if (leadsErr) throw leadsErr;
+      const leadIds = (leads || []).map(l => l.id);
+      const leadMap = Object.fromEntries((leads || []).map(l => [l.id, l.nome]));
+
+      if (!leadIds.length) {
+        _calTasks = [];
+        renderCal();
+        return;
+      }
+
+      // 2. Busca tarefas desses leads
+      const { data: tarefas, error: tarefasErr } = await db.from('lead_tarefas')
+        .select('id, descricao, data_vencimento, concluida, lead_id')
+        .in('lead_id', leadIds)
+        .not('data_vencimento', 'is', null)
+        .order('data_vencimento');
+      if (tarefasErr) throw tarefasErr;
+
+      // 3. Enriquecer com nome do lead
+      _calTasks = (tarefas || []).map(t => ({ ...t, leads: { nome: leadMap[t.lead_id] || 'Lead' } }));
+      renderCal();
+    } catch (err) {
+      console.error('❌ loadCalendario:', err);
+      body.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">❌ Erro ao carregar: ${err.message}</div>`;
+    }
   }
 
   async function _calFetchTasks() {
@@ -13745,8 +13914,13 @@
   let _equipeNumerosExtras = 0;  // números extras contratados (assinaturas.numeros_extras)
 
   async function loadEquipePage() {
+    const grid = document.getElementById('equipe-grid');
+    try {
     const { data: { user } } = await db.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      if (grid) grid.innerHTML = '<div style="padding:40px;text-align:center;color:#6e7681;">Faça login para ver a equipe.</div>';
+      return;
+    }
 
     // 1. Quota comprada no marketplace — lê de assinaturas (Hotmart) — admin: ilimitado
     if (currentProfile?.role === 'admin') {
@@ -13788,6 +13962,11 @@
 
     // 5. Renderiza grid
     renderEquipeGrid(_equipeMembros);
+    } catch(err) {
+      console.error('❌ loadEquipePage:', err);
+      const g = document.getElementById('equipe-grid');
+      if (g) g.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">❌ Erro ao carregar equipe: ${err.message}</div>`;
+    }
   }
 
   function renderEquipeGrid(membros) {
