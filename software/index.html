@@ -4544,6 +4544,21 @@
           <div class="dash-kpi-value" id="dk-taxa">—</div>
           <div class="dash-kpi-sub">ganhos / total</div>
         </div>
+        <div class="dash-kpi" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(74,222,128,.05));border:1px solid rgba(34,197,94,.2);">
+          <div class="dash-kpi-label">💰 Custo/Qualificado</div>
+          <div class="dash-kpi-value" id="dk-custo-qualif">—</div>
+          <div class="dash-kpi-sub" id="dk-custo-qualif-sub">custo total / qualificados</div>
+        </div>
+        <div class="dash-kpi" style="background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(248,113,113,.05));border:1px solid rgba(239,68,68,.2);">
+          <div class="dash-kpi-label">💰 Custo/Desqualificado</div>
+          <div class="dash-kpi-value" id="dk-custo-desqualif">—</div>
+          <div class="dash-kpi-sub" id="dk-custo-desqualif-sub">custo total / desqualificados</div>
+        </div>
+        <div class="dash-kpi" style="background:linear-gradient(135deg,rgba(59,130,246,.1),rgba(96,165,250,.05));border:1px solid rgba(59,130,246,.2);">
+          <div class="dash-kpi-label">💰 Custo/Conversão</div>
+          <div class="dash-kpi-value" id="dk-custo-conv">—</div>
+          <div class="dash-kpi-sub" id="dk-custo-conv-sub">custo total / convertidos</div>
+        </div>
       </div>
 
       <!-- Gráfico de evolução -->
@@ -10681,10 +10696,22 @@
     // ── Contagens por stage ──
     const total  = leads.length;
     const atend  = leads.filter(l => ['novo_contato','em_atendimento'].includes(l.stage)).length;
-    const ganho  = leads.filter(l => ['convertido','qualificado'].includes(l.stage)).length;
-    const perda  = leads.filter(l => ['perdido','nao_qualificado'].includes(l.stage)).length;
+    const qualificados = leads.filter(l => l.stage === 'qualificado').length;
+    const convertidos = leads.filter(l => l.stage === 'convertido').length;
+    const ganho  = convertidos + qualificados;
+    const desqualificados = leads.filter(l => l.stage === 'nao_qualificado').length;
+    const perdidos = leads.filter(l => l.stage === 'perdido').length;
+    const perda  = desqualificados + perdidos;
     const concl  = ganho + perda;
     const taxa   = total > 0 ? Math.round(ganho / total * 100) : 0;
+
+    // ── Calcula custos (simulado ou de workflow_executions) ──
+    // Para agora, estimaremos custo médio por token ou por lead
+    const custoPorLead = 0.05;  // Custo estimado por lead ($0.05 por lead como exemplo)
+    const custoTotal = total * custoPorLead;
+    const custoPorQualif = qualificados > 0 ? (custoTotal / qualificados).toFixed(2) : '—';
+    const custoPorDesqualif = desqualificados > 0 ? (custoTotal / desqualificados).toFixed(2) : '—';
+    const custoPorConv = convertidos > 0 ? (custoTotal / convertidos).toFixed(2) : '—';
 
     document.getElementById('dk-total').textContent = total;
     document.getElementById('dk-atend').textContent = atend;
@@ -10692,6 +10719,17 @@
     document.getElementById('dk-ganho').textContent = ganho;
     document.getElementById('dk-perda').textContent = perda;
     document.getElementById('dk-taxa').textContent  = taxa + '%';
+
+    // Atualiza KPIs de custo
+    const custoCurrencyFormatter = val => typeof val === 'string' ? val : '$' + val;
+    document.getElementById('dk-custo-qualif').textContent = custoCurrencyFormatter(custoPorQualif);
+    document.getElementById('dk-custo-desqualif').textContent = custoCurrencyFormatter(custoPorDesqualif);
+    document.getElementById('dk-custo-conv').textContent = custoCurrencyFormatter(custoPorConv);
+
+    // Atualiza subtextos com custo total
+    document.getElementById('dk-custo-qualif-sub').textContent = `${qualificados} qualificados | Total: $${custoTotal.toFixed(2)}`;
+    document.getElementById('dk-custo-desqualif-sub').textContent = `${desqualificados} desqualificados | Total: $${custoTotal.toFixed(2)}`;
+    document.getElementById('dk-custo-conv-sub').textContent = `${convertidos} convertidos | Total: $${custoTotal.toFixed(2)}`;
 
     // ── Gráfico: evolução por dia ──
     renderDashChart(leads, range);
@@ -10751,15 +10789,20 @@
     const wrap = document.getElementById('dash-funis-wrap');
     if (!wrap) return;
 
+    const custoPorLead = 0.05;  // Custo estimado por lead
+
     // Agrupa por fluxo_id
     const byFunil = {};
     leads.forEach(l => {
       const key = l.fluxo_id || '__sem_funil__';
-      if (!byFunil[key]) byFunil[key] = { total: 0, atend: 0, ganho: 0, perda: 0 };
+      if (!byFunil[key]) byFunil[key] = { total: 0, atend: 0, ganho: 0, perda: 0, qualificados: 0, desqualificados: 0, convertidos: 0, custo: 0 };
       byFunil[key].total++;
-      if (['convertido','qualificado'].includes(l.stage))       byFunil[key].ganho++;
-      else if (['perdido','nao_qualificado'].includes(l.stage)) byFunil[key].perda++;
-      else                                                       byFunil[key].atend++;
+      byFunil[key].custo += custoPorLead;
+      if (l.stage === 'qualificado')           { byFunil[key].ganho++; byFunil[key].qualificados++; }
+      else if (l.stage === 'convertido')       { byFunil[key].ganho++; byFunil[key].convertidos++; }
+      else if (l.stage === 'nao_qualificado')  { byFunil[key].perda++; byFunil[key].desqualificados++; }
+      else if (l.stage === 'perdido')          { byFunil[key].perda++; }
+      else                                      byFunil[key].atend++;
     });
 
     // Mapa de nomes dos funis (usa crmFluxos se disponível)
@@ -10773,6 +10816,9 @@
       .sort((a,b) => b[1].total - a[1].total)
       .map(([id, d]) => {
         const taxa = d.total > 0 ? Math.round(d.ganho / d.total * 100) : 0;
+        const custoPorQualif = d.qualificados > 0 ? (d.custo / d.qualificados).toFixed(2) : '—';
+        const custoPorDesqualif = d.desqualificados > 0 ? (d.custo / d.desqualificados).toFixed(2) : '—';
+        const custoPorConv = d.convertidos > 0 ? (d.custo / d.convertidos).toFixed(2) : '—';
         return `<tr>
           <td><strong>${escapeHtml(nomeFunil(id))}</strong></td>
           <td style="text-align:center">${d.total}</td>
@@ -10782,6 +10828,11 @@
           <td style="min-width:100px">
             <div style="font-size:12px;font-weight:700;color:${taxa>=50?'#a3e635':'#f87171'}">${taxa}%</div>
             <div class="dash-prog-bar"><div class="dash-prog-fill" style="width:${taxa}%;background:${taxa>=50?'#a3e635':'#f87171'}"></div></div>
+          </td>
+          <td style="text-align:right;font-size:12px;font-weight:600;">
+            <div style="color:#a3e635;margin-bottom:4px;">$${custoPorQualif}</div>
+            <div style="color:#f87171;margin-bottom:4px;">$${custoPorDesqualif}</div>
+            <div style="color:#60a5fa;">$${custoPorConv}</div>
           </td>
         </tr>`;
       }).join('');
@@ -10793,7 +10844,8 @@
         <th style="text-align:center">Em Atend.</th>
         <th style="text-align:center">Ganhos</th>
         <th style="text-align:center">Perda</th>
-        <th>Conversão</th>
+        <th>Taxa %</th>
+        <th style="text-align:right">💰 Custo<br/><small style="color:#6e7681;">(Qualif|Desq|Conv)</small></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
