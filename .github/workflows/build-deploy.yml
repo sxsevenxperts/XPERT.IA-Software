@@ -42,10 +42,15 @@ jobs:
           gh api --method PATCH /user/packages/container/easydrive -f visibility=public || echo "Package visibility update skipped"
 
       - name: Trigger EasyPanel Redeploy
-        if: ${{ secrets.EASYPANEL_WEBHOOK_URL != '' }}
+        env:
+          EASYPANEL_WEBHOOK_URL: ${{ secrets.EASYPANEL_WEBHOOK_URL }}
         run: |
-          curl -s -X POST "${{ secrets.EASYPANEL_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{"projectName":"xpert-ia","serviceName":"software"}' \
-            && echo "EasyPanel redeploy triggered successfully" \
-            || echo "EasyPanel redeploy failed (webhook may not be configured)"
+          if [ -n "$EASYPANEL_WEBHOOK_URL" ]; then
+            curl -s -X POST "$EASYPANEL_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d '{"projectName":"xpert-ia","serviceName":"software"}' \
+              && echo "EasyPanel redeploy triggered successfully" \
+              || echo "EasyPanel redeploy webhook call failed"
+          else
+            echo "EASYPANEL_WEBHOOK_URL not configured — skipping auto-redeploy"
+          fi
