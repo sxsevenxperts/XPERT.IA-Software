@@ -1,7 +1,8 @@
 FROM nginx:alpine
 
-# Copia o HTML estático para o nginx
+# Copia o HTML estático e as imagens para o nginx
 COPY index.html /usr/share/nginx/html/index.html
+COPY *.png /usr/share/nginx/html/
 
 # Configuração nginx simples
 RUN echo 'server { \
