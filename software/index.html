@@ -4240,8 +4240,23 @@
 
     <div class="page" id="page-numeros-extras">
       <div class="page-header">
-        <h1>Números Extras de WhatsApp</h1>
-        <p>Gerencie os números de WhatsApp adicionais que você asinou como addon</p>
+        <div>
+          <h1>Números Extras de WhatsApp</h1>
+          <p>Gerencie os números de WhatsApp adicionais que você assinou como addon</p>
+        </div>
+        <button class="btn-primary" onclick="adicionarNumeroExtra()" style="white-space:nowrap;">+ Adicionar Número</button>
+      </div>
+
+      <!-- Barra de cota -->
+      <div class="equipe-quota-bar">
+        <div class="equipe-quota-info">
+          <div class="equipe-quota-title">Números Extras</div>
+          <div class="equipe-quota-sub" id="numeros-quota-sub">Carregando...</div>
+        </div>
+        <div class="equipe-quota-bar-track" style="max-width:200px;">
+          <div class="equipe-quota-bar-fill" id="numeros-quota-fill" style="width:0%"></div>
+        </div>
+        <div style="font-size:12px;color:#8b949e;" id="numeros-quota-label">—</div>
       </div>
 
       <div class="card">
@@ -7398,6 +7413,88 @@
     setTimeout(() => gerarQRNumeroExtra(index), 300);
   }
 
+  async function adicionarNumeroExtra() {
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+
+      const { data: sub } = await db.from('assinaturas').select('numeros_extras').eq('user_id', user.id).maybeSingle();
+      const numerosContratados = sub?.numeros_extras || 0;
+
+      if (numerosContratados === 0) {
+        if (!confirm('Você não tem números extras contratados.\n\nDeseja ir ao Marketplace para contratar?')) return;
+        showPage('faturamento', document.querySelector('.nav-item[onclick*="faturamento"]'));
+        setTimeout(() => showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1]), 400);
+        return;
+      }
+
+      alert('✅ Acesse o Marketplace para ativar novos números extras!');
+      showPage('faturamento', document.querySelector('.nav-item[onclick*="faturamento"]'));
+      setTimeout(() => showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1]), 400);
+    } catch(err) {
+      console.error('Erro:', err);
+      alert('Erro ao verificar cota: ' + err.message);
+    }
+  }
+
+  async function loadNumeroExtraConfig(index) {
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+      const { data } = await db.from('agente_config')
+        .select('valor')
+        .eq('user_id', user.id)
+        .in('chave', [`numero_extra_${index}_nome`, `numero_extra_${index}_funcao`])
+        .maybeSingle();
+
+      const { data: dataNome } = await db.from('agente_config')
+        .select('valor').eq('user_id', user.id).eq('chave', `numero_extra_${index}_nome`).maybeSingle();
+      const { data: dataFuncao } = await db.from('agente_config')
+        .select('valor').eq('user_id', user.id).eq('chave', `numero_extra_${index}_funcao`).maybeSingle();
+
+      const nomeEl = document.getElementById(`numero-extra-nome-${index}`);
+      const funcaoEl = document.getElementById(`numero-extra-funcao-${index}`);
+
+      if (dataNome?.valor && nomeEl) nomeEl.value = dataNome.valor;
+      if (dataFuncao?.valor && funcaoEl) funcaoEl.value = dataFuncao.valor;
+    } catch(err) {
+      console.error('Erro ao carregar config:', err);
+    }
+  }
+
+  async function salvarNumeroExtra(index) {
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (!user) return;
+
+      const nome = document.getElementById(`numero-extra-nome-${index}`)?.value.trim() || `Número Extra ${index}`;
+      const funcao = document.getElementById(`numero-extra-funcao-${index}`)?.value.trim() || '';
+
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      // Salva nome
+      await db.from('agente_config').upsert([
+        { user_id: user.id, chave: `numero_extra_${index}_nome`, valor: nome }
+      ], { onConflict: 'user_id,chave' });
+
+      // Salva função
+      if (funcao) {
+        await db.from('agente_config').upsert([
+          { user_id: user.id, chave: `numero_extra_${index}_funcao`, valor: funcao }
+        ], { onConflict: 'user_id,chave' });
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Salvo! ✓';
+      setTimeout(() => { btn.textContent = 'Salvar'; }, 2000);
+    } catch(err) {
+      console.error('Erro ao salvar:', err);
+      alert('Erro ao salvar: ' + err.message);
+    }
+  }
+
   async function gerarQRNumeroExtra(index) {
     const btn = document.getElementById(`btn-gerar-qr-${index}`);
     const placeholder = document.getElementById(`qr-placeholder-${index}`);
@@ -10087,26 +10184,57 @@
     }
     
     // Renderiza lista de números extras
-    if (numerosExtrasNum > 0) {
-      const listContainer = document.getElementById('numeros-extras-list');
-      if (listContainer) {
+    const listContainer = document.getElementById('numeros-extras-list');
+    const quotaFill = document.getElementById('numeros-quota-fill');
+    const quotaSub = document.getElementById('numeros-quota-sub');
+    const quotaLabel = document.getElementById('numeros-quota-label');
+
+    // Atualiza barra de cota
+    const numerosUsados = numerosExtrasNum;
+    const pct = numerosExtrasNum > 0 ? Math.min(100, (numerosUsados / 10) * 100) : 0;  // Assume limite de 10
+    if (quotaFill) { quotaFill.style.width = pct + '%'; }
+    if (quotaSub) quotaSub.textContent = numerosExtrasNum === 0
+      ? 'Nenhum número extra contratado — compre no Marketplace'
+      : `${numerosExtrasNum} número${numerosExtrasNum > 1 ? 's' : ''} extra${numerosExtrasNum > 1 ? 's' : ''} em uso`;
+    if (quotaLabel) quotaLabel.textContent = `${numerosUsados}/∞`;
+
+    if (listContainer) {
+      if (numerosExtrasNum === 0) {
+        listContainer.innerHTML = `<div style="padding:40px;text-align:center;color:#8b949e;">
+          <div style="margin-bottom:12px;">Nenhum número extra contratado.</div>
+          <button class="btn-primary" onclick="showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400)">Ir ao Marketplace</button>
+        </div>`;
+      } else {
         listContainer.innerHTML = '';
         for (let i = 1; i <= numerosExtrasNum; i++) {
           const item = document.createElement('div');
           item.id = `numero-extra-card-${i}`;
-          item.style.cssText = 'border:1px solid #30363d;border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;';
           item.innerHTML = `
-            <div>
-              <div style="font-weight:600;color:#e6edf3;">Número Extra ${i}</div>
-              <div id="numero-extra-status-${i}" style="font-size:12px;color:#8b949e;margin-top:4px;">Verificando...</div>
-            </div>
-            <div id="numero-extra-actions-${i}" style="display:flex;gap:8px;">
-              <button class="btn-secondary" onclick="conectarNumeroExtra(${i})">Conectar QR</button>
+            <div style="border:1px solid #30363d;border-radius:8px;padding:16px;">
+              <div style="display:flex;gap:16px;margin-bottom:12px;">
+                <div style="flex:1;">
+                  <label style="font-size:11px;color:#8b949e;font-weight:600;display:block;margin-bottom:4px;">Nome do Número</label>
+                  <input type="text" id="numero-extra-nome-${i}" placeholder="Ex: Número Principal, Atendimento..." value="Número Extra ${i}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);color:var(--text);font-size:13px;box-sizing:border-box;" />
+                </div>
+                <div style="flex:1;">
+                  <label style="font-size:11px;color:#8b949e;font-weight:600;display:block;margin-bottom:4px;">Função / Setor</label>
+                  <input type="text" id="numero-extra-funcao-${i}" placeholder="Ex: Vendas, Suporte..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);color:var(--text);font-size:13px;box-sizing:border-box;" />
+                </div>
+              </div>
+              <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">
+                <div id="numero-extra-status-${i}">Verificando status...</div>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-save" onclick="salvarNumeroExtra(${i})" style="flex:1;padding:8px 12px;font-size:13px;">Salvar</button>
+                <button class="btn-secondary" onclick="conectarNumeroExtra(${i})" style="flex:1;padding:8px 12px;font-size:13px;">Conectar QR</button>
+              </div>
             </div>
           `;
           listContainer.appendChild(item);
           // Carrega status desta instância extra
           checkStatusNumeroExtra(i);
+          // Carrega dados salvos (nome e função)
+          loadNumeroExtraConfig(i);
         }
       }
     }
