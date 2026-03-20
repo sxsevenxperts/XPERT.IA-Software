@@ -7876,24 +7876,42 @@
     const pageAtCheck = 'page-' + (agentType === 'principal' ? 'agente'
                       : agentType === 'ob' ? 'agente-objecao'
                       : `agente-extra-${agentIndex || ''}`);
+    // Verificação de assinatura — só desabilita edição, não bloqueia visualização
     checkSubscriptionForAgent(checkType, agentIndex).then(({ canEdit, reason }) => {
-      document.querySelectorAll('.locked-page-overlay').forEach(el => el.remove());
-      // Só cria overlay se o usuário ainda está na página do agente
-      const stillOnAgentPage = document.querySelector('.page.active')?.id === pageAtCheck
-        || document.querySelector('.page.active')?.id?.startsWith('page-agente');
-      if (!canEdit && stillOnAgentPage) {
-        const overlay = document.createElement('div');
-        overlay.className = 'locked-page-overlay';
-        overlay.innerHTML = `
-          <div class="locked-page-box">
-            <span class="lock-emoji">🔒</span>
-            <h2>Recurso Bloqueado</h2>
-            <p>${reason || 'Este agente requer um addon ativo. Adquira no marketplace para desbloquear.'}</p>
-            <button class="btn-marketplace" onclick="document.querySelectorAll('.locked-page-overlay').forEach(e=>e.remove());showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">
-              🛒 Adquirir no Marketplace
-            </button>
-          </div>`;
-        document.body.appendChild(overlay);
+      if (!canEdit) {
+        // Só desabilita inputs/botões — conteúdo continua visível
+        const activePage = document.querySelector('.page.active');
+        if (!activePage) return;
+
+        // Desabilita todos os inputs da página ativa
+        activePage.querySelectorAll('input, textarea, select').forEach(el => {
+          el.disabled = true;
+          el.style.opacity = '0.6';
+          el.style.cursor = 'not-allowed';
+        });
+
+        // Desabilita botões de salvar
+        activePage.querySelectorAll('button[onclick*="save"], button[onclick*="Save"]').forEach(btn => {
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+          btn.title = reason || 'Requer assinatura ativa';
+        });
+
+        // Mostra banner no topo da página (não overlay)
+        if (!activePage.querySelector('.subscription-lock-banner')) {
+          const banner = document.createElement('div');
+          banner.className = 'subscription-lock-banner';
+          banner.style.cssText = 'background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;';
+          banner.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:18px;">🔒</span>
+              <span style="color:#fb923c;font-size:13px;">${reason || 'Visualização disponível. Adquira o addon para editar.'}</span>
+            </div>
+            <button onclick="showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);" style="background:#fb923c;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+              🛒 Adquirir
+            </button>`;
+          activePage.insertBefore(banner, activePage.firstChild);
+        }
       }
     });
   }
