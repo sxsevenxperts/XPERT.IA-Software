@@ -785,7 +785,7 @@
     .nav-subitem .lock-icon { font-size: 12px; margin-left: auto; }
 
     /* ── Locked page overlay ─────────────────────────────────── */
-    .locked-page-overlay { position:absolute; inset:0; background:rgba(7,10,14,0.93); display:flex; align-items:center; justify-content:center; z-index:50; border-radius:12px; backdrop-filter:blur(4px); }
+    .locked-page-overlay { position:fixed; inset:0 0 32px 240px; background:rgba(7,10,14,0.96); display:flex; align-items:center; justify-content:center; z-index:200; backdrop-filter:blur(4px); }
     .locked-page-box { text-align:center; max-width:420px; padding:48px 40px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; }
     .locked-page-box .lock-emoji { font-size:48px; margin-bottom:20px; display:block; }
     .locked-page-box h2 { font-size:20px; font-weight:800; color:#fff; margin:0 0 10px; letter-spacing:-.3px; }
