@@ -6989,15 +6989,25 @@
   };
 
   function showPage(name, el) {
-    console.log('showPage called with name:', name);
     // Bloqueia membro de acessar páginas não permitidas
     if (currentProfile?.role === 'membro' && !_membroAllowedPages.has(name)) return;
 
+    // Remove overlays apenas se existem (não query se vazio)
     document.querySelectorAll('.locked-page-overlay').forEach(e => e.remove());
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
-    document.getElementById('page-' + name).classList.add('active');
+
+    // Otimizado: remove active apenas dos que têm (não query todos)
+    const activePage = document.querySelector('.page.active');
+    if (activePage) activePage.classList.remove('active');
+
+    const activeNav = document.querySelector('.nav-item.active');
+    if (activeNav) activeNav.classList.remove('active');
+
+    const activeSubNav = document.querySelector('.nav-subitem.active');
+    if (activeSubNav) activeSubNav.classList.remove('active');
+
+    // Ativa a nova página
+    const newPage = document.getElementById('page-' + name);
+    if (newPage) newPage.classList.add('active');
     if (el) el.classList.add('active');
     if (name === 'leads') { console.log('Loading leads');
       loadLeads().catch(err => {
@@ -7010,18 +7020,11 @@
     if (name === 'agente-objecao') { loadAgenteConfigs('ob'); }
     if (name === 'agente-prospecao') { loadAgenteConfigs('prospec'); }
     if (name === 'crm') {
-      loadCRM().catch(err => {
-        console.error('Erro ao carregar CRM:', err);
-        document.getElementById('crm-board').innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
-      });
+      loadCRM();  // Executa em background, erro tratado dentro da função
       setTimeout(checkReminders, 500);
     }
     if (name === 'historico-leads') {
-      loadHistorico().catch(err => {
-        console.error('Erro ao carregar histórico:', err);
-        const container = document.getElementById('historico-list');
-        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
-      });
+      loadHistorico();  // Executa em background, erro tratado dentro da função
     }
     if (name === 'pdfs') loadPDFList();
     if (name === 'analytics') loadDashboard();
