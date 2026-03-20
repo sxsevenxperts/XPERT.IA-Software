@@ -752,9 +752,10 @@
     .sidebar.collapsed .nav-item span:not(.icon) { display: none; }
     .sidebar.collapsed .logo { padding: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar.collapsed .logo img, .sidebar.collapsed .logo > div { display: none; }
-    .main-content { position: relative; z-index: 10; margin-left: 240px; transition: margin-left 0.3s ease; }
+    .main-content { position: relative; z-index: 10; margin-left: 240px; transition: margin-left 0.3s ease; overflow: visible; }
     .sidebar.collapsed ~ .main-content { margin-left: 70px; }
-    .page { position: relative; z-index: 10; }
+    .page { position: relative; z-index: 10 !important; display: block !important; }
+    #dashboard-page { position: relative; z-index: 10; }
     .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar .logo .logo-brand { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
     .sidebar .logo .logo-img { width:44px; height:44px; object-fit:contain; flex-shrink:0; border-radius:8px; }
