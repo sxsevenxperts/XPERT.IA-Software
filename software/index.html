@@ -9,9 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
 
   // =====================
   // =====================
@@ -572,13 +571,6 @@
   document.addEventListener('page-shown', (e) => {
     if (e.detail?.page === 'analytics') refreshAnalyticsData();
   });
-
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4">
-
-
-
-  // =====================
 
 </script>
   <style>
@@ -5531,6 +5523,12 @@
         </div>
       </div>
 
+      <!-- Tabela de assinaturas -->
+      <div class="card" style="margin-top:24px;overflow-x:auto;">
+        <h3 style="margin:0 0 16px;font-size:15px;font-weight:700;">Assinaturas</h3>
+        <div id="monitoramento-tabela"><p class="loading">Carregando...</p></div>
+      </div>
+
     </div>
 
     <!-- CLIENTES (admin only) -->
@@ -5955,106 +5953,8 @@
       </div>
     </div>
 
-    <!-- CONFIGURAÇÕES -->
-    <!-- MONITORAMENTO -->
-    <div class="page" id="page-monitoramento">
-      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
-        <div>
-          <h1>📊 Monitoramento</h1>
-          <p>Acompanhe a performance do seu agente em tempo real</p>
-        </div>
-        <button onclick="refreshMonitoringData()" style="padding:8px 16px;background:#1f6feb;border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:500;font-size:14px;">↻ Atualizar</button>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
-        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Execuções (24h)</div>
-          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-total-execucoes">0</div>
-          <div style="font-size:11px;color:#6e7681;margin-top:8px;">Taxa: <span id="metric-taxa-sucesso">0%</span></div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Tokens Usados</div>
-          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-tokens-total">0</div>
-          <div style="font-size:11px;color:#6e7681;margin-top:8px;">Custo: $<span id="metric-custo-total">0.00</span></div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Duração Média</div>
-          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-duracao-media">0ms</div>
-          <div style="font-size:11px;color:#6e7681;margin-top:8px;">Max: <span id="metric-duracao-max">0ms</span></div>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-          <div style="font-size:12px;color:#6e7681;text-transform:uppercase;margin-bottom:8px;">Leads Processados</div>
-          <div style="font-size:28px;font-weight:700;color:#e6edf3;" id="metric-leads-processados">0</div>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-        <div>
-          <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">Agente</label>
-          <select id="filter-agent-type" onchange="filterExecutions()" style="width:100%;padding:6px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;">
-            <option value="">Todos</option>
-            <option value="principal">Principal</option>
-            <option value="objecao">Objeção</option>
-            <option value="extra">Extra</option>
-          </select>
-        </div>
-        <div>
-          <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">Status</label>
-          <select id="filter-status" onchange="filterExecutions()" style="width:100%;padding:6px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;">
-            <option value="">Todos</option>
-            <option value="sucesso">Sucesso ✓</option>
-            <option value="erro">Erro ✗</option>
-            <option value="timeout">Timeout ⏱</option>
-          </select>
-        </div>
-        <div>
-          <label style="display:block;font-size:12px;color:#6e7681;margin-bottom:6px;">Período</label>
-          <select id="filter-period" onchange="filterExecutions()" style="width:100%;padding:6px;background:var(--bg);border:1px solid #30363d;color:#e6edf3;border-radius:4px;font-size:13px;">
-            <option value="24h">Últimas 24h</option>
-            <option value="7d">Últimos 7 dias</option>
-            <option value="30d">Últimos 30 dias</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
-        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-          <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Execuções por Hora</h3>
-          <canvas id="chart-executions" height="250"></canvas>
-        </div>
-        <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;padding:16px;">
-          <h3 style="margin:0 0 16px;color:#e6edf3;font-size:14px;font-weight:600;">Taxa de Erro por Agente</h3>
-          <canvas id="chart-errors" height="250"></canvas>
-        </div>
-      </div>
-
-      <div style="background:var(--bg-card);border:1px solid #30363d;border-radius:6px;overflow:hidden;">
-        <div style="padding:16px;border-bottom:1px solid #30363d;">
-          <h3 style="margin:0;color:#e6edf3;font-size:14px;font-weight:600;">Execuções Recentes</h3>
-        </div>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;">
-            <thead>
-              <tr style="background:var(--bg);border-bottom:1px solid #30363d;">
-                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Lead</th>
-                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Agente</th>
-                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Status</th>
-                <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Tokens</th>
-                <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Duração</th>
-                <th style="padding:12px;text-align:right;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Custo</th>
-                <th style="padding:12px;text-align:left;color:#6e7681;font-weight:500;font-size:12px;text-transform:uppercase;">Timestamp</th>
-              </tr>
-            </thead>
-            <tbody id="execution-table-body">
-              <tr><td colspan="7" style="padding:40px;text-align:center;color:#6e7681;">Carregando...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- ANALYTICS — Phase 2 & 3 -->
-    <div class="page" id="page-analytics">
+    <div class="page" id="page-analytics-v2">
       <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
         <div>
           <h1>📈 Analytics — Phase 2 & 3</h1>
@@ -6298,7 +6198,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- PAGE: MONITORAMENTO (Dashboard) -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <div class="page" id="page-monitoramento" style="display: none;">
+    <div class="page" id="page-monitoramento">
       <div class="page-header">
         <h1>📊 Monitoramento</h1>
         <p>Acompanhe performance dos workflows e gastos com IA</p>
@@ -6990,7 +6890,8 @@
     if (name === 'analytics') loadDashboard();
     if (name === 'scoring') loadScoring();
     if (name === 'kpis') loadKPIsPage();
-    if (name === 'monitoramento') loadMonitoramentoPage();
+    if (name === 'monitoramento') loadMonitoringData();
+    if (name === 'dashboard-financeiro') loadMonitoramentoPage();
     if (name === 'clientes') { loadClients(); loadTokenUsageAdmin(); }
     if (name === 'admin-model-costs') loadAdminModelCosts();
     if (name === 'faturamento') {
@@ -14972,7 +14873,8 @@
   // =====================
 
 </script>
-<script src="https://unpkg.com/drawflow/dist/drawflow.min.js">
+<script src="https://unpkg.com/drawflow/dist/drawflow.min.js"></script>
+<script>
   // =====================
   // HISTÓRICO DE LEADS
   // =====================
