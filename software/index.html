@@ -6975,6 +6975,7 @@
     // Bloqueia membro de acessar páginas não permitidas
     if (currentProfile?.role === 'membro' && !_membroAllowedPages.has(name)) return;
 
+    document.querySelectorAll('.locked-page-overlay').forEach(e => e.remove());
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
@@ -7814,27 +7815,23 @@
     // Navegar para página (mesmo se bloqueada — mostra overlay)
     showPage(pageName, subitemEl);
 
-    // Mostrar overlay de bloqueio ou limpar
-    const pageEl = document.getElementById('page-' + pageName);
-    if (pageEl) {
-      const existing = pageEl.querySelector('.locked-page-overlay');
-      if (existing) existing.remove();
-      if (!canEdit) {
-        const overlay = document.createElement('div');
-        overlay.className = 'locked-page-overlay';
-        overlay.innerHTML = `
-          <div class="locked-page-box">
-            <span class="lock-emoji">🔒</span>
-            <h2>Recurso Bloqueado</h2>
-            <p>${reason || 'Este agente requer um addon ativo. Adquira no marketplace para desbloquear.'}</p>
-            <button class="btn-marketplace" onclick="showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">
-              🛒 Adquirir no Marketplace
-            </button>
-          </div>`;
-        pageEl.style.position = 'relative';
-        pageEl.appendChild(overlay);
-        return;
-      }
+    // Limpar overlay anterior (no body)
+    document.querySelectorAll('.locked-page-overlay').forEach(el => el.remove());
+
+    if (!canEdit) {
+      const overlay = document.createElement('div');
+      overlay.className = 'locked-page-overlay';
+      overlay.innerHTML = `
+        <div class="locked-page-box">
+          <span class="lock-emoji">🔒</span>
+          <h2>Recurso Bloqueado</h2>
+          <p>${reason || 'Este agente requer um addon ativo. Adquira no marketplace para desbloquear.'}</p>
+          <button class="btn-marketplace" onclick="document.querySelectorAll('.locked-page-overlay').forEach(e=>e.remove());showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">
+            🛒 Adquirir no Marketplace
+          </button>
+        </div>`;
+      document.body.appendChild(overlay);
+      return;
     }
 
     // Mudar aba dentro da página após um pequeno delay
