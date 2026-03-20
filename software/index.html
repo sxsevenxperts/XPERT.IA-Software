@@ -6758,6 +6758,9 @@
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('dashboard-page').style.display = 'block';
     if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    // Mostra todos os itens membro-hidden imediatamente (ajusta depois se for membro)
+    document.querySelectorAll('.membro-hidden:not(.page)').forEach(el => el.classList.add('visible'));
     // Inicializa layout vertical de abas
     setTimeout(() => { if (typeof initVerticalTabs === 'function') initVerticalTabs(); }, 300);
 
@@ -6794,13 +6797,9 @@
         document.querySelectorAll('.admin-only:not(.page)').forEach(el => el.classList.add('visible'));
       }
 
-      // Se membro: oculta itens restritos, mostra página inicial correta
+      // Se membro: oculta itens restritos (já foram mostrados otimisticamente acima)
       if (isMembro) {
         document.querySelectorAll('.membro-hidden:not(.page)').forEach(el => el.classList.remove('visible'));
-        // membro-hidden já começa oculto via CSS; garante que não ficou visível por engano
-      } else {
-        // não-membro: torna visíveis os itens que eram membro-hidden (exceto páginas, controladas por showPage)
-        document.querySelectorAll('.membro-hidden:not(.page)').forEach(el => el.classList.add('visible'));
       }
 
       // Atualiza nome/instância na sidebar
