@@ -2279,6 +2279,8 @@
     Powered by <span style="margin:0 4px;">SX Seven Xperts</span> · <span>CNPJ 32.794.007/0001-19</span>
   </div>
 
+  </div>  <!-- closing dashboard-page opened at line 2123 -->
+
   <div class="main-content">
 
     <!-- OVERVIEW -->
@@ -3051,7 +3053,7 @@
           <!-- Sugestões -->
           <div>
             <label style="display:block;font-weight:600;margin-bottom:8px;color:#e6edf3;">💡 Sugestões para melhorar?</label>
-            <textarea id="feedback-sugestoes" placeholder="Deixe suas sugestões aqui..." style="width:100%;height:100px;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;" />
+            <textarea id="feedback-sugestoes" placeholder="Deixe suas sugestões aqui..." style="width:100%;height:100px;padding:8px;border:1px solid #30363d;background:var(--bg);color:#e6edf3;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
           </div>
 
           <!-- Botões -->
@@ -3119,86 +3121,159 @@
         <span class="save-status" id="stages-save-status" style="display:block;text-align:center;margin-top:8px;min-height:18px;"></span>
       </div>
     </div>
+    </div>  <!-- closing page-crm opened at line 2869 -->
 
-    <!-- COMUNICAÇÃO -->
-    <div class="page" id="page-historico-leads">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <!-- MARKETPLACE - Addons XPERT.IA -->
+    <div class="page" id="page-marketplace">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
         <div>
-          <h1 style="font-size:20px;font-weight:800;color:#e6edf3;margin:0 0 4px;letter-spacing:-.3px;">Histórico de Leads</h1>
-          <p style="font-size:13px;color:#6e7681;margin:0;">Resumo de contatos finalizados — convertidos e perdidos</p>
+          <h1 style="font-size:20px;font-weight:800;color:#e6edf3;margin:0 0 4px;letter-spacing:-.3px;">🛒 Marketplace — Addons XPERT.IA</h1>
+          <p style="font-size:13px;color:#6e7681;margin:0;">Expanda suas capacidades com addons de IA e recursos extras</p>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-          <input type="date" id="hist-date-from" style="padding:8px 12px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;border-radius:6px;font-size:13px;" />
-          <span style="color:#6e7681;">até</span>
-          <input type="date" id="hist-date-to" style="padding:8px 12px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;border-radius:6px;font-size:13px;" />
-          <button class="btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="loadHistorico()">Filtrar</button>
-          <button class="btn-secondary" style="padding:8px 14px;font-size:13px;" onclick="exportHistoricoCSV()">Exportar</button>
-        </div>
+        <button class="btn-secondary" style="padding:9px 14px;font-size:13px;" onclick="loadAddonStatus()" title="Atualizar status">Atualizar</button>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr;gap:16px;max-width:900px;" id="historico-list">
-        <div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Carregando histórico...</div>
-      </div>
-    </div>
-
-    <div class="page" id="page-comunicacao">
-      <div class="page-header"><h1>Comunicação</h1><p>Defina como o agente deve se comunicar</p></div>
-      <div class="card">
-        <h3>Tonalidade de Voz</h3>
-        <div class="field-group"><label>Como o agente deve falar?</label>
-          <textarea id="cfg-tonalidade" placeholder="Ex: Empático, claro e objetivo. Use linguagem simples e acessível."></textarea></div>
-      </div>
-      <div class="card">
-        <h3>Regras de Comunicação</h3>
-        <div class="field-group"><label>Instruções específicas de como conduzir a conversa</label>
-          <textarea id="cfg-instrucoes_comunicacao" placeholder="Ex: Faça uma pergunta por vez. Nunca prometa resultado. Máximo 10 trocas."></textarea></div>
-      </div>
-      <div class="card">
-        <h3>Mensagens de Encerramento</h3>
-        <div class="field-group"><label>Mensagem quando lead é QUALIFICADO</label>
-          <textarea id="cfg-msg_qualificado" placeholder="Ex: Ótimo! Vou encaminhar suas informações ao responsável. Em breve ele entrará em contato."></textarea></div>
-        <div class="field-group"><label>Mensagem quando lead NÃO é qualificado</label>
-          <textarea id="cfg-msg_desqualificado" placeholder="Ex: Obrigado pelo contato! No momento não identificamos um caso que atendemos."></textarea></div>
-      </div>
-      <div class="card">
-        <h3>Resposta em Áudio</h3>
-        <div class="toggle-row">
-          <div class="toggle-info">
-            <div class="toggle-label">Responder em áudio no WhatsApp</div>
-            <div class="toggle-desc">Quando ativado, o agente envia a resposta como mensagem de voz. Áudios recebidos são sempre transcritos independentemente desta opção.</div>
+      <!-- TOKENS SECTION -->
+      <div style="margin-bottom:32px;">
+        <h2 style="font-size:14px;font-weight:700;color:#e6edf3;margin:0 0 16px;text-transform:uppercase;letter-spacing:.5px;">💾 Pacotes de Tokens</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+          <!-- Tokens Mini -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">Tokens Mini</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">5 Milhões de Tokens</p>
+              </div>
+              <span id="badge-tokens-mini" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ Ativo</span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Ideal para começar. Aproximadamente 50k requisições de IA.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 97</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('tokens_mini')">Comprar Agora</button>
           </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="cfg-responder_em_audio" checked />
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div style="margin-top:8px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;">
-          <strong>Custo:</strong> ~R$0,003 por mensagem de áudio enviada (OpenAI TTS). Transcrição de áudio recebido: ~R$0,003 por áudio de 30s (Whisper).
+
+          <!-- Tokens Médio -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">Tokens Médio</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">10 Milhões de Tokens</p>
+              </div>
+              <span id="badge-tokens-medio" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ Ativo</span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Para crescimento. Aproximadamente 100k requisições.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 177</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('tokens_medio')">Comprar Agora</button>
+          </div>
+
+          <!-- Tokens Grande -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">Tokens Grande</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">20 Milhões de Tokens</p>
+              </div>
+              <span id="badge-tokens-grande" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ Ativo</span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Para equipes. Aproximadamente 200k requisições.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 297</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('tokens_grande')">Comprar Agora</button>
+          </div>
+
+          <!-- Tokens Max -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">Tokens Max</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">50 Milhões de Tokens</p>
+              </div>
+              <span id="badge-tokens-max" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ Ativo</span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Enterprise. Aproximadamente 500k requisições.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 597</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('tokens_max')">Comprar Agora</button>
+          </div>
         </div>
       </div>
-      <button class="btn-save" onclick="saveConfigs(['tonalidade','instrucoes_comunicacao','msg_qualificado','msg_desqualificado','responder_em_audio'])">Salvar</button>
-      <span class="save-status" id="save-comunicacao"></span>
 
-      <!-- Google Calendar Integration -->
-      <div class="card" style="margin-top:20px;" id="card-gcal-integration">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
-          <div style="width:38px;height:38px;border-radius:8px;background:rgba(26,115,232,.12);border:1px solid rgba(26,115,232,.3);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;"></div>
+      <!-- AGENTS SECTION -->
+      <div style="margin-bottom:32px;">
+        <h2 style="font-size:14px;font-weight:700;color:#e6edf3;margin:0 0 16px;text-transform:uppercase;letter-spacing:.5px;">🤖 Agentes de IA Especializados</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+          <!-- Agente de Objeção -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">🛡️ Agente de Objeção</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">Mensal / Recorrente</p>
+              </div>
+              <span id="badge-addon-objecao" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;">✓ Ativo</span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Responde objeções automaticamente com argumentos inteligentes.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 127/mês</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('addon_objecao')">Ativar Agora</button>
+          </div>
+
+          <!-- Agente Extra -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">🤖 Agente Extra</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">1x / Mensal</p>
+              </div>
+              <span id="badge-addon-agente" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;"></span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Adiciona 1 agente paralelo. Compre múltiplas vezes para mais agentes.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 197/mês</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('addon_agente')">Adicionar Agente</button>
+          </div>
+
+          <!-- Número Extra -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">📱 Número Extra</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">1x / Mensal</p>
+              </div>
+              <span id="badge-addon-numero" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;"></span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Adiciona 1 número WhatsApp. Compre múltiplas vezes para mais números.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 97/mês</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('addon_numero')">Adicionar Número</button>
+          </div>
+
+          <!-- Usuário Extra -->
+          <div class="marketplace-card" style="border:1px solid #30363d;border-radius:12px;padding:20px;background:#0d1117;display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:#e6edf3;">👤 Usuário Extra</h3>
+                <p style="margin:0;font-size:13px;color:#8b949e;">1x / Mensal</p>
+              </div>
+              <span id="badge-addon-usuario" style="display:none;background:#22c55e;color:#000;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;"></span>
+            </div>
+            <p style="margin:0;font-size:12px;color:#6e7681;line-height:1.5;">Adiciona 1 usuário da equipe. Compre múltiplas vezes para mais usuários.</p>
+            <div style="font-size:16px;font-weight:700;color:#58a6ff;margin:8px 0 0;">R$ 57/mês</div>
+            <button class="btn-save" style="width:100%;padding:10px;margin-top:auto;" onclick="openHotmartCheckout('addon_usuario')">Adicionar Usuário</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;padding:20px;margin-top:32px;">
+        <h3 style="margin:0 0 12px;font-size:14px;font-weight:700;color:#e6edf3;">❓ Perguntas Frequentes</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;">
           <div>
-            <h3 style="margin:0;font-size:15px;">Google Calendar</h3>
-            <p style="margin:2px 0 0;font-size:12px;color:#8b949e;">Permite ao agente agendar eventos diretamente na sua agenda Google</p>
+            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#58a6ff;">Como posso adicionar múltiplos agentes?</p>
+            <p style="margin:0;font-size:12px;color:#8b949e;">Compre a oferta "Agente Extra" múltiplas vezes. Cada compra adiciona 1 agente paralelo à sua assinatura.</p>
           </div>
-          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-            <span id="gcal-status-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(107,114,128,.15);border:1px solid #30363d;color:#6b7280;">Desconectado</span>
+          <div>
+            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#58a6ff;">Os addons são recorrentes?</p>
+            <p style="margin:0;font-size:12px;color:#8b949e;">Tokens são one-time. Agentes, números e usuários são recorrentes mensais. O Agente de Objeção é recorrente mensal.</p>
+          </div>
+          <div>
+            <p style="margin:0 0 4px;font-size:12px;font-weight:600;color:#58a6ff;">Posso cancelar um addon?</p>
+            <p style="margin:0;font-size:12px;color:#8b949e;">Sim. Acesse sua assinatura no Hotmart e cancele. O addon será desativado imediatamente.</p>
           </div>
         </div>
-        <div id="gcal-connected-info" style="display:none;margin-bottom:14px;padding:10px 14px;background:rgba(26,115,232,.06);border:1px solid rgba(26,115,232,.2);border-radius:8px;font-size:13px;color:#93c5fd;">
-          Conta conectada: <strong id="gcal-email-label"></strong>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn-save" id="btn-gcal-connect" onclick="connectGCal()" style="background:rgba(26,115,232,.8);">Conectar com Google</button>
-          <button class="btn-secondary" id="btn-gcal-disconnect" onclick="disconnectGCal()" style="display:none;color:#fca5a5;border-color:rgba(239,68,68,.3);">Desconectar</button>
-        </div>
-        <p style="margin:12px 0 0;font-size:11px;color:#6e7681;">Para usar o bloco <strong>Agendar no Google Agenda</strong> no Designer de Fluxos, conecte sua conta aqui primeiro. O agente criará eventos automaticamente quando o lead confirmar agendamento.</p>
       </div>
     </div>
 
@@ -6341,6 +6416,38 @@
   </div>
 </div>
 
+  </div>  <!-- closing main-content opened at line 2284 -->
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+
 <!-- POPUP ALERTA TOKENS BAIXOS -->
 <div class="token-alert-backdrop" id="token-alert-popup">
   <div class="token-alert-box">
@@ -6523,6 +6630,7 @@
     <div id="create-client-error" class="error-msg" style="margin-top:10px;text-align:left;"></div>
   </div>
 </div>
+  </div>
 
 <script>
   // =====================
@@ -6882,6 +6990,7 @@
   };
 
   function showPage(name, el) {
+    console.log('showPage called with name:', name);
     // Bloqueia membro de acessar páginas não permitidas
     if (currentProfile?.role === 'membro' && !_membroAllowedPages.has(name)) return;
 
@@ -6891,7 +7000,7 @@
     document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    if (name === 'leads') {
+    if (name === 'leads') { console.log('Loading leads');
       loadLeads().catch(err => {
         console.error('Erro ao carregar leads:', err);
         const container = document.getElementById('leads-list');
@@ -6904,7 +7013,7 @@
     if (name === 'crm') {
       loadCRM().catch(err => {
         console.error('Erro ao carregar CRM:', err);
-        document.getElementById('crm-container').innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+        document.getElementById('crm-board').innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
       });
       setTimeout(checkReminders, 500);
     }
