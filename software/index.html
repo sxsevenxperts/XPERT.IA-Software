@@ -7072,6 +7072,7 @@
     if (name === 'agente') { loadAiConfig(); loadWebAgente(); checkGCalStatus(); loadAgentes(); loadAgenteConfigs('principal'); }
     if (name === 'agente-objecao') { loadAgenteConfigs('ob'); }
     if (name === 'agente-prospecao') { loadAgenteConfigs('prospec'); }
+    if (name === 'workflows') { loadWorkflows().catch(err => console.error('Erro ao carregar workflows:', err)); }
     if (name === 'crm') {
       loadCRM().catch(err => {
         console.error('❌ Erro ao carregar CRM:', err);
