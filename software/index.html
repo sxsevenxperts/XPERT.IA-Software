@@ -6883,15 +6883,39 @@
     document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    if (name === 'leads') loadLeads();
+    if (name === 'leads') {
+      loadLeads().catch(err => {
+        console.error('Erro ao carregar leads:', err);
+        const container = document.getElementById('leads-list');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+    }
     if (name === 'agente') { loadAiConfig(); loadWebAgente(); checkGCalStatus(); loadAgentes(); loadAgenteConfigs('principal'); }
-    if (name === 'crm') { loadCRM(); setTimeout(checkReminders, 500); }
-    if (name === 'historico-leads') loadHistorico();
+    if (name === 'crm') {
+      loadCRM().catch(err => {
+        console.error('Erro ao carregar CRM:', err);
+        document.getElementById('crm-container').innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+      setTimeout(checkReminders, 500);
+    }
+    if (name === 'historico-leads') {
+      loadHistorico().catch(err => {
+        console.error('Erro ao carregar histórico:', err);
+        const container = document.getElementById('historico-list');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+    }
     if (name === 'pdfs') loadPDFList();
     if (name === 'analytics') loadDashboard();
     if (name === 'scoring') loadScoring();
     if (name === 'kpis') loadKPIsPage();
-    if (name === 'monitoramento') loadMonitoringData();
+    if (name === 'monitoramento') {
+      loadMonitoringData().catch(err => {
+        console.error('Erro ao carregar monitoramento:', err);
+        const container = document.getElementById('monitoring-content');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+    }
     if (name === 'dashboard-financeiro') loadMonitoramentoPage();
     if (name === 'clientes') { loadClients(); loadTokenUsageAdmin(); }
     if (name === 'admin-model-costs') loadAdminModelCosts();
