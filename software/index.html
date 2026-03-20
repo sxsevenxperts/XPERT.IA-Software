@@ -6599,6 +6599,14 @@
   let currentUser = null;    // Supabase auth user object (set after login)
   let _effectiveUserId = null; // para membros: owner_id; para admin/client: user.id
 
+  // Garante que currentUser está disponível (resolve race condition de auth)
+  async function ensureUser() {
+    if (currentUser) return currentUser;
+    const { data: { user } } = await db.auth.getUser();
+    if (user) { currentUser = user; return user; }
+    return null;
+  }
+
   // ── Toast notification ──────────────────────────────────────────────────
   function showToast(msg, type = 'success') {
     let t = document.getElementById('_toast');
@@ -8352,10 +8360,12 @@
   async function loadCRM() {
     const board = document.getElementById('crm-board');
     board.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;">Carregando...</div>';
-    if (!scoringRules) scoringRules = await loadScoringRulesFromDB();
-    await loadCRMStages();
-    // Carrega fluxos e monta filtros
-    await loadCRMFluxos();
+    // Carrega scoring, stages e fluxos em paralelo
+    await Promise.all([
+      !scoringRules ? loadScoringRulesFromDB().then(r => { scoringRules = r; }) : Promise.resolve(),
+      loadCRMStages(),
+      loadCRMFluxos()
+    ]);
     // Carrega leads (com filtro de fluxo se ativo)
     let query = db.from('leads').select('*, lead_tarefas(id, concluida, descricao, data_vencimento)').order('atualizado_em', { ascending: false });
     if (crmFluxoFilter !== 'all') {
@@ -9321,7 +9331,7 @@
   };
 
   async function loadAgentes() {
-    if (!currentUser) return;
+    if (!await ensureUser()) return;
     const [{ data: agentes }, { data: sub }] = await Promise.all([
       db.from('agentes').select('*').eq('user_id', currentUser.id).order('criado_em'),
       db.from('assinaturas').select('agentes_extras').eq('user_id', currentUser.id).maybeSingle(),
@@ -12008,7 +12018,7 @@
   }
 
   async function loadAddonStatus() {
-    if (!currentUser) return;
+    if (!await ensureUser()) return;
     const { data: sub } = await db.from('assinaturas')
       .select('addon_objecao, agentes_extras, numeros_extras, usuarios_extras_limite')
       .eq('user_id', currentUser.id)
@@ -14881,8 +14891,8 @@
   async function loadHistorico() {
     const list = document.getElementById('historico-list');
     list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Carregando...</div>';
-    
-    if (!currentUser) return;
+
+    if (!await ensureUser()) { list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Faça login para ver o histórico</div>'; return; }
     
     // Filtros de data
     const dateFrom = document.getElementById('hist-date-from').value;
@@ -14943,7 +14953,7 @@
   }
   
   async function exportHistoricoCSV() {
-    if (!currentUser) return;
+    if (!await ensureUser()) return;
     
     const dateFrom = document.getElementById('hist-date-from').value;
     const dateTo = document.getElementById('hist-date-to').value;
