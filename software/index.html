@@ -8468,37 +8468,59 @@
 
   async function loadCRM() {
     const board = document.getElementById('crm-board');
-    board.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;">Carregando...</div>';
+    console.log('🔵 loadCRM iniciado');
+
+    // Placeholder imediato
+    board.innerHTML = `<div style="padding:40px;text-align:center;color:#6e7681;">
+      <div style="font-size:14px;margin-bottom:10px;">⏳ Carregando CRM...</div>
+      <button onclick="loadCRM()" style="margin-top:10px;padding:8px 16px;background:#30363d;border:1px solid #444;border-radius:6px;color:#e6edf3;cursor:pointer;font-size:12px;">↻ Retry</button>
+    </div>`;
 
     try {
-      // Timeout de 15 segundos para não ficar carregando eternamente
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout: carregamento muito lento')), 15000)
-      );
+      console.log('📦 Carregando stages e fluxos...');
 
+      // Timeout agressivo de 8 segundos
       const loadPromise = Promise.all([
-        !scoringRules ? loadScoringRulesFromDB().then(r => { scoringRules = r; }).catch(e => { console.warn('Erro loadScoringRulesFromDB:', e); }) : Promise.resolve(),
-        loadCRMStages().catch(e => { console.warn('Erro loadCRMStages:', e); }),
-        loadCRMFluxos().catch(e => { console.warn('Erro loadCRMFluxos:', e); })
+        !scoringRules ? (async () => {
+          console.log('📥 loadScoringRulesFromDB start');
+          const r = await loadScoringRulesFromDB();
+          scoringRules = r;
+          console.log('✅ loadScoringRulesFromDB done:', r?.length);
+        })() : (console.log('✓ scoringRules já existe'), Promise.resolve()),
+        (async () => { console.log('📥 loadCRMStages start'); await loadCRMStages(); console.log('✅ loadCRMStages done'); })(),
+        (async () => { console.log('📥 loadCRMFluxos start'); await loadCRMFluxos(); console.log('✅ loadCRMFluxos done'); })()
       ]);
 
-      await Promise.race([loadPromise, timeoutPromise]);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout: levou mais de 8 segundos')), 8000)
+      );
 
-      // Carrega leads (com filtro de fluxo se ativo)
+      await Promise.race([loadPromise, timeoutPromise]);
+      console.log('✅ Stages/fluxos carregados, agora carregando leads...');
+
+      // Carrega leads
       let query = db.from('leads').select('*, lead_tarefas(id, concluida, descricao, data_vencimento)').order('atualizado_em', { ascending: false });
-      if (crmFluxoFilter !== 'all') {
-        query = query.eq('fluxo_id', crmFluxoFilter);
-      }
+      if (crmFluxoFilter !== 'all') query = query.eq('fluxo_id', crmFluxoFilter);
+
+      console.log('📥 Query leads iniciada');
       const { data, error } = await query;
-      if (error || !data) {
-        board.innerHTML = '<div style="padding:40px;color:#ef4444;">❌ Erro ao carregar CRM: ' + (error?.message || 'Nenhum dado') + '</div>';
-        return;
-      }
+      console.log('✅ Query leads completa:', { hasData: !!data, hasError: !!error, errorMsg: error?.message });
+
+      if (error) throw error;
+      if (!data) throw new Error('Nenhum dado retornado');
+
       crmLeads = data;
+      console.log('📊 Renderizando kanban com', data.length, 'leads');
       renderKanban(data);
+      console.log('✅ CRM carregado com sucesso');
     } catch (err) {
-      console.error('Erro em loadCRM:', err);
-      board.innerHTML = '<div style="padding:40px;color:#ef4444;text-align:center;"><strong>❌ Erro ao carregar CRM</strong><br><small style="font-size:11px;margin-top:8px;display:block;font-family:monospace;">' + (err.message || err) + '</small></div>';
+      console.error('❌ Erro em loadCRM:', err);
+      const msg = err.message || String(err);
+      board.innerHTML = `<div style="padding:40px;text-align:center;color:#dc2626;">
+        <strong>❌ Erro ao carregar CRM</strong>
+        <div style="font-size:11px;margin-top:8px;font-family:monospace;word-break:break-all;color:#fca5a5;">${msg}</div>
+        <button onclick="loadCRM()" style="margin-top:12px;padding:8px 16px;background:#7f1d1d;border:1px solid #dc2626;border-radius:6px;color:#fca5a5;cursor:pointer;font-size:12px;">↻ Retry</button>
+      </div>`;
     }
   }
 
