@@ -6883,15 +6883,41 @@
     document.querySelectorAll('.nav-subitem').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     if (el) el.classList.add('active');
-    if (name === 'leads') loadLeads();
+    if (name === 'leads') {
+      loadLeads().catch(err => {
+        console.error('Erro ao carregar leads:', err);
+        const container = document.getElementById('leads-list');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+    }
     if (name === 'agente') { loadAiConfig(); loadWebAgente(); checkGCalStatus(); loadAgentes(); loadAgenteConfigs('principal'); }
-    if (name === 'crm') { loadCRM(); setTimeout(checkReminders, 500); }
-    if (name === 'historico-leads') loadHistorico();
+    if (name === 'agente-objecao') { loadAgenteConfigs('ob'); }
+    if (name === 'agente-prospecao') { loadAgenteConfigs('prospec'); }
+    if (name === 'crm') {
+      loadCRM().catch(err => {
+        console.error('Erro ao carregar CRM:', err);
+        document.getElementById('crm-container').innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+      setTimeout(checkReminders, 500);
+    }
+    if (name === 'historico-leads') {
+      loadHistorico().catch(err => {
+        console.error('Erro ao carregar histórico:', err);
+        const container = document.getElementById('historico-list');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+    }
     if (name === 'pdfs') loadPDFList();
     if (name === 'analytics') loadDashboard();
     if (name === 'scoring') loadScoring();
     if (name === 'kpis') loadKPIsPage();
-    if (name === 'monitoramento') loadMonitoringData();
+    if (name === 'monitoramento') {
+      loadMonitoringData().catch(err => {
+        console.error('Erro ao carregar monitoramento:', err);
+        const container = document.getElementById('monitoring-content');
+        if (container) container.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;">❌ Erro ao carregar: ' + (err.message || err) + '</div>';
+      });
+    }
     if (name === 'dashboard-financeiro') loadMonitoramentoPage();
     if (name === 'clientes') { loadClients(); loadTokenUsageAdmin(); }
     if (name === 'admin-model-costs') loadAdminModelCosts();
@@ -7680,73 +7706,46 @@
     localStorage.setItem(`nav-group-${groupName}-collapsed`, group.classList.contains('collapsed'));
   }
 
-  async function navigateToAgentTab(agentType, tab, subitemEl) {
-    // Mapear tipo para prefix e índice
+  function navigateToAgentTab(agentType, tab, subitemEl) {
     let prefix = agentType;
     let agentIndex = 0;
+    if (agentType.startsWith('ae')) agentIndex = parseInt(agentType.substring(2));
 
-    if (agentType === 'ob') {
-      agentIndex = 0;
-    } else if (agentType === 'prospec') {
-      agentIndex = 0;
-    } else if (agentType.startsWith('ae')) {
-      agentIndex = parseInt(agentType.substring(2));
-    }
-
-    // Determinar agentType para checkSubscription
-    let checkType = agentType === 'principal' ? 'main'
-                  : agentType === 'ob' ? 'objecao'
-                  : agentType === 'prospec' ? 'extra'
-                  : 'extra';
-
-    // Verificar subscription
-    const { canEdit, reason } = await checkSubscriptionForAgent(checkType, agentIndex);
-
-    // Mapear agente para página (showPage já adiciona o prefixo 'page-')
+    // Mapear agente para página
     let pageName;
-    if (agentType === 'principal') {
-      pageName = 'agente';
-    } else if (agentType === 'ob') {
-      pageName = 'agente-objecao';
-    } else if (agentType === 'prospec') {
-      pageName = 'agente-prospecao';
-    } else if (agentType.startsWith('ae')) {
-      const idx = parseInt(agentType.substring(2));
-      pageName = `agente-extra-${idx}`;
-    }
+    if (agentType === 'principal') pageName = 'agente';
+    else if (agentType === 'ob') pageName = 'agente-objecao';
+    else if (agentType === 'prospec') pageName = 'agente-prospecao';
+    else if (agentType.startsWith('ae')) pageName = `agente-extra-${agentIndex}`;
 
-    // Navegar para página (mesmo se bloqueada — mostra overlay)
+    // Mostrar página e aba IMEDIATAMENTE (sem await)
     showPage(pageName, subitemEl);
+    switchAgenteTab(prefix, tab);
 
-    // Limpar overlay anterior (no body)
-    document.querySelectorAll('.locked-page-overlay').forEach(el => el.remove());
+    // Marcar active no sidebar
+    document.querySelectorAll('.nav-subitem.active').forEach(el => el.classList.remove('active'));
+    if (subitemEl) subitemEl.classList.add('active');
 
-    if (!canEdit) {
-      const overlay = document.createElement('div');
-      overlay.className = 'locked-page-overlay';
-      overlay.innerHTML = `
-        <div class="locked-page-box">
-          <span class="lock-emoji">🔒</span>
-          <h2>Recurso Bloqueado</h2>
-          <p>${reason || 'Este agente requer um addon ativo. Adquira no marketplace para desbloquear.'}</p>
-          <button class="btn-marketplace" onclick="document.querySelectorAll('.locked-page-overlay').forEach(e=>e.remove());showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">
-            🛒 Adquirir no Marketplace
-          </button>
-        </div>`;
-      document.body.appendChild(overlay);
-      return;
-    }
-
-    // Mudar aba dentro da página após um pequeno delay
-    setTimeout(() => {
-      switchAgenteTab(prefix, tab);
-    }, 100);
-
-    // Marcar como active no sidebar
-    document.querySelectorAll('.nav-subitem.active').forEach(el => {
-      el.classList.remove('active');
+    // Verificar subscription em background (overlay só se bloqueado)
+    let checkType = agentType === 'principal' ? 'main'
+                  : agentType === 'ob' ? 'objecao' : 'extra';
+    checkSubscriptionForAgent(checkType, agentIndex).then(({ canEdit, reason }) => {
+      document.querySelectorAll('.locked-page-overlay').forEach(el => el.remove());
+      if (!canEdit) {
+        const overlay = document.createElement('div');
+        overlay.className = 'locked-page-overlay';
+        overlay.innerHTML = `
+          <div class="locked-page-box">
+            <span class="lock-emoji">🔒</span>
+            <h2>Recurso Bloqueado</h2>
+            <p>${reason || 'Este agente requer um addon ativo. Adquira no marketplace para desbloquear.'}</p>
+            <button class="btn-marketplace" onclick="document.querySelectorAll('.locked-page-overlay').forEach(e=>e.remove());showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">
+              🛒 Adquirir no Marketplace
+            </button>
+          </div>`;
+        document.body.appendChild(overlay);
+      }
     });
-    subitemEl.classList.add('active');
   }
 
   async function initializeNavHierarchy() {
