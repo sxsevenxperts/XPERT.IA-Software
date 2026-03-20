@@ -745,8 +745,15 @@
 
     /* DASHBOARD */
     #dashboard-page { display: none; min-height: 100vh; }
-    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; z-index: 100; }
-    .main-content { position: relative; z-index: 1; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; z-index: 100; transition: width 0.3s ease; }
+    .sidebar.collapsed { width: 70px; }
+    .sidebar.collapsed .nav-item { padding: 12px 10px; }
+    .sidebar.collapsed .nav-section { display: none; }
+    .sidebar.collapsed .nav-item span:not(.icon) { display: none; }
+    .sidebar.collapsed .logo { padding: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar.collapsed .logo img, .sidebar.collapsed .logo > div { display: none; }
+    .main-content { position: relative; z-index: 1; margin-left: 240px; transition: margin-left 0.3s ease; }
+    .sidebar.collapsed ~ .main-content { margin-left: 70px; }
     .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar .logo .logo-brand { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
     .sidebar .logo .logo-img { width:44px; height:44px; object-fit:contain; flex-shrink:0; border-radius:8px; }
@@ -2122,11 +2129,14 @@
 
 <!-- DASHBOARD -->
 <div id="dashboard-page">
-  <div class="sidebar">
-    <div class="logo">
-      <img src="logo-banner.png" alt="XPERT.IA" style="width:100%;max-width:190px;height:auto;display:block;margin-bottom:8px;" />
-      <div style="font-size:10px;color:rgba(255,255,255,0.45);font-weight:500;letter-spacing:.4px;text-transform:uppercase;margin-bottom:2px;">Painel de Administração</div>
-      <div class="logo-company" id="sidebar-company-name"></div>
+  <div class="sidebar" id="sidebar-main">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;">
+      <div class="logo" style="flex:1;">
+        <img src="logo-banner.png" alt="XPERT.IA" style="width:100%;max-width:190px;height:auto;display:block;margin-bottom:8px;" />
+        <div style="font-size:10px;color:rgba(255,255,255,0.45);font-weight:500;letter-spacing:.4px;text-transform:uppercase;margin-bottom:2px;">Painel de Administração</div>
+        <div class="logo-company" id="sidebar-company-name"></div>
+      </div>
+      <button id="sidebar-toggle" onclick="toggleSidebar()" style="background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:20px;padding:4px;display:flex;align-items:center;justify-content:center;margin-left:8px;">☰</button>
     </div>
     <div style="padding: 8px 0; flex: 1;">
       <div class="nav-section">Principal</div>
@@ -16171,6 +16181,207 @@
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initVerticalTabs, 200);
   });
+
+  // ═══════════════════════════════════════════════════════════════
+  // SIDEBAR TOGGLE — Collapse/Expand Sidebar
+  // ═══════════════════════════════════════════════════════════════
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-main');
+    const isCollapsed = sidebar.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+      sidebar.classList.remove('collapsed');
+      localStorage.setItem('sidebarCollapsed', 'false');
+    } else {
+      sidebar.classList.add('collapsed');
+      localStorage.setItem('sidebarCollapsed', 'true');
+    }
+  }
+
+  // Restore sidebar state on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (sidebarCollapsed) {
+      const sidebar = document.getElementById('sidebar-main');
+      if (sidebar) sidebar.classList.add('collapsed');
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // HOTMART INTEGRATION — Alias para showBuyModal
+  // ═══════════════════════════════════════════════════════════════
+  function openHotmartCheckout(pacoteId) {
+    showBuyModal(pacoteId);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // CLIENT PROFILES (PERFIL DE CLIENTES)
+  // ═══════════════════════════════════════════════════════════════
+
+  async function loadPerfilClientesPage() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data: clientes } = await db.from('perfil_clientes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('ativo', true)
+        .order('atualizado_em', { ascending: false });
+
+      renderPerfilClientesTable(clientes || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      showToast('Erro ao carregar clientes', 'error');
+    }
+  }
+
+  function renderPerfilClientesTable(clientes) {
+    const container = document.getElementById('perfil-clientes-table');
+    if (!container) return;
+
+    if (!clientes.length) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary);">Nenhum cliente cadastrado. Clique em "Adicionar Cliente" para começar.</div>';
+      return;
+    }
+
+    container.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+      <thead style="background:var(--bg-card2);border-bottom:1px solid var(--border);">
+        <tr>
+          <th style="padding:12px;text-align:left;font-weight:700;">Nome</th>
+          <th style="padding:12px;text-align:left;font-weight:700;">Empresa</th>
+          <th style="padding:12px;text-align:left;font-weight:700;">Telefone</th>
+          <th style="padding:12px;text-align:left;font-weight:700;">Email</th>
+          <th style="padding:12px;text-align:center;font-weight:700;">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${clientes.map(c => `<tr style="border-bottom:1px solid var(--border2);">
+          <td style="padding:12px;"><strong>${escapeHtml(c.nome)}</strong></td>
+          <td style="padding:12px;">${escapeHtml(c.empresa || '—')}</td>
+          <td style="padding:12px;">${escapeHtml(c.telefone || '—')}</td>
+          <td style="padding:12px;">${escapeHtml(c.email || '—')}</td>
+          <td style="padding:12px;text-align:center;">
+            <button class="btn-secondary" style="font-size:11px;padding:4px 10px;margin-right:4px;" onclick="abrirModalPerfilCliente('${c.id}')">Editar</button>
+            <button class="btn-danger" style="font-size:11px;padding:4px 10px;" onclick="removerPerfilCliente('${c.id}','${escapeHtml(c.nome)}')">Remover</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  async function abrirModalPerfilCliente(clienteId) {
+    const { data: { user } } = await db.auth.getUser();
+    
+    // Clear form
+    document.getElementById('cliente-id').value = '';
+    document.getElementById('cliente-nome').value = '';
+    document.getElementById('cliente-empresa').value = '';
+    document.getElementById('cliente-cnpj').value = '';
+    document.getElementById('cliente-telefone').value = '';
+    document.getElementById('cliente-email').value = '';
+    document.getElementById('cliente-endereco').value = '';
+    document.getElementById('cliente-cidade').value = '';
+    document.getElementById('cliente-estado').value = '';
+    document.getElementById('cliente-cep').value = '';
+    document.getElementById('cliente-ramo').value = '';
+    document.getElementById('cliente-porte').value = '';
+    document.getElementById('cliente-funcionarios').value = '';
+    document.getElementById('cliente-site').value = '';
+    document.getElementById('cliente-obs').value = '';
+
+    if (clienteId && user) {
+      const { data: cliente } = await db.from('perfil_clientes')
+        .select('*')
+        .eq('id', clienteId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (cliente) {
+        document.getElementById('cliente-id').value = cliente.id;
+        document.getElementById('cliente-nome').value = cliente.nome || '';
+        document.getElementById('cliente-empresa').value = cliente.empresa || '';
+        document.getElementById('cliente-cnpj').value = cliente.cnpj_cpf || '';
+        document.getElementById('cliente-telefone').value = cliente.telefone || '';
+        document.getElementById('cliente-email').value = cliente.email || '';
+        document.getElementById('cliente-endereco').value = cliente.endereco || '';
+        document.getElementById('cliente-cidade').value = cliente.cidade || '';
+        document.getElementById('cliente-estado').value = cliente.estado || '';
+        document.getElementById('cliente-cep').value = cliente.cep || '';
+        document.getElementById('cliente-ramo').value = cliente.ramo_atividade || '';
+        document.getElementById('cliente-porte').value = cliente.porte_empresa || '';
+        document.getElementById('cliente-funcionarios').value = cliente.numero_funcionarios || '';
+        document.getElementById('cliente-site').value = cliente.site || '';
+        document.getElementById('cliente-obs').value = cliente.observacoes || '';
+      }
+    }
+
+    document.getElementById('cliente-modal-titulo').textContent = clienteId ? 'Editar Cliente' : 'Adicionar Cliente';
+    document.getElementById('modal-perfil-cliente').style.display = 'flex';
+  }
+
+  function fecharModalPerfilCliente() {
+    document.getElementById('modal-perfil-cliente').style.display = 'none';
+  }
+
+  async function salvarPerfilCliente() {
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const id = document.getElementById('cliente-id').value.trim();
+    const nome = document.getElementById('cliente-nome').value.trim();
+    const empresa = document.getElementById('cliente-empresa').value.trim();
+    const cnpj = document.getElementById('cliente-cnpj').value.trim();
+    const telefone = document.getElementById('cliente-telefone').value.trim();
+    const email = document.getElementById('cliente-email').value.trim();
+    const endereco = document.getElementById('cliente-endereco').value.trim();
+    const cidade = document.getElementById('cliente-cidade').value.trim();
+    const estado = document.getElementById('cliente-estado').value.trim();
+    const cep = document.getElementById('cliente-cep').value.trim();
+    const ramo = document.getElementById('cliente-ramo').value.trim();
+    const porte = document.getElementById('cliente-porte').value.trim();
+    const funcionarios = parseInt(document.getElementById('cliente-funcionarios').value) || 0;
+    const site = document.getElementById('cliente-site').value.trim();
+    const obs = document.getElementById('cliente-obs').value.trim();
+
+    if (!nome) {
+      showToast('Nome do cliente é obrigatório', 'error');
+      return;
+    }
+
+    const clienteData = {
+      nome, empresa, cnpj_cpf: cnpj, telefone, email, endereco, cidade, estado, cep,
+      ramo_atividade: ramo, porte_empresa: porte, numero_funcionarios: funcionarios, site, observacoes: obs
+    };
+
+    if (!id) {
+      const { error } = await db.from('perfil_clientes').insert({
+        user_id: user.id, ...clienteData, ativo: true
+      });
+      if (error) { showToast('Erro ao salvar cliente: ' + error.message, 'error'); return; }
+    } else {
+      const { error } = await db.from('perfil_clientes')
+        .update({ ...clienteData, atualizado_em: new Date().toISOString() })
+        .eq('id', id);
+      if (error) { showToast('Erro ao atualizar cliente: ' + error.message, 'error'); return; }
+    }
+
+    fecharModalPerfilCliente();
+    loadPerfilClientesPage();
+    showToast('Cliente salvo com sucesso!', 'success');
+  }
+
+  async function removerPerfilCliente(id, nome) {
+    if (!confirm(`Remover cliente "${nome}"?`)) return;
+    
+    const { error } = await db.from('perfil_clientes')
+      .update({ ativo: false })
+      .eq('id', id);
+    
+    if (error) { showToast('Erro ao remover: ' + error.message, 'error'); return; }
+    loadPerfilClientesPage();
+    showToast('Cliente removido', 'success');
+  }
 
 </script>
 </body>
