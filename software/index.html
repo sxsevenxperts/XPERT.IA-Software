@@ -784,6 +784,15 @@
     .nav-subitem.active { color: #a3e635; border-left-color: #a3e635; background: rgba(163,230,53,0.08); }
     .nav-subitem .lock-icon { font-size: 12px; margin-left: auto; }
 
+    /* ── Locked page overlay ─────────────────────────────────── */
+    .locked-page-overlay { position:absolute; inset:0; background:rgba(7,10,14,0.93); display:flex; align-items:center; justify-content:center; z-index:50; border-radius:12px; backdrop-filter:blur(4px); }
+    .locked-page-box { text-align:center; max-width:420px; padding:48px 40px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:16px; }
+    .locked-page-box .lock-emoji { font-size:48px; margin-bottom:20px; display:block; }
+    .locked-page-box h2 { font-size:20px; font-weight:800; color:#fff; margin:0 0 10px; letter-spacing:-.3px; }
+    .locked-page-box p { font-size:13px; color:rgba(255,255,255,0.55); margin:0 0 28px; line-height:1.6; }
+    .locked-page-box .btn-marketplace { display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg,#a3e635,#78c800); color:#0a0a0a; font-weight:800; font-size:14px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer; transition:all .2s; }
+    .locked-page-box .btn-marketplace:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(163,230,53,.4); }
+
     .sidebar-bottom { margin-top: auto; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.08); }
     .btn-logout { width: 100%; padding: 10px; background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
     .btn-logout:hover { background: rgba(239,68,68,0.25); }
@@ -7788,10 +7797,6 @@
 
     // Verificar subscription
     const { canEdit, reason } = await checkSubscriptionForAgent(checkType, agentIndex);
-    if (!canEdit) {
-      showModal('🔒 Acesso Bloqueado', reason || 'Você não tem permissão para acessar esta configuração');
-      return;
-    }
 
     // Mapear agente para página (showPage já adiciona o prefixo 'page-')
     let pageName;
@@ -7806,8 +7811,31 @@
       pageName = `agente-extra-${idx}`;
     }
 
-    // Navegar para página
+    // Navegar para página (mesmo se bloqueada — mostra overlay)
     showPage(pageName, subitemEl);
+
+    // Mostrar overlay de bloqueio ou limpar
+    const pageEl = document.getElementById('page-' + pageName);
+    if (pageEl) {
+      const existing = pageEl.querySelector('.locked-page-overlay');
+      if (existing) existing.remove();
+      if (!canEdit) {
+        const overlay = document.createElement('div');
+        overlay.className = 'locked-page-overlay';
+        overlay.innerHTML = `
+          <div class="locked-page-box">
+            <span class="lock-emoji">🔒</span>
+            <h2>Recurso Bloqueado</h2>
+            <p>${reason || 'Este agente requer um addon ativo. Adquira no marketplace para desbloquear.'}</p>
+            <button class="btn-marketplace" onclick="showPage('faturamento',document.querySelector('.nav-item[onclick*=faturamento]'));setTimeout(()=>showBillingTab('marketplace',document.querySelectorAll('.billing-tab-btn')[1]),400);">
+              🛒 Adquirir no Marketplace
+            </button>
+          </div>`;
+        pageEl.style.position = 'relative';
+        pageEl.appendChild(overlay);
+        return;
+      }
+    }
 
     // Mudar aba dentro da página após um pequeno delay
     setTimeout(() => {
