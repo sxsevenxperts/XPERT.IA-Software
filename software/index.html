@@ -4576,7 +4576,11 @@
         <div class="equipe-empty">
           <div class="equipe-empty-icon"></div>
           <div class="equipe-empty-title">Nenhum membro adicionado</div>
-          <div>Contrate usuários extras no Marketplace e adicione membros da equipe aqui.</div>
+          <div style="font-size:13px;line-height:1.5;">
+            <div>✨ <strong>Primeira pessoa é GRÁTIS!</strong></div>
+            <div style="margin-top:6px;color:#8b949e;">Clique em "Adicionar Membro" para adicionar seu primeiro colaborador com login e senha gerados.</div>
+            <div style="margin-top:8px;color:#8b949e;">A partir do segundo membro, você precisará contratar usuários extras no Marketplace.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -4587,6 +4591,10 @@
         <div class="usuario-modal-title">
           <span id="usuario-modal-icon"></span>
           <span id="usuario-modal-title-text">Adicionar Membro</span>
+        </div>
+        <div id="usuario-modal-banner" style="display:none;background:rgba(163,230,53,.1);border:1px solid rgba(163,230,53,.3);border-radius:6px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--text);">
+          <strong style="color:#a3e635;">✨ Primeiro membro é GRATUITO!</strong><br/>
+          Um login e senha serão gerados automaticamente e enviados por email.
         </div>
         <input type="hidden" id="usuario-id" />
         <div class="field-group">
@@ -14072,6 +14080,8 @@
       if (!m) return;
       document.getElementById('usuario-modal-title-text').textContent = 'Editar Membro';
       document.getElementById('usuario-modal-icon').textContent = '';
+      const banner = document.getElementById('usuario-modal-banner');
+      if (banner) banner.style.display = 'none';
       document.getElementById('usuario-id').value      = m.id;
       document.getElementById('usuario-nome').value    = m.nome || '';
       document.getElementById('usuario-cargo').value   = m.cargo || '';
@@ -14094,6 +14104,9 @@
       sel.value = '';
       picker.querySelectorAll('.usuario-cor-swatch').forEach((sw, i) =>
         sw.classList.toggle('selected', i === 0));
+      // Mostra banner se for o primeiro membro
+      const banner = document.getElementById('usuario-modal-banner');
+      if (banner) banner.style.display = _equipeMembros.length === 0 ? 'block' : 'none';
     }
     modal.classList.add('open');
   }
@@ -14118,33 +14131,66 @@
     if (!nome) { alert('Informe o nome do membro.'); return; }
 
     if (!id) {
-      // Verifica cota
-      if (_equipeMembros.length >= _equipeQuotaMax) {
-        if (!confirm(`Você atingiu o limite de ${_equipeQuotaMax} usuário${_equipeQuotaMax > 1 ? 's' : ''} contratado${_equipeQuotaMax > 1 ? 's' : ''}.\n\nDeseja ir ao Marketplace para contratar mais?`)) return;
+      // Criação de novo membro
+      if (_equipeMembros.length === 0) {
+        // Primeiro membro é GRATUITO — cria login/senha auto
+        const genLogin = 'user_' + Math.random().toString(36).substring(2, 9);
+        const genSenha = Math.random().toString(36).substring(2, 10) + 'A1!';
+        const { error } = await db.from('usuarios_extras').insert({
+          owner_id: user.id, nome, cargo, email: email || null,
+          whatsapp_contato: whats || null, numero_atribuido: numero || null, cor,
+          login_usuario: genLogin, senha_usuario: genSenha
+        });
+        if (error) { alert('Erro ao adicionar membro.'); return; }
+        // Envia credenciais por email
+        if (email) {
+          try {
+            const { data: { session } } = await db.auth.getSession();
+            await fetch(`${SUPABASE_URL}/functions/v1/invite-user`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+                'apikey': SUPABASE_KEY
+              },
+              body: JSON.stringify({
+                email, nome, owner_id: user.id,
+                login: genLogin, senha: genSenha,
+                isFirstMember: true
+              })
+            });
+          } catch(e) { console.warn('Convite não enviado:', e); }
+        }
+        alert(`✅ Membro adicionado gratuitamente!\n\nLogin: ${genLogin}\nSenha: ${genSenha}\n\nAs credenciais foram enviadas para ${email || 'o email do membro'}.`);
+      } else if (_equipeMembros.length >= _equipeQuotaMax && _equipeQuotaMax > 0) {
+        // Já tem membros E atingiu limite contratado → vai ao marketplace
+        if (!confirm(`Você já tem ${_equipeMembros.length} membro${_equipeMembros.length > 1 ? 's' : ''} e atingiu seu limite contratado.\n\nDeseja ir ao Marketplace para contratar mais usuários extras?`)) return;
         fecharModalUsuario();
         showPage('faturamento', document.querySelector('.nav-item[onclick*="faturamento"]'));
         setTimeout(() => showBillingTab('marketplace', document.querySelectorAll('.billing-tab-btn')[1]), 400);
         return;
-      }
-      const { error } = await db.from('usuarios_extras').insert({
-        owner_id: user.id, nome, cargo, email: email || null,
-        whatsapp_contato: whats || null, numero_atribuido: numero || null, cor
-      });
-      if (error) { alert('Erro ao adicionar membro.'); return; }
-      // Envia convite por email se o campo foi preenchido
-      if (email) {
-        try {
-          const { data: { session } } = await db.auth.getSession();
-          await fetch(`${SUPABASE_URL}/functions/v1/invite-user`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
-              'apikey': SUPABASE_KEY
-            },
-            body: JSON.stringify({ email, nome, owner_id: user.id })
-          });
-        } catch(e) { console.warn('Convite não enviado:', e); }
+      } else {
+        // Tem membros mas ainda tem cota disponível
+        const { error } = await db.from('usuarios_extras').insert({
+          owner_id: user.id, nome, cargo, email: email || null,
+          whatsapp_contato: whats || null, numero_atribuido: numero || null, cor
+        });
+        if (error) { alert('Erro ao adicionar membro.'); return; }
+        // Envia convite por email se preenchido
+        if (email) {
+          try {
+            const { data: { session } } = await db.auth.getSession();
+            await fetch(`${SUPABASE_URL}/functions/v1/invite-user`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+                'apikey': SUPABASE_KEY
+              },
+              body: JSON.stringify({ email, nome, owner_id: user.id })
+            });
+          } catch(e) { console.warn('Convite não enviado:', e); }
+        }
       }
     } else {
       const { error } = await db.from('usuarios_extras').update({
