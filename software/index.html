@@ -6596,6 +6596,7 @@
   let waStatusInterval = null;
   let qrCountdownInterval = null;
   let currentProfile = null; // { id, role, display_name, evo_instance, active, owner_id }
+  let currentUser = null;    // Supabase auth user object (set after login)
   let _effectiveUserId = null; // para membros: owner_id; para admin/client: user.id
 
   // ── Toast notification ──────────────────────────────────────────────────
@@ -6775,6 +6776,7 @@
     if (user) {
       const { data: profile } = await db.from('profiles').select('*').eq('id', user.id).single();
       currentProfile = profile;
+      currentUser = user;
 
       const isMembro = profile?.role === 'membro';
 
