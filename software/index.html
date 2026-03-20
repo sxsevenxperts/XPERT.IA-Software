@@ -6989,11 +6989,14 @@
   };
 
   function showPage(name, el) {
+    const t0 = performance.now();
     // Bloqueia membro de acessar páginas não permitidas
     if (currentProfile?.role === 'membro' && !_membroAllowedPages.has(name)) return;
 
-    // Remove overlays apenas se existem (não query se vazio)
-    document.querySelectorAll('.locked-page-overlay').forEach(e => e.remove());
+    // Remover overlays em background (não bloqueia)
+    setTimeout(() => {
+      document.querySelectorAll('.locked-page-overlay').forEach(e => e.remove());
+    }, 0);
 
     // Otimizado: remove active apenas dos que têm (não query todos)
     const activePage = document.querySelector('.page.active');
@@ -7009,6 +7012,9 @@
     const newPage = document.getElementById('page-' + name);
     if (newPage) newPage.classList.add('active');
     if (el) el.classList.add('active');
+
+    const t1 = performance.now();
+    console.log(`⚡ showPage('${name}') levou ${Math.round(t1-t0)}ms`);
     if (name === 'leads') { console.log('Loading leads');
       loadLeads().catch(err => {
         console.error('Erro ao carregar leads:', err);
@@ -15037,20 +15043,18 @@
   // =====================
   async function loadHistorico() {
     const list = document.getElementById('historico-list');
+    list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">⏳ Carregando...</div>';
 
-    // Mostra placeholder IMEDIATAMENTE
-    list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">⏳ Carregando histórico...</div>';
-
-    // Carrega em background, sem bloquear
+    // Carrega em background
     (async () => {
       try {
         if (!await ensureUser()) {
-          list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Faça login para ver o histórico</div>';
+          list.innerHTML = '<div style="padding:40px;color:#6e7681;">Faça login</div>';
           return;
         }
 
-        const dateFrom = document.getElementById('hist-date-from').value;
-        const dateTo = document.getElementById('hist-date-to').value;
+        const dateFrom = document.getElementById('hist-date-from')?.value || '';
+        const dateTo = document.getElementById('hist-date-to')?.value || '';
 
         let query = db.from('leads')
           .select('id, nome, numero_whatsapp, celular, email, resumo, stage, atualizado_em')
@@ -15063,23 +15067,14 @@
 
         const { data, error } = await query;
 
-        if (error) {
-          console.error('Erro Histórico:', error);
-          list.innerHTML = '<div style="padding:40px;color:#dc2626;font-size:14px;text-align:center;">❌ Erro: ' + error.message + '</div>';
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          list.innerHTML = '<div style="padding:40px;color:#6e7681;">Nenhum contato</div>';
           return;
         }
 
-        if (!data || data.length === 0) {
-          list.innerHTML = '<div style="padding:40px;color:#6e7681;font-size:14px;text-align:center;">Nenhum contato finalizado neste período</div>';
-          return;
-        }
-      } catch (err) {
-        console.error('Erro em loadHistorico:', err);
-        list.innerHTML = '<div style="padding:40px;color:#dc2626;text-align:center;"><strong>❌ Erro ao carregar histórico</strong><br><small style="font-size:11px;margin-top:8px;display:block;font-family:monospace;">' + err.message + '</small></div>';
-      }
-    })(); // Executa em background
-    
-    list.innerHTML = data.map(lead => {
+        // RENDERIZAR AQUI, DENTRO DA IIFE
+        list.innerHTML = data.map(lead => {
       const dt = new Date(lead.atualizado_em);
       const dtStr = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
       const stageLabel = { convertido: 'Convertido', perdido: 'Perdido' }[lead.stage] || lead.stage;
@@ -15114,9 +15109,14 @@
           </div>
         </div>
       `;
-    }).join('');
+      }).join('');
+      } catch (err) {
+        console.error('❌ Erro loadHistorico:', err);
+        list.innerHTML = '<div style="padding:40px;color:#dc2626;"><strong>Erro:</strong> ' + (err.message || err) + '</div>';
+      }
+    })();
   }
-  
+
   async function exportHistoricoCSV() {
     if (!await ensureUser()) return;
     
