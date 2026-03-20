@@ -745,15 +745,16 @@
 
     /* DASHBOARD */
     #dashboard-page { display: none; min-height: 100vh; }
-    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; z-index: 100; transition: width 0.3s ease; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 240px; height: 100vh; background: #0a0a0a; padding: 24px 0; display: flex; flex-direction: column; overflow-y: auto; z-index: 100; transition: width 0.3s ease; box-shadow: 2px 0 8px rgba(0,0,0,0.4); }
     .sidebar.collapsed { width: 70px; }
     .sidebar.collapsed .nav-item { padding: 12px 10px; }
     .sidebar.collapsed .nav-section { display: none; }
     .sidebar.collapsed .nav-item span:not(.icon) { display: none; }
     .sidebar.collapsed .logo { padding: 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar.collapsed .logo img, .sidebar.collapsed .logo > div { display: none; }
-    .main-content { position: relative; z-index: 1; margin-left: 240px; transition: margin-left 0.3s ease; }
+    .main-content { position: relative; z-index: 10; margin-left: 240px; transition: margin-left 0.3s ease; }
     .sidebar.collapsed ~ .main-content { margin-left: 70px; }
+    .page { position: relative; z-index: 10; }
     .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar .logo .logo-brand { display:flex; align-items:center; gap:10px; margin-bottom:5px; }
     .sidebar .logo .logo-img { width:44px; height:44px; object-fit:contain; flex-shrink:0; border-radius:8px; }
