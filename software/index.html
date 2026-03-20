@@ -755,6 +755,11 @@
     .main-content { position: relative; z-index: 10; margin-left: 240px; transition: margin-left 0.3s ease; min-height: 100vh; overflow-x: hidden; }
     .sidebar.collapsed ~ .main-content,
     body.sidebar-collapsed .main-content { margin-left: 70px; }
+    /* Pages inside main-content: no extra margin needed */
+    .main-content > .page { margin-left: 0 !important; width: 100% !important; }
+    /* Pages outside main-content (direct children of #dashboard-page): need full offset */
+    #dashboard-page > .page { margin-left: 240px; padding: 32px 32px 52px; box-sizing: border-box; transition: margin-left 0.3s ease; width: calc(100% - 240px); }
+    body.sidebar-collapsed #dashboard-page > .page { margin-left: 70px; width: calc(100% - 70px); }
     .page { position: relative; z-index: 10 !important; }
     #dashboard-page { position: relative; z-index: 10; }
     .sidebar .logo { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -7088,12 +7093,21 @@
     if (newPage) newPage.classList.add('active');
     if (el) el.classList.add('active');
 
-    // Garante que main-content sempre está à direita da sidebar
+    // Garante que main-content e páginas externas sempre estão à direita da sidebar
     const mc = document.querySelector('.main-content');
     const sb = document.getElementById('sidebar-main');
     if (mc && sb) {
-      const w = sb.classList.contains('collapsed') ? '70px' : '240px';
+      const collapsed = sb.classList.contains('collapsed');
+      const w = collapsed ? '70px' : '240px';
+      const calcW = collapsed ? 'calc(100% - 70px)' : 'calc(100% - 240px)';
       mc.style.marginLeft = w;
+      // Se a página ativa está fora do main-content, aplica margem diretamente nela
+      if (newPage && !mc.contains(newPage)) {
+        newPage.style.marginLeft = w;
+        newPage.style.width = calcW;
+        newPage.style.boxSizing = 'border-box';
+        if (!newPage.style.padding) newPage.style.padding = '32px 32px 52px';
+      }
     }
 
     const t1 = performance.now();
@@ -16364,11 +16378,25 @@
       sidebar.classList.remove('collapsed');
       document.body.classList.remove('sidebar-collapsed');
       localStorage.setItem('sidebarCollapsed', 'false');
+      _applyOuterPageMargin('240px');
     } else {
       sidebar.classList.add('collapsed');
       document.body.classList.add('sidebar-collapsed');
       localStorage.setItem('sidebarCollapsed', 'true');
+      _applyOuterPageMargin('70px');
     }
+  }
+
+  function _applyOuterPageMargin(w) {
+    const mc = document.querySelector('.main-content');
+    if (mc) mc.style.marginLeft = w;
+    const calcW = `calc(100% - ${w})`;
+    // Aplica em todas as páginas fora do main-content
+    document.querySelectorAll('#dashboard-page > .page').forEach(p => {
+      p.style.marginLeft = w;
+      p.style.width = calcW;
+      p.style.boxSizing = 'border-box';
+    });
   }
 
   // Restore sidebar state on page load
@@ -16379,12 +16407,8 @@
       if (sidebar) sidebar.classList.add('collapsed');
       document.body.classList.add('sidebar-collapsed');
     }
-    
-    // Always ensure main-content has correct margin
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-      mainContent.style.marginLeft = sidebarCollapsed ? '70px' : '240px';
-    }
+    // Apply correct margin to all pages (inside and outside main-content)
+    _applyOuterPageMargin(sidebarCollapsed ? '70px' : '240px');
   });
 
   // ═══════════════════════════════════════════════════════════════
