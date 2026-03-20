@@ -15448,7 +15448,7 @@
         
         console.log('✅ loadPagamentoConfigs: Concluído');
         resolve();
-      } catch (err) {
+        } catch (err) {
         console.error('❌ loadPagamentoConfigs: Erro:', err.message);
         reject(err);
       }
@@ -15621,7 +15621,7 @@
         console.log('✅ savePagamentoConfigs: Sucesso');
         showToast('Configurações de pagamento salvas com sucesso!', 'success');
         resolve();
-      } catch (error) {
+        } catch (error) {
         if (statusEl) {
           statusEl.textContent = '❌ Erro ao salvar';
           statusEl.style.color = '#f87171';
