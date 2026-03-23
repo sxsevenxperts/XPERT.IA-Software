@@ -64,14 +64,7 @@ Deno.serve(async (req) => {
       userId = newUser.user!.id
       isNew = true
 
-      // 3. Enviar email de boas-vindas com link de reset de senha
-      await adminClient.auth.admin.generateLink({
-        type: 'recovery',
-        email,
-        options: {
-          redirectTo: `${Deno.env.get('APP_URL') || 'https://easydrive.app'}/reset-password`
-        }
-      })
+      // 3. Email removido - credenciais serão exibidas no login
     }
 
     // 4. Criar/atualizar subscription
