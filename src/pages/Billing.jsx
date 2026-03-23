@@ -5,7 +5,7 @@ import {
   Receipt, ArrowLeft, RefreshCw, Loader, ExternalLink,
 } from 'lucide-react'
 
-const HOTMART_CHECKOUT = 'https://pay.hotmart.com/SEU_PRODUTO_ID' // Substituir pelo link real
+const HOTMART_CHECKOUT = 'https://pay.hotmart.com/Q104879353L' // Premium Anual - Lançamento 60% desc
 
 export default function Billing({ user, subscription, onBack }) {
   const [payments, setPayments] = useState([])
