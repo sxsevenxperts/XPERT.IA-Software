@@ -184,7 +184,7 @@ export default function Login({ onAuth }) {
               </div>
               <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 16 }}>Bem-vindo ao EasyDrive!</h2>
               <p style={{ color: '#64748b', fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>
-                Sua conta foi criada com sucesso. Anote suas credenciais abaixo:
+                Sua conta foi criada com sucesso. Use suas credenciais para fazer login:
               </p>
             </div>
 
@@ -211,9 +211,9 @@ export default function Login({ onAuth }) {
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password (Telefone) */}
             <div style={{ marginBottom: 24 }}>
-              <label style={S.label}>Senha</label>
+              <label style={S.label}>Senha (Seu Telefone)</label>
               <div style={{
                 display: 'flex', gap: 10, padding: '12px 14px', background: '#111',
                 border: '1px solid #2a2a2a', borderRadius: 12, alignItems: 'center'
