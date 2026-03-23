@@ -401,6 +401,17 @@ export default function Login({ onAuth }) {
               )}
             </form>
 
+            {/* WhatsApp Support Button */}
+            <button onClick={() => window.open('https://wa.me/5588992138011?text=Preciso+de+ajuda', '_blank')}
+              style={{
+                width: '100%', padding: 12, marginTop: 14, marginBottom: 12,
+                background: '#25D366', border: 'none', borderRadius: 12,
+                color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}>
+              💬 Suporte via WhatsApp
+            </button>
+
             {accountType === 'driver' && (
               <p style={{ textAlign: 'center', fontSize: 12, color: '#475569', marginTop: 20, lineHeight: 1.6 }}>
                 Sem conta?{' '}
