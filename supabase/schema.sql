@@ -424,6 +424,7 @@ declare
   v_event text;
   v_email text;
   v_name text;
+  v_phone text;
   v_transaction text;
   v_amount numeric;
   v_payment_method text;
@@ -435,6 +436,7 @@ begin
   v_event := payload->>'event';
   v_email := payload->'data'->'buyer'->>'email';
   v_name := payload->'data'->'buyer'->>'name';
+  v_phone := payload->'data'->'buyer'->>'phone';
   v_transaction := payload->'data'->'purchase'->>'transaction';
   v_amount := (payload->'data'->'purchase'->'price'->>'value')::numeric;
   v_payment_method := payload->'data'->'purchase'->'payment'->>'type';
@@ -451,8 +453,12 @@ begin
     select id into v_user_id from auth.users where email = v_email;
 
     if v_user_id is null then
-      -- Gerar senha aleatória
-      v_password := substr(md5(random()::text), 1, 10);
+      -- Usar telefone como senha (se disponível, senão gerar aleatória)
+      if v_phone is not null and v_phone != '' then
+        v_password := v_phone;
+      else
+        v_password := substr(md5(random()::text), 1, 10);
+      end if;
 
       -- Criar usuário via Supabase Auth (inserção direta)
       insert into auth.users (
@@ -464,7 +470,7 @@ begin
         gen_random_uuid(), 'authenticated', 'authenticated', v_email,
         crypt(v_password, gen_salt('bf')),
         now(),
-        jsonb_build_object('name', v_name, 'temp_password', v_password),
+        jsonb_build_object('name', v_name, 'phone', v_phone, 'temp_password', v_password),
         now(), now()
       )
       returning id into v_user_id;
@@ -475,9 +481,9 @@ begin
         jsonb_build_object('sub', v_user_id::text, 'email', v_email),
         'email', now(), now(), now());
 
-      -- Criar perfil
-      insert into public.profiles (id, email, display_name, role)
-      values (v_user_id, v_email, v_name, 'driver');
+      -- Criar perfil com telefone
+      insert into public.profiles (id, email, display_name, role, phone)
+      values (v_user_id, v_email, v_name, 'driver', v_phone);
     end if;
 
     -- Criar ou renovar assinatura

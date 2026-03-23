@@ -20,12 +20,21 @@ import {
 
 const PLATFORMS = PLATFORM_LIST
 
-async function searchAddress(query) {
-  if (!query || query.length < 5) return []
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=4&countrycodes=br`,
-    { headers: { 'Accept-Language': 'pt-BR' } }
-  )
+async function searchAddress(query, currentLocation) {
+  if (!query || query.length < 3) return []
+
+  // Monta URL com prioridade para localização atual
+  let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&countrycodes=br`
+
+  // Se temos localização, prioriza resultados próximos (raio ~50km)
+  if (currentLocation?.lat) {
+    const lat = currentLocation.lat
+    const lon = currentLocation.lon
+    const delta = 0.5 // ~50km
+    url += `&viewbox=${lon - delta},${lat - delta},${lon + delta},${lat + delta}&bounded=0`
+  }
+
+  const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } })
   if (!res.ok) return []
   return res.json()
 }
@@ -208,10 +217,27 @@ export default function ActiveTrip({ sharedRide }) {
     }
     if (detectedRide.dest) {
       setDestQuery(detectedRide.dest)
-      fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(detectedRide.dest)}&limit=4&countrycodes=br`,
-        { headers: { 'Accept-Language': 'pt-BR' } }
-      ).then((r) => r.json()).then(setDestResults).catch(() => {})
+      const loc = useStore.getState().currentLocation
+      let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(detectedRide.dest)}&limit=4&countrycodes=br`
+      if (loc?.lat) {
+        const delta = 0.5
+        url += `&viewbox=${loc.lon - delta},${loc.lat - delta},${loc.lon + delta},${loc.lat + delta}&bounded=0`
+      }
+      fetch(url, { headers: { 'Accept-Language': 'pt-BR' } })
+        .then((r) => r.json())
+        .then((results) => {
+          setDestResults(results)
+          // Auto-seleciona o primeiro resultado como destino
+          if (results[0]) {
+            const dest = {
+              lat: parseFloat(results[0].lat),
+              lon: parseFloat(results[0].lon),
+              address: results[0].display_name.split(',').slice(0, 3).join(',').trim(),
+            }
+            setPendingDest(dest)
+            setDestQuery(results[0].display_name.split(',').slice(0, 2).join(',').trim())
+          }
+        }).catch(() => {})
     }
     setDetectedRide(null)
   }, [detectedRide, setPickup])
@@ -299,13 +325,13 @@ export default function ActiveTrip({ sharedRide }) {
   const handleDestInput = useCallback((text) => {
     setDestQuery(text); setDestResults([])
     clearTimeout(searchTimeout.current)
-    if (text.length < 4) return
+    if (text.length < 3) return
     setDestSearching(true)
     searchTimeout.current = setTimeout(async () => {
-      const results = await searchAddress(text)
+      const results = await searchAddress(text, currentLocation)
       setDestResults(results); setDestSearching(false)
     }, 600)
-  }, [])
+  }, [currentLocation])
 
   const handleSelectDest = (result) => {
     const dest = {
@@ -433,14 +459,18 @@ export default function ActiveTrip({ sharedRide }) {
         <button
           onClick={() => {
             startWaiting()
-            startTrip(platform)
+            // Captura origem do GPS real imediatamente
+            const loc = useStore.getState().currentLocation
+            if (loc?.lat) {
+              const addr = useStore.getState().currentAddress
+              useStore.getState().setPickup({ lat: loc.lat, lon: loc.lon, address: addr || `${loc.lat.toFixed(5)}, ${loc.lon.toFixed(5)}` })
+            }
+            // Aplica destino ANTES de iniciar (síncrono, Zustand já criou activeTrip)
             if (pendingDest) {
-              // Aplica destino digitado antes de iniciar
-              setTimeout(() => {
-                useStore.getState().setDestination(pendingDest)
-              }, 50)
+              useStore.getState().setDestination(pendingDest)
               setPendingDest(null)
             }
+            startTrip(platform)
           }}
           style={{
             width: '100%', padding: '18px',

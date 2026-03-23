@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabase, checkSubscription, checkIsAdmin } from '../lib/supabase'
-import { Lock, Mail, AlertCircle, CheckCircle, Loader, ArrowLeft, Shield, Car } from 'lucide-react'
+import { Lock, Mail, AlertCircle, CheckCircle, Loader, ArrowLeft, Shield, Car, Copy, Check } from 'lucide-react'
 
 export default function Login({ onAuth }) {
-  const [screen, setScreen] = useState('login') // 'login' | 'forgot' | 'sent'
+  const [screen, setScreen] = useState('login') // 'login' | 'forgot' | 'sent' | 'credentials'
   const [accountType, setAccountType] = useState('driver') // 'driver' | 'admin'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [showCredentials, setShowCredentials] = useState(false)
+  const [credentials, setCredentials] = useState(null)
+  const [copiedEmail, setCopiedEmail] = useState(false)
+  const [copiedPassword, setCopiedPassword] = useState(false)
 
   const hasSupabase = !!supabase
 
@@ -97,12 +101,46 @@ export default function Login({ onAuth }) {
         return
       }
 
+      // ⚠️ Se tem temp_password, é primeira vez - mostrar credenciais
+      if (user.user_metadata?.temp_password) {
+        setCredentials({
+          email: user.email,
+          password: user.user_metadata.temp_password
+        })
+        setShowCredentials(true)
+        setLoading(false)
+        return
+      }
+
       const sub = await checkSubscription(user.id)
       onAuth({ user, subscription: sub })
 
     } catch {
       setError('Erro de conexão. Verifique sua internet e tente novamente.')
       setLoading(false)
+    }
+  }
+
+  const handleCopy = (text, type) => {
+    navigator.clipboard.writeText(text)
+    if (type === 'email') {
+      setCopiedEmail(true)
+      setTimeout(() => setCopiedEmail(false), 2000)
+    } else {
+      setCopiedPassword(true)
+      setTimeout(() => setCopiedPassword(false), 2000)
+    }
+  }
+
+  const handleContinue = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const sub = await checkSubscription(user.id)
+        onAuth({ user, subscription: sub })
+      }
+    } catch {
+      setError('Erro ao continuar. Tente novamente.')
     }
   }
 
@@ -130,6 +168,102 @@ export default function Login({ onAuth }) {
 
   return (
     <div style={S.wrapper}>
+      {/* Modal de Credenciais */}
+      {showCredentials && credentials && (
+        <div style={{
+          position: 'fixed', inset: 0, background: '#00000080', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20
+        }}>
+          <div style={{
+            background: '#0d0d0d', border: '1px solid #1a1a1a', borderRadius: 20,
+            padding: '32px 24px', maxWidth: 380, width: '100%'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ ...S.iconBox, background: '#10b98120' }}>
+                <CheckCircle size={36} color='#10b981' />
+              </div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, marginTop: 16 }}>Bem-vindo ao EasyDrive!</h2>
+              <p style={{ color: '#64748b', fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>
+                Sua conta foi criada com sucesso. Use suas credenciais para fazer login:
+              </p>
+            </div>
+
+            {/* Email */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={S.label}>E-mail (Login)</label>
+              <div style={{
+                display: 'flex', gap: 10, padding: '12px 14px', background: '#111',
+                border: '1px solid #2a2a2a', borderRadius: 12, alignItems: 'center'
+              }}>
+                <code style={{ flex: 1, color: '#f1f5f9', fontSize: 13, fontWeight: 500, fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {credentials.email}
+                </code>
+                <button
+                  type='button'
+                  onClick={() => handleCopy(credentials.email, 'email')}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: copiedEmail ? '#10b981' : '#64748b', padding: 4
+                  }}
+                >
+                  {copiedEmail ? <Check size={18} /> : <Copy size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Password (Telefone) */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={S.label}>Senha (Seu Telefone)</label>
+              <div style={{
+                display: 'flex', gap: 10, padding: '12px 14px', background: '#111',
+                border: '1px solid #2a2a2a', borderRadius: 12, alignItems: 'center'
+              }}>
+                <code style={{ flex: 1, color: '#f1f5f9', fontSize: 13, fontWeight: 500, fontFamily: 'monospace', letterSpacing: 1 }}>
+                  {credentials.password}
+                </code>
+                <button
+                  type='button'
+                  onClick={() => handleCopy(credentials.password, 'password')}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: copiedPassword ? '#10b981' : '#64748b', padding: 4
+                  }}
+                >
+                  {copiedPassword ? <Check size={18} /> : <Copy size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Aviso */}
+            <div style={{
+              background: '#f59e0b15', border: '1px solid #f59e0b40', borderRadius: 10,
+              padding: '12px 14px', marginBottom: 20
+            }}>
+              <p style={{ fontSize: 12, color: '#f59e0b', margin: 0, lineHeight: 1.5 }}>
+                ⚠️ Guarde essas credenciais em local seguro. Não compartilhe com ninguém.
+              </p>
+            </div>
+
+            <button
+              type='button'
+              onClick={handleContinue}
+              disabled={loading}
+              style={{
+                ...S.btn,
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                marginBottom: 10
+              }}
+            >
+              {loading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : 'Continuar'}
+            </button>
+
+            <p style={{ textAlign: 'center', fontSize: 12, color: '#475569', marginTop: 10 }}>
+              Você está logado e pode entrar no app agora.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div style={S.card}>
 
         {/* E-mail enviado */}
