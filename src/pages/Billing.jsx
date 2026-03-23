@@ -5,11 +5,24 @@ import {
   Receipt, ArrowLeft, RefreshCw, Loader, ExternalLink,
 } from 'lucide-react'
 
-const HOTMART_CHECKOUT = 'https://pay.hotmart.com/Q104879353L' // Premium Anual - Lançamento 60% desc
+// Planos disponíveis na Hotmart
+const HOTMART_PLANS = {
+  mensal: {
+    url: 'https://pay.hotmart.com/Q104879353L?off=j97m36gi',
+    nome: 'Premium Mensal',
+    desconto: '70%'
+  },
+  anual: {
+    url: 'https://pay.hotmart.com/Q104879353L',
+    nome: 'Premium Anual',
+    desconto: '60%'
+  }
+}
 
 export default function Billing({ user, subscription, onBack }) {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedPlan, setSelectedPlan] = useState('anual') // 'mensal' | 'anual'
 
   useEffect(() => {
     if (user?.id) {
@@ -105,9 +118,37 @@ export default function Billing({ user, subscription, onBack }) {
         )}
       </div>
 
+      {/* Seleção de planos */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: 10 }}>
+          Escolha seu plano
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {Object.entries(HOTMART_PLANS).map(([key, plan]) => (
+            <button
+              key={key}
+              onClick={() => setSelectedPlan(key)}
+              style={{
+                padding: 14, borderRadius: 12, border: '2px solid',
+                borderColor: selectedPlan === key ? '#3b82f6' : '#334155',
+                background: selectedPlan === key ? '#3b82f615' : '#1e293b',
+                color: '#f1f5f9', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', transition: 'all 0.2s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+              }}
+            >
+              <span>{plan.nome}</span>
+              <span style={{ fontSize: 11, color: '#10b981', fontWeight: 700 }}>
+                {plan.desconto} desc
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Botão de renovação */}
       <button
-        onClick={() => window.open(HOTMART_CHECKOUT, '_blank')}
+        onClick={() => window.open(HOTMART_PLANS[selectedPlan].url, '_blank')}
         style={{
           width: '100%', padding: 16, marginBottom: 20,
           background: isActive ? '#1e293b' : 'linear-gradient(135deg, #22c55e, #16a34a)',
