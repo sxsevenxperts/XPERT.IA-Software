@@ -7,41 +7,65 @@ import json
 @dataclass
 class VariableSet:
     """Conjunto de variáveis para análise"""
-    # Solo
+    # Solo (5)
     ph: float
     nitrogenio_ppm: float
     fosforo_ppm: float
     potassio_ppm: float
     materia_organica: float
 
-    # Clima
+    # Clima (5)
     precipitacao: float
     temperatura: float
     umidade: float
     dias_sem_chuva: int
     indice_seca: str
 
-    # Mercado
+    # Mercado (3)
     preco_atual: float
     tendencia_preco: str
     volatilidade_preco: float
 
-    # Consumo/Demanda
+    # Consumo/Demanda (4)
     consumo_historico_media: float
     consumo_previsto_prox_6m: float
     sazonalidade_mes: float
     pico_demanda_mes: int
 
-    # Economia
+    # Economia (4)
     ipca: float
     selic: float
     inflacao_alimentos: float
     desemprego: float
 
-    # Produção
+    # Produção (3)
     produtividade_historica: float
     area_hectares: float
     custo_producao_ha: float
+
+    # NOVOS: Variedade/Genética (3)
+    variedade_cultura: str = "padrão"  # "IAC V450 Milho", "BRS Querência Feijão"
+    taxa_germinacao_semente: float = 0.85  # 0.70-0.95
+    pureza_semente: float = 0.90  # 0.85-0.99
+
+    # NOVOS: Manejo de Água (2)
+    manejo_agua_tipo: str = "chuva"  # "chuva", "irrigacao_complementar", "irrigacao_integral"
+    profundidade_lencol_freatico: float = 150.0  # cm
+
+    # NOVOS: Saúde do Solo (2)
+    compactacao_solo: str = "baixa"  # "baixa", "media", "alta"
+    cobertura_anterior: str = "pousio"  # "pousio", "crotalaria", "milho", "feijao", etc
+
+    # NOVOS: Histórico de Pragas/Doenças (2)
+    historico_pragas_area: str = "media"  # "baixa", "media", "alta"
+    historico_doencas_area: str = "media"  # "baixa", "media", "alta"
+
+    # NOVOS: Manejo de Defensivos (1)
+    ultimo_defensivo_dias: int = 0  # dias desde último uso
+
+    # NOVOS: Preferências Agrícola (2)
+    risco_tolerance_agricultor: str = "moderado"  # "conservador", "moderado", "agressivo"
+    limite_perda_aceitavel: float = 15.0  # % de perda aceitável
 
 @dataclass
 class PreditiveAnalysis:
@@ -79,6 +103,32 @@ class PreditiveAnalysis:
     roi_esperado: float
     break_even_dias: int
     ponto_equilibrio_kg: float
+
+    # NOVOS: Perdas Esperadas
+    perda_total_esperada_percent: float  # % total
+    perda_climatica_percent: float
+    perda_pragas_percent: float
+    perda_doencas_percent: float
+    perda_colheita_percent: float
+    quantidade_esperada_com_perdas: float  # kg
+
+    # NOVOS: Densidade de Plantio
+    densidade_plantio_recomendada: float  # plantas/ha
+    sementes_kg_hectare: float  # kg sementes/ha
+    sementes_totais_kg: float  # para a área toda
+    factor_reserva_sementes: float  # multiplicador para perdas
+
+    # NOVOS: Alertas de Pragas/Doenças
+    pragas_esperadas: List[str]  # ["lagarta-do-cartucho", "broca"]
+    doencas_esperadas: List[str]  # ["ferrugem", "mancha foliar"]
+    periodo_pico_pragas: str  # "V4-V8", "R1-R3"
+    recomendacoes_defensivos: List[str]
+
+    # NOVOS: Recomendações de Manejo
+    recomendacoes_agua: List[str]  # irrigação
+    recomendacoes_nutricao: List[str]  # adubação
+    recomendacoes_solo: List[str]  # preparo, compactação
+    recomendacoes_colheita: List[str]  # timing, ponto ideal
 
     # Parecer/Orientação
     parecer_executivo: str
@@ -181,6 +231,21 @@ class PredictiveAnalysisEngine:
             assertividade, len(variaveis_criticas), variaveis
         )
 
+        # 14. NOVO: Análise de Perdas Esperadas
+        perdas_data = self._analisar_perdas_esperadas(cultura, variaveis)
+        quantidade_com_perdas = quantidade * (1 - perdas_data['perda_total_percent'] / 100)
+
+        # 15. NOVO: Cálculo de Densidade e Sementes
+        densidade_recomendada, sementes_kg_ha, sementes_totais = self._calcular_densidade_plantio(
+            cultura, variaveis, quantidade_com_perdas
+        )
+
+        # 16. NOVO: Identificar Pragas/Doenças Esperadas
+        pragas_doencas = self._identificar_pragas_doencas(cultura, municipio, variaveis)
+
+        # 17. NOVO: Recomendações de Manejo Específicas
+        rec_manejo = self._gerar_recomendacoes_manejo(cultura, variaveis, pragas_doencas)
+
         return PreditiveAnalysis(
             cultura=cultura,
             municipio=municipio,
@@ -210,6 +275,32 @@ class PredictiveAnalysisEngine:
             roi_esperado=roi,
             break_even_dias=break_even,
             ponto_equilibrio_kg=ponto_eq,
+
+            # NOVOS: Perdas Esperadas
+            perda_total_esperada_percent=perdas_data['perda_total_percent'],
+            perda_climatica_percent=perdas_data['perda_climatica_percent'],
+            perda_pragas_percent=perdas_data['perda_pragas_percent'],
+            perda_doencas_percent=perdas_data['perda_doencas_percent'],
+            perda_colheita_percent=perdas_data['perda_colheita_percent'],
+            quantidade_esperada_com_perdas=quantidade_com_perdas,
+
+            # NOVOS: Densidade de Plantio
+            densidade_plantio_recomendada=densidade_recomendada,
+            sementes_kg_hectare=sementes_kg_ha,
+            sementes_totais_kg=sementes_totais,
+            factor_reserva_sementes=perdas_data['perda_total_percent'] / 100 + 0.05,
+
+            # NOVOS: Pragas/Doenças
+            pragas_esperadas=pragas_doencas['pragas'],
+            doencas_esperadas=pragas_doencas['doencas'],
+            periodo_pico_pragas=pragas_doencas['periodo_pico'],
+            recomendacoes_defensivos=pragas_doencas['recomendacoes_defensivos'],
+
+            # NOVOS: Recomendações de Manejo
+            recomendacoes_agua=rec_manejo['agua'],
+            recomendacoes_nutricao=rec_manejo['nutricao'],
+            recomendacoes_solo=rec_manejo['solo'],
+            recomendacoes_colheita=rec_manejo['colheita'],
 
             parecer_executivo=parecer,
             recomendacoes=recomendacoes,
@@ -778,3 +869,217 @@ class PredictiveAnalysisEngine:
         score += estabilidade
 
         return score
+
+    def _analisar_perdas_esperadas(self, cultura: str, variaveis: VariableSet) -> Dict:
+        """Calcular perdas esperadas por tipo e total"""
+        # Perdas base por cultura
+        perdas_base = {
+            'milho': {'clima': 5, 'pragas': 8, 'doencas': 5, 'colheita': 3},
+            'feijão': {'clima': 6, 'pragas': 10, 'doencas': 7, 'colheita': 3},
+            'tomate': {'clima': 8, 'pragas': 12, 'doencas': 10, 'colheita': 4},
+            'mandioca': {'clima': 4, 'pragas': 6, 'doencas': 4, 'colheita': 2},
+            'melancia': {'clima': 7, 'pragas': 9, 'doencas': 6, 'colheita': 3},
+        }
+
+        base = perdas_base.get(cultura.lower(), {'clima': 6, 'pragas': 8, 'doencas': 6, 'colheita': 3})
+
+        # Ajustes por condições climáticas
+        perda_clima = base['clima']
+        if variaveis.dias_sem_chuva > 30:
+            perda_clima *= 1.5
+        elif variaveis.indice_seca == 'alto':
+            perda_clima *= 1.3
+
+        # Ajustes por histórico de pragas
+        perda_pragas = base['pragas']
+        if variaveis.historico_pragas_area == 'alta':
+            perda_pragas *= 1.4
+        elif variaveis.historico_pragas_area == 'media':
+            perda_pragas *= 1.1
+
+        # Ajustes por histórico de doenças
+        perda_doencas = base['doencas']
+        if variaveis.historico_doencas_area == 'alta':
+            perda_doencas *= 1.5
+        elif variaveis.historico_doencas_area == 'media':
+            perda_doencas *= 1.2
+
+        # Ajustes por saúde do solo
+        if variaveis.compactacao_solo == 'alta':
+            perda_clima *= 1.2
+
+        # Perdas na colheita (fixa)
+        perda_colheita = base['colheita']
+
+        # Total
+        perda_total = perda_clima + perda_pragas + perda_doencas + perda_colheita
+
+        return {
+            'perda_climatica_percent': min(40, perda_clima),
+            'perda_pragas_percent': min(30, perda_pragas),
+            'perda_doencas_percent': min(30, perda_doencas),
+            'perda_colheita_percent': min(15, perda_colheita),
+            'perda_total_percent': min(85, perda_total)
+        }
+
+    def _calcular_densidade_plantio(
+        self,
+        cultura: str,
+        variaveis: VariableSet,
+        quantidade_esperada: float
+    ) -> Tuple[float, float, float]:
+        """Calcular densidade ótima de plantio e sementes necessárias"""
+        # Densidade base recomendada (plantas/ha)
+        densidade_base = {
+            'milho': 50000,      # 50 mil plantas/ha
+            'feijão': 200000,    # 200 mil sementes/ha
+            'tomate': 30000,     # 30 mil plantas/ha
+            'mandioca': 8000,    # 8 mil plantas/ha
+            'melancia': 4000,    # 4 mil plantas/ha
+        }
+
+        densidade = densidade_base.get(cultura.lower(), 40000)
+
+        # Ajustar por compactação e manejo
+        if variaveis.compactacao_solo == 'alta':
+            densidade *= 0.95
+        if variaveis.manejo_agua_tipo == 'chuva':
+            densidade *= 0.98
+
+        # Peso da semente (gramas) - médias
+        peso_semente = {
+            'milho': 0.3,        # 300mg
+            'feijão': 0.25,      # 250mg
+            'tomate': 0.0002,    # 0.2mg
+            'mandioca': 5,       # 5g (estaca)
+            'melancia': 0.08,    # 80mg
+        }
+
+        ps = peso_semente.get(cultura.lower(), 0.3)
+
+        # Sementes/kg = 1000 / (peso em gramas)
+        sementes_por_kg = 1000000 / (ps * 1000) if ps > 0 else 3000000
+
+        # kg de sementes/ha necessário
+        sementes_kg_ha = (densidade * ps) / 1000
+
+        # Ajustar por taxa de germinação e pureza
+        fator_germinacao = 1 / variaveis.taxa_germinacao_semente
+        fator_pureza = 1 / variaveis.pureza_semente
+        sementes_kg_ha *= (fator_germinacao * fator_pureza)
+
+        # Total para a área
+        sementes_totais = sementes_kg_ha * variaveis.area_hectares
+
+        return densidade, sementes_kg_ha, sementes_totais
+
+    def _identificar_pragas_doencas(
+        self,
+        cultura: str,
+        municipio: str,
+        variaveis: VariableSet
+    ) -> Dict:
+        """Identificar pragas e doenças esperadas para a cultura/região"""
+        pragas_cultura = {
+            'milho': ['lagarta-do-cartucho', 'broca', 'cigarrinha-do-milho', 'elasmo'],
+            'feijão': ['carunchão', 'broca-das-vagens', 'ácaros', 'cigarrinha'],
+            'tomate': ['traça-do-tomate', 'whitefly', 'pulgão', 'ácaro-rajado'],
+            'melancia': ['mosca-branca', 'ácaro', 'antracnose-cucurbitácea'],
+            'mandioca': ['broca-da-mandioca', 'ácaros'],
+        }
+
+        doencas_cultura = {
+            'milho': ['ferrugem', 'mancha-de-cercospora', 'antracnose', 'podrão-de-espiga'],
+            'feijão': ['antracnose', 'ferrugem', 'murcha-de-fusário'],
+            'tomate': ['tizão-tardio', 'oídio', 'pinta-preta'],
+            'melancia': ['oídio', 'antracnose', 'mancha-angular'],
+            'mandioca': ['superalongamento-da-mandioca'],
+        }
+
+        # Selecionar com base no histórico
+        pragas = pragas_cultura.get(cultura.lower(), [])
+        doencas = doencas_cultura.get(cultura.lower(), [])
+
+        if variaveis.historico_pragas_area == 'alta':
+            pragas = pragas[:3]  # Top 3
+        elif variaveis.historico_pragas_area == 'media':
+            pragas = pragas[:2]  # Top 2
+
+        if variaveis.historico_doencas_area == 'alta':
+            doencas = doencas[:3]  # Top 3
+        elif variaveis.historico_doencas_area == 'media':
+            doencas = doencas[:2]  # Top 2
+
+        # Período de pico baseado na fase da cultura
+        periodo_picos = {
+            'milho': 'V4-V8 (lagarta) / R1-R3 (podrão)',
+            'feijão': 'V3-V6 (antracnose) / R3-R4 (ferrugem)',
+            'tomate': 'V6+ (traça) / R1+ (tizão)',
+            'melancia': 'V4+ (mosca-branca) / R2+ (oídio)',
+        }
+
+        periodo_pico = periodo_picos.get(cultura.lower(), 'V4-R3')
+
+        recomendacoes_defensivos = [
+            f"Monitorar semanalmente por {', '.join(pragas[:2])}",
+            f"Alertar para presença de {', '.join(doencas[:2])} em período: {periodo_pico}",
+            "Iniciar controle preventivo 15 dias antes do pico esperado"
+        ]
+
+        return {
+            'pragas': pragas,
+            'doencas': doencas,
+            'periodo_pico': periodo_pico,
+            'recomendacoes_defensivos': recomendacoes_defensivos
+        }
+
+    def _gerar_recomendacoes_manejo(
+        self,
+        cultura: str,
+        variaveis: VariableSet,
+        pragas_doencas: Dict
+    ) -> Dict:
+        """Gerar recomendações específicas de manejo"""
+        rec_agua = []
+        if variaveis.manejo_agua_tipo == 'chuva':
+            rec_agua.append(f"Monitorar precipitação; se <50mm/mês, iniciar irrigação de compensação")
+            rec_agua.append(f"Verificar profundidade do lençol em {variaveis.profundidade_lencol_freatico}cm")
+        elif variaveis.manejo_agua_tipo == 'irrigacao_complementar':
+            rec_agua.append(f"Irrigar quando precipitação acumular <40mm em 10 dias")
+        else:
+            rec_agua.append(f"Sistema de irrigação integral: ajustar turnos conforme ETo local")
+
+        rec_nutricao = []
+        if variaveis.nitrogenio_ppm < 20:
+            rec_nutricao.append("Deficiência de N: aplicar 30-50 kg N/ha em cobertura aos 30 dias")
+        elif variaveis.nitrogenio_ppm > 60:
+            rec_nutricao.append("N em nível adequado: evitar excessos para não aumentar pragas")
+
+        if variaveis.fosforo_ppm < 10:
+            rec_nutricao.append("Baixo P: aplicar 20 kg P2O5/ha no pré-plantio")
+
+        if variaveis.potassio_ppm < 40:
+            rec_nutricao.append("Deficiência K: afeta resistência; aplicar 40 kg K2O/ha")
+
+        rec_solo = []
+        if variaveis.compactacao_solo == 'alta':
+            rec_solo.append("Compactação detectada: realiza descompactação ou plantio direto")
+        if variaveis.cobertura_anterior == 'pousio':
+            rec_solo.append("Considerar plantio de cobertura (crotalária) antes da próxima safra")
+        if variaveis.ph < 5.5:
+            rec_solo.append("pH ácido: aplicar calcário 1-2 ton/ha (após análise)")
+        elif variaveis.ph > 7.5:
+            rec_solo.append("pH alcalino: pode reduzir disponibilidade de micronutrientes")
+
+        rec_colheita = [
+            f"Colher quando teor de água atingir {45 if cultura.lower() == 'milho' else 13}%",
+            f"Realizar colheita em horário ameno (manhã/final de tarde) para reduzir danos",
+            f"Limpar máquinas entre talhões para evitar transmissão de pragas/doenças"
+        ]
+
+        return {
+            'agua': rec_agua,
+            'nutricao': rec_nutricao,
+            'solo': rec_solo,
+            'colheita': rec_colheita
+        }

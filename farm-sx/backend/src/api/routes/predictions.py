@@ -130,11 +130,28 @@ def gerar_parecer_ia(
     municipio: str,
     agricultor_id: Optional[int] = None,
     area_hectares: float = 10.0,
+    # Solo
     ph: float = 6.0,
     nitrogenio_ppm: float = 30,
     fosforo_ppm: float = 15,
     potassio_ppm: float = 60,
     materia_organica: float = 2.5,
+    # NOVOS: Variedade/Genética
+    variedade_cultura: str = "padrão",
+    taxa_germinacao_semente: float = 0.85,
+    pureza_semente: float = 0.90,
+    # NOVOS: Manejo de Água
+    manejo_agua_tipo: str = "chuva",
+    profundidade_lencol_freatico: float = 150.0,
+    # NOVOS: Saúde do Solo
+    compactacao_solo: str = "baixa",
+    cobertura_anterior: str = "pousio",
+    # NOVOS: Histórico
+    historico_pragas_area: str = "media",
+    historico_doencas_area: str = "media",
+    # NOVOS: Manejo
+    ultimo_defensivo_dias: int = 0,
+    risco_tolerance_agricultor: str = "moderado",
     db: Session = Depends(get_db)
 ):
     """
@@ -197,7 +214,7 @@ def gerar_parecer_ia(
         except:
             consumo_medio, consumo_previsto, sazonalidade, picos_demanda = 1000, 1200, 1.0, [6, 7]
 
-        # Construir VariableSet com as variáveis
+        # Construir VariableSet com TODAS as variáveis (24+ campos)
         variables = VariableSet(
             # Solo (5 variáveis)
             ph=ph,
@@ -233,7 +250,30 @@ def gerar_parecer_ia(
             # Produção (3 variáveis)
             produtividade_historica=4.5,  # tons/ha
             area_hectares=area_hectares,
-            custo_producao_ha=3000.0  # R$/hectare
+            custo_producao_ha=3000.0,  # R$/hectare
+
+            # NOVOS: Variedade/Genética (3)
+            variedade_cultura=variedade_cultura,
+            taxa_germinacao_semente=taxa_germinacao_semente,
+            pureza_semente=pureza_semente,
+
+            # NOVOS: Manejo de Água (2)
+            manejo_agua_tipo=manejo_agua_tipo,
+            profundidade_lencol_freatico=profundidade_lencol_freatico,
+
+            # NOVOS: Saúde do Solo (2)
+            compactacao_solo=compactacao_solo,
+            cobertura_anterior=cobertura_anterior,
+
+            # NOVOS: Histórico (2)
+            historico_pragas_area=historico_pragas_area,
+            historico_doencas_area=historico_doencas_area,
+
+            # NOVOS: Manejo (1)
+            ultimo_defensivo_dias=ultimo_defensivo_dias,
+
+            # NOVOS: Preferências (1)
+            risco_tolerance_agricultor=risco_tolerance_agricultor
         )
 
         # Executar análise
@@ -341,7 +381,47 @@ def gerar_parecer_ia(
                 "risco_geral": analise.risco_geral,
             },
 
-            # Recomendações
+            # NOVOS: Análise de Perdas Esperadas
+            "analise_perdas": {
+                "perda_total_esperada_percent": round(analise.perda_total_esperada_percent, 1),
+                "detalhamento": {
+                    "perda_climatica_percent": round(analise.perda_climatica_percent, 1),
+                    "perda_pragas_percent": round(analise.perda_pragas_percent, 1),
+                    "perda_doencas_percent": round(analise.perda_doencas_percent, 1),
+                    "perda_colheita_percent": round(analise.perda_colheita_percent, 1),
+                },
+                "quantidade_esperada_com_perdas_kg": round(analise.quantidade_esperada_com_perdas, 0),
+                "recomendacao": f"Semear com factor de segurança {round(analise.factor_reserva_sementes, 2)}x para compensar perdas"
+            },
+
+            # NOVOS: Densidade de Plantio e Sementes
+            "plantio_recomendado": {
+                "densidade_plantio_plantas_ha": round(analise.densidade_plantio_recomendada, 0),
+                "sementes_kg_por_hectare": round(analise.sementes_kg_hectare, 2),
+                "sementes_totais_a_comprar_kg": round(analise.sementes_totais_kg, 1),
+                "variedade_recomendada": variedade_cultura,
+                "taxa_germinacao_esperada": f"{taxa_germinacao_semente*100:.0f}%",
+                "pureza_semente_esperada": f"{pureza_semente*100:.0f}%"
+            },
+
+            # NOVOS: Pragas e Doenças Esperadas
+            "pragas_doencas_esperadas": {
+                "pragas": analise.pragas_esperadas,
+                "doencas": analise.doencas_esperadas,
+                "periodo_pico_pressao": analise.periodo_pico_pragas,
+                "recomendacoes_defensivos": analise.recomendacoes_defensivos,
+                "alerta": f"⚠️ Monitorar semanalmente a partir da emergência das plantas"
+            },
+
+            # NOVOS: Recomendações de Manejo
+            "recomendacoes_manejo": {
+                "agua": analise.recomendacoes_agua,
+                "nutricao": analise.recomendacoes_nutricao,
+                "solo": analise.recomendacoes_solo,
+                "colheita": analise.recomendacoes_colheita,
+            },
+
+            # Recomendações gerais
             "recomendacoes_acao": analise.recomendacoes,
 
             # Alertas
