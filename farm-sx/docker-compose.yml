@@ -30,6 +30,7 @@ services:
       API_PORT: 8000
       CORS_ORIGINS: "*"
       SQL_ECHO: "false"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     ports:
       - "8000:8000"
     depends_on:

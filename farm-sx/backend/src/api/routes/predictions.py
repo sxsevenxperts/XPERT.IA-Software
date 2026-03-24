@@ -4,6 +4,7 @@ from src.core.database import get_db
 from src.models.harvest_predictor import HarvestPredictor
 from src.models.predictive_engine import PredictiveAnalysisEngine, VariableSet
 from src.models.database_models import PlanoBuscaPlantio, Alerta
+from src.models.claude_ai import gerar_parecer_agricultura, MODELOS_DISPONIVEIS, MODELO_PADRAO
 from src.data.collectors.ceasa_collector import CEASACollector
 from src.data.collectors.climate_collector import ClimateCollector
 from src.data.collectors.economic_collector import EconomicCollector
@@ -124,12 +125,27 @@ def get_feature_importance():
         'total_features': len(importance)
     }
 
+@router.get("/modelos-ia")
+def listar_modelos_ia():
+    """Listar modelos Claude disponíveis para análise"""
+    return {
+        "modelos": list(MODELOS_DISPONIVEIS.keys()),
+        "padrao": MODELO_PADRAO,
+        "descricoes": {
+            "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
+            "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
+            "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade",
+        }
+    }
+
+
 @router.post("/parecer")
 def gerar_parecer_ia(
     cultura: str,
     municipio: str,
     agricultor_id: Optional[int] = None,
     area_hectares: float = 10.0,
+    modelo_ia: Optional[str] = None,
     # Solo
     ph: float = 6.0,
     nitrogenio_ppm: float = 30,
@@ -325,6 +341,47 @@ def gerar_parecer_ia(
                 print(f"Erro ao salvar análise: {str(e)}")
                 # Não falha a resposta se não conseguir salvar
 
+        # Gerar parecer com Claude AI
+        parecer_claude = None
+        modelo_usado = None
+        try:
+            dados_analise = {
+                "receita_prevista": analise.receita_prevista,
+                "lucro_previsto": analise.lucro_previsto,
+                "margem_lucro": analise.margem_lucro,
+                "roi_esperado": analise.roi_esperado,
+                "produtividade_prevista": analise.produtividade_prevista,
+                "quantidade_colheita_prevista": analise.quantidade_colheita_prevista,
+                "perda_climatica_percent": analise.perda_climatica_percent,
+                "perda_pragas_percent": analise.perda_pragas_percent,
+                "perda_doencas_percent": analise.perda_doencas_percent,
+                "perda_total_esperada_percent": analise.perda_total_esperada_percent,
+                "risco_clima": analise.risco_clima,
+                "risco_mercado": analise.risco_mercado,
+                "risco_economia": analise.risco_economia,
+                "risco_geral": analise.risco_geral,
+                "assertividade": analise.assertividade,
+                "data_plantio_recomendada": analise.data_plantio_recomendada,
+                "data_colheita_prevista": analise.data_colheita_prevista,
+                "mes_melhor_venda": analise.mes_melhor_venda,
+                "pragas_esperadas": analise.pragas_esperadas,
+                "doencas_esperadas": analise.doencas_esperadas,
+                "oportunidades": analise.oportunidades,
+                "alertas": analise.alertas,
+            }
+            parecer_claude = gerar_parecer_agricultura(
+                cultura=cultura,
+                municipio=municipio,
+                area_hectares=area_hectares,
+                analise=dados_analise,
+                modelo=modelo_ia,
+            )
+            from src.models.claude_ai import _resolver_modelo
+            modelo_usado = _resolver_modelo(modelo_ia)
+        except Exception as e:
+            print(f"Aviso: Claude API indisponível ({str(e)}). Usando parecer local.")
+            parecer_claude = None
+
         # Preparar resposta estruturada
         resposta = {
             "status": "sucesso",
@@ -345,6 +402,13 @@ def gerar_parecer_ia(
                 "nivel_assertividade": f"{analise.assertividade:.0f}%",
                 "periodo_validade": analise.periodo_validade,
                 "score_qualidade": round(analise.score_qualidade, 2)
+            },
+
+            # Parecer Claude AI
+            "parecer_claude_ai": {
+                "disponivel": parecer_claude is not None,
+                "modelo_utilizado": modelo_usado,
+                "parecer": parecer_claude,
             },
 
             # Previsões

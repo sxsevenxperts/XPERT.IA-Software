@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from src.core.database import get_db
 from src.models.livestock_engine import LivestockAnalysisEngine, LivestockVariableSet
 from src.models.database_models import Agricultor
+from src.models.claude_ai import gerar_parecer_pecuaria, MODELOS_DISPONIVEIS, MODELO_PADRAO
 from typing import Optional
 from datetime import datetime
 import json
@@ -10,6 +11,21 @@ import json
 router = APIRouter(prefix="/api/v1/livestock", tags=["livestock"])
 
 livestock_engine = LivestockAnalysisEngine()
+
+
+@router.get("/modelos-ia")
+def listar_modelos_ia():
+    """Listar modelos Claude disponíveis para análise"""
+    return {
+        "modelos": list(MODELOS_DISPONIVEIS.keys()),
+        "padrao": MODELO_PADRAO,
+        "descricoes": {
+            "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
+            "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
+            "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade",
+        }
+    }
+
 
 @router.post("/analise")
 def analisar_rebanho(
@@ -63,6 +79,9 @@ def analisar_rebanho(
     frequencia_ordenha_dia: int = 2,
     genetica_melhorada: bool = False,
     participacao_programas_melhoramento: bool = False,
+
+    # Claude AI
+    modelo_ia: Optional[str] = None,
 
     db: Session = Depends(get_db)
 ):
@@ -126,6 +145,42 @@ def analisar_rebanho(
             variaveis=variaveis
         )
 
+        # Gerar parecer com Claude AI
+        parecer_claude = None
+        modelo_usado = None
+        try:
+            dados_analise = {
+                "receita_bruta_anual": analise.receita_bruta_anual,
+                "custos_totais_anual": analise.custos_totais_anual,
+                "lucro_liquido_anual": analise.lucro_liquido_anual,
+                "margem_lucro_percent": analise.margem_lucro_percent,
+                "roi_percent": analise.roi_percent,
+                "producao_diaria_total": analise.producao_diaria_total,
+                "producao_anual_total": analise.producao_anual_total,
+                "margem_producao": analise.margem_producao,
+                "probabilidade_doenca": analise.probabilidade_doenca,
+                "mastite_risco": analise.mastite_risco if tipo_rebanho == "gado_leite" else "n/a",
+                "sanidade_geral": sanidade_geral,
+                "assertividade": analise.assertividade,
+                "pontos_criticos": analise.pontos_criticos,
+                "oportunidades": analise.oportunidades,
+                "alertas": analise.alertas,
+                "potencial_producao_otimizada": analise.potencial_producao_otimizada,
+                "ganho_potencial_anual": analise.ganho_potencial_anual,
+            }
+            parecer_claude = gerar_parecer_pecuaria(
+                tipo_rebanho=tipo_rebanho,
+                quantidade_animais=quantidade_animais,
+                raca_predominante=raca_predominante,
+                analise=dados_analise,
+                modelo=modelo_ia,
+            )
+            from src.models.claude_ai import _resolver_modelo
+            modelo_usado = _resolver_modelo(modelo_ia)
+        except Exception as e:
+            print(f"Aviso: Claude API indisponível ({str(e)}). Usando parecer local.")
+            parecer_claude = None
+
         # Preparar resposta estruturada
         resposta = {
             "status": "sucesso",
@@ -145,6 +200,13 @@ def analisar_rebanho(
                 "nivel_assertividade": f"{analise.assertividade:.0f}%",
                 "periodo_validade": analise.periodo_validade,
                 "score_qualidade": round(analise.score_qualidade, 2)
+            },
+
+            # Parecer Claude AI
+            "parecer_claude_ai": {
+                "disponivel": parecer_claude is not None,
+                "modelo_utilizado": modelo_usado,
+                "parecer": parecer_claude,
             },
 
             # Produção
