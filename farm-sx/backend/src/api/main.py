@@ -2,7 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from src.core.database import init_db
-from src.api.routes import soil_analysis, products, subsidies
+from src.api.routes import (
+    soil_analysis, products, subsidies,
+    predictions, market, climate, economics,
+    consumption, recommendations, farmers, auth
+)
 
 # Initialize database
 init_db()
@@ -24,9 +28,17 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)
+app.include_router(farmers.router)
 app.include_router(soil_analysis.router)
 app.include_router(products.router)
 app.include_router(subsidies.router)
+app.include_router(predictions.router)
+app.include_router(market.router)
+app.include_router(climate.router)
+app.include_router(economics.router)
+app.include_router(consumption.router)
+app.include_router(recommendations.router)
 
 @app.get("/")
 def read_root():
