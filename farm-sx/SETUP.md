@@ -39,11 +39,16 @@ cp .env.example .env
 # Editar .env com suas credenciais
 nano .env  # ou use seu editor favorito
 
-# Adicionar ANTHROPIC_API_KEY para geração de pareceres com IA
+# Adicionar chaves de IA (opcional, mas recomendado)
 # export ANTHROPIC_API_KEY="sua-chave-api-claude"
+# export GEMINI_API_KEY="sua-chave-api-gemini"
 ```
 
-**Nota**: A chave `ANTHROPIC_API_KEY` é necessária para usar a funcionalidade de geração de pareceres inteligentes (parecer_claude_ai) nos módulos de Agricultura e Pecuária. Sem esta chave, os endpoints funcionarão normalmente, mas o campo `parecer_claude_ai` retornará `disponivel: false`.
+**Nota sobre Provedores de IA**:
+- `ANTHROPIC_API_KEY`: Para Claude (Anthropic) - padrão quando nenhuma chave está configurada. Modelos: opus (mais poderoso), sonnet (balanceado), haiku (mais rápido).
+- `GEMINI_API_KEY`: Para Gemini (Google) - **completamente gratuito**. Obter chave em https://ai.google.dev
+
+Sem essas chaves, os endpoints funcionarão normalmente, mas o campo `parecer_ia` retornará `disponivel: false`.
 
 ### 3. Inicializar Banco de Dados
 
@@ -63,29 +68,49 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --workers 4
 
 Acesse: http://localhost:8000/docs para documentação interativa
 
-### 5. Integração Claude AI (Pareceres Inteligentes)
+### 5. Integração com Provedores de IA (Pareceres Inteligentes)
 
-O sistema inclui integração com Claude AI para geração automática de pareceres analíticos em Agricultura e Pecuária.
+O sistema suporta múltiplos provedores de IA para geração automática de pareceres analíticos em Agricultura e Pecuária.
 
-#### Modelos Disponíveis
+#### Provedores Disponíveis
 
 ```bash
-# Listar modelos Claude disponíveis
+# Listar modelos de IA disponíveis (Agricultura)
 curl http://localhost:8000/api/v1/predictions/modelos-ia
 
-# Resposta:
+# Listar modelos de IA disponíveis (Pecuária)
+curl http://localhost:8000/api/v1/livestock/modelos-ia
+
+# Resposta inclui:
 {
-  "modelos": ["opus", "sonnet", "haiku", "claude-opus-4-6", ...],
-  "padrao": "claude-opus-4-6",
-  "descricoes": {
-    "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
-    "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
-    "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade"
+  "provedores": {
+    "claude": {
+      "nome": "Claude (Anthropic)",
+      "modelos": ["opus", "sonnet", "haiku", "claude-opus-4-6", ...],
+      "padrao": "claude-opus-4-6",
+      "descricoes": {
+        "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
+        "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
+        "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade"
+      },
+      "requer_chave": true
+    },
+    "gemini": {
+      "nome": "Google Gemini (Grátis)",
+      "modelos": ["gemini", "gemini-flash", "gemini-pro", "gemini-2.0-flash", ...],
+      "padrao": "gemini-2.0-flash",
+      "descricoes": {
+        "gemini-2.0-flash": "Rápido e preciso - completamente grátis",
+        "gemini-pro": "Mais poderoso - análise profunda (grátis)"
+      },
+      "requer_chave": true,
+      "nota": "Usar GEMINI_API_KEY (obtém grátis em ai.google.dev)"
+    }
   }
 }
 ```
 
-#### Gerar Parecer (Agricultura)
+#### Gerar Parecer com Claude (Agricultura)
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/predictions/parecer \
@@ -95,26 +120,57 @@ curl -X POST http://localhost:8000/api/v1/predictions/parecer \
     "municipio": "Fortaleza",
     "area_hectares": 10,
     "ph": 6.2,
-    "modelo_ia": "sonnet"
+    "modelo_ia": "sonnet",
+    "provedor_ia": "claude"
+  }'
+```
+
+#### Gerar Parecer com Gemini (Agricultura)
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predictions/parecer \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cultura": "Milho",
+    "municipio": "Fortaleza",
+    "area_hectares": 10,
+    "ph": 6.2,
+    "modelo_ia": "gemini-2.0-flash",
+    "provedor_ia": "gemini"
   }'
 ```
 
 #### Gerar Parecer (Pecuária)
 
 ```bash
+# Com Claude (padrão)
 curl -X POST http://localhost:8000/api/v1/livestock/analise \
   -H "Content-Type: application/json" \
   -d '{
-    "tipo_rebanho": "Bovino",
+    "tipo_rebanho": "gado_leite",
     "quantidade_animais": 50,
-    "raca_predominante": "Nelore",
-    "modelo_ia": "opus"
+    "raca_predominante": "Holandesa",
+    "modelo_ia": "opus",
+    "provedor_ia": "claude"
+  }'
+
+# Com Gemini (grátis)
+curl -X POST http://localhost:8000/api/v1/livestock/analise \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo_rebanho": "gado_leite",
+    "quantidade_animais": 50,
+    "raca_predominante": "Holandesa",
+    "provedor_ia": "gemini"
   }'
 ```
 
-A resposta incluirá um objeto `parecer_claude_ai` com:
-- `disponivel`: boolean (true se ANTHROPIC_API_KEY está configurada)
-- `modelo_utilizado`: string (qual modelo Claude foi usado)
+#### Estrutura de Resposta
+
+A resposta incluirá um objeto `parecer_ia` com:
+- `disponivel`: boolean (true se a chave API do provedor está configurada)
+- `provedor`: string ("claude" ou "gemini")
+- `modelo_utilizado`: string (qual modelo foi usado)
 - `parecer`: string (parecer gerado com 6-7 seções estruturadas)
 
 ## 💻 Configuração do Dashboard
@@ -298,6 +354,13 @@ ENV=production
 # CORS
 CORS_ORIGINS=https://yourdomain.com
 
+# Provedores de IA (opcional, recomendado)
+# Claude AI - obter chave em https://console.anthropic.com/
+ANTHROPIC_API_KEY=your_anthropic_api_key
+
+# Google Gemini - obter chave grátis em https://ai.google.dev/
+GEMINI_API_KEY=your_gemini_api_key
+
 # Optionals
 TWILIO_ACCOUNT_SID=your_sid
 TWILIO_AUTH_TOKEN=your_token
@@ -359,11 +422,13 @@ server: {
 - [ ] Python venv criado e ativado
 - [ ] Dependências pip instaladas
 - [ ] `.env` configurado com DATABASE_URL
+- [ ] ANTHROPIC_API_KEY ou GEMINI_API_KEY configurada (opcional)
 - [ ] Backend iniciado com `uvicorn`
 - [ ] Node.js dependências instaladas
 - [ ] Dashboard rodando em localhost:5173
 - [ ] API documentação acessível em localhost:8000/docs
 - [ ] Primeiro agricultor criado e testado
+- [ ] Provedores de IA testados em `/api/v1/predictions/modelos-ia`
 
 ## 🎯 Próximos Passos
 
