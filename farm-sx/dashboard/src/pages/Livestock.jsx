@@ -39,10 +39,10 @@ export default function Livestock() {
   };
 
   const tiposRebanho = [
-    { id: 'gado_leite', label: '🥛 Gado Leiteiro', icon: '🐄' },
-    { id: 'gado_corte', label: '🥩 Gado de Corte', icon: '🐂' },
-    { id: 'ovino', label: '🐑 Ovelhas', icon: '🐑' },
-    { id: 'suíno', label: '🐷 Suínos', icon: '🐷' }
+    { id: 'gado_leite', label: 'Gado Leiteiro', icon: '' },
+    { id: 'gado_corte', label: 'Gado de Corte', icon: '' },
+    { id: 'ovino', label: 'Ovelhas', icon: '' },
+    { id: 'suíno', label: 'Suinos', icon: '' }
   ];
 
   return (
@@ -50,7 +50,7 @@ export default function Livestock() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">🏡 Análise de Pecuária</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Analise de Pecuaria</h1>
           <p className="text-gray-600">Otimize sua produção animal com análise AI integrada</p>
         </div>
 
@@ -102,7 +102,7 @@ export default function Livestock() {
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg w-full transition-all disabled:opacity-50"
           >
-            {loading ? '⏳ Analisando...' : '🔍 Analisar Rebanho'}
+            {loading ? 'Analisando...' : 'Analisar Rebanho'}
           </button>
         </div>
 
@@ -111,7 +111,7 @@ export default function Livestock() {
           <>
             {/* Parecer Executivo */}
             <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">📋 Parecer AI</h2>
+              <h2 className="text-2xl font-bold mb-4">Parecer AI</h2>
               <p className="text-lg mb-4">{analise.parecer_executivo.opiniao}</p>
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-blue-400 bg-opacity-50 rounded-lg p-4">
@@ -160,7 +160,7 @@ export default function Livestock() {
             {/* Produção */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-4">📊 Produção</h3>
+                <h3 className="text-xl font-bold mb-4">Producao</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-700">Produção Diária</span>
@@ -178,7 +178,7 @@ export default function Livestock() {
               </div>
 
               <div className="bg-white rounded-lg shadow-lg p-6">
-                <h3 className="text-xl font-bold mb-4">🏥 Saúde Animal</h3>
+                <h3 className="text-xl font-bold mb-4">Saude Animal</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">Status Sanitário</span>
@@ -192,7 +192,7 @@ export default function Livestock() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-700">Vacinação</span>
-                    <span className="font-bold">{analise.saude_animal.vacinacao_atualizada ? '✅ Atualizada' : '❌ Desatualizada'}</span>
+                    <span className="font-bold">{analise.saude_animal.vacinacao_atualizada ? 'Atualizada' : 'Desatualizada'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-700">Sanidade Geral</span>
@@ -205,7 +205,7 @@ export default function Livestock() {
             {/* Pontos Críticos */}
             {analise.pontos_criticos.length > 0 && (
               <div className="bg-red-50 border-l-4 border-red-500 rounded-lg shadow-lg p-6 mb-8">
-                <h3 className="text-xl font-bold text-red-800 mb-4">⚠️ Pontos Críticos</h3>
+                <h3 className="text-xl font-bold text-red-800 mb-4">Pontos Criticos</h3>
                 <ul className="space-y-2">
                   {analise.pontos_criticos.map((ponto, idx) => (
                     <li key={idx} className="text-red-700 flex items-start gap-2">
@@ -219,7 +219,7 @@ export default function Livestock() {
 
             {/* Recomendações */}
             <div className="bg-blue-50 rounded-lg shadow-lg p-6 mb-8">
-              <h3 className="text-xl font-bold text-blue-900 mb-4">💡 Recomendações</h3>
+              <h3 className="text-xl font-bold text-blue-900 mb-4">Recomendacoes</h3>
               <ul className="space-y-2">
                 {analise.recomendacoes_manejo.map((rec, idx) => (
                   <li key={idx} className="text-blue-800 flex items-start gap-2">
@@ -233,7 +233,7 @@ export default function Livestock() {
             {/* Investimentos Sugeridos */}
             {analise.investimentos_sugeridos.length > 0 && (
               <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-                <h3 className="text-xl font-bold mb-4">💰 Investimentos Sugeridos</h3>
+                <h3 className="text-xl font-bold mb-4">Investimentos Sugeridos</h3>
                 <div className="space-y-4">
                   {analise.investimentos_sugeridos.map((inv, idx) => (
                     <div key={idx} className="border-l-4 border-blue-500 pl-4 py-2">
@@ -242,7 +242,7 @@ export default function Livestock() {
                         Investimento: R$ {inv.custo_investimento.toLocaleString()} | ROI: {inv.roi_meses} meses
                       </div>
                       {inv.aumento_producao_percent > 0 && (
-                        <div className="text-sm text-green-600">📈 Aumento: +{inv.aumento_producao_percent}%</div>
+                        <div className="text-sm text-green-600">Aumento: +{inv.aumento_producao_percent}%</div>
                       )}
                     </div>
                   ))}
@@ -253,11 +253,11 @@ export default function Livestock() {
             {/* Oportunidades */}
             {analise.oportunidades.length > 0 && (
               <div className="bg-green-50 rounded-lg shadow-lg p-6">
-                <h3 className="text-xl font-bold text-green-900 mb-4">🌟 Oportunidades</h3>
+                <h3 className="text-xl font-bold text-green-900 mb-4">Oportunidades</h3>
                 <ul className="space-y-2">
                   {analise.oportunidades.map((oport, idx) => (
                     <li key={idx} className="text-green-800 flex items-start gap-2">
-                      <span className="text-green-600 mt-1">✨</span>
+                      <span className="text-green-600 mt-1">*</span>
                       {oport}
                     </li>
                   ))}
@@ -270,7 +270,7 @@ export default function Livestock() {
         {/* Estado Inicial */}
         {!analise && !loading && (
           <div className="text-center text-gray-500">
-            <div className="text-6xl mb-4">🐄</div>
+            <div className="text-6xl mb-4"></div>
             <p>Clique em "Analisar Rebanho" para gerar parecer AI completo</p>
           </div>
         )}

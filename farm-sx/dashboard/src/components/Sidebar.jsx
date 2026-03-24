@@ -62,7 +62,7 @@ export default function Sidebar({ open, onClose }) {
 
             {/* Agriculture Section */}
             <div>
-              <h3 className="px-4 py-2 text-xs font-semibold text-farm-300 uppercase tracking-wider">🌾 Agricultura</h3>
+              <h3 className="px-4 py-2 text-xs font-semibold text-farm-300 uppercase tracking-wider">Agricultura</h3>
               <div className="space-y-2">
                 {agricultureLinks.map(({ path, label, icon: Icon }) => (
                   <Link
@@ -80,7 +80,7 @@ export default function Sidebar({ open, onClose }) {
 
             {/* Livestock Section */}
             <div>
-              <h3 className="px-4 py-2 text-xs font-semibold text-farm-300 uppercase tracking-wider">🐄 Pecuária</h3>
+              <h3 className="px-4 py-2 text-xs font-semibold text-farm-300 uppercase tracking-wider">Pecuária</h3>
               <div className="space-y-2">
                 {livestockLinks.map(({ path, label, icon: Icon }) => (
                   <Link
@@ -99,7 +99,7 @@ export default function Sidebar({ open, onClose }) {
 
           <div className="absolute bottom-6 left-6 right-6">
             <div className="bg-farm-700 rounded-lg p-4">
-              <p className="text-farm-100 text-xs mb-2">💡 Dica</p>
+              <p className="text-farm-100 text-xs mb-2">Dica</p>
               <p className="text-sm">
                 Mantenha seus dados atualizados para análises mais precisas e recomendações personalizadas
               </p>

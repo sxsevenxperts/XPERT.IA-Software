@@ -19,7 +19,7 @@ export default function Recommendations() {
       tipo: 'clima',
       titulo: 'Alerta de Seca',
       urgencia: 'alta',
-      descricao': 'Risco alto de seca previsto para os próximos 30 dias',
+      descricao: 'Risco alto de seca previsto para os próximos 30 dias',
       acao: 'Preparar sistema de irrigação',
       data: '2024-02-20',
       impacto: 'Proteja sua colheita de perdas de até 30%'
@@ -37,7 +37,7 @@ export default function Recommendations() {
     {
       id: 4,
       tipo: 'plantio',
-      titulo': 'Otimizar Data de Plantio',
+      titulo: 'Otimizar Data de Plantio',
       urgencia: 'media',
       descricao: 'Análise de demanda indica pico de consumo em junho',
       acao: 'Usar otimizador de plantio',
@@ -50,31 +50,31 @@ export default function Recommendations() {
       titulo: 'Nova Oportunidade: Seguro Safra',
       urgencia: 'media',
       descricao: 'Aberto inscrições para Seguro Safra 2024 com cobertura de até 90%',
-      acao': 'Verificar elegibilidade',
+      acao: 'Verificar elegibilidade',
       data: '2024-02-28',
       impacto: 'Proteção total contra riscos climáticos'
     },
     {
       id: 6,
       tipo: 'produtos',
-      titulo': 'Atualizar Registro de Produtos',
+      titulo: 'Atualizar Registro de Produtos',
       urgencia: 'baixa',
       descricao: 'Sem registros de produtos nos últimos 3 meses',
       acao: 'Registrar insumos utilizados',
-      data': '2024-03-01',
+      data: '2024-03-01',
       impacto: 'Melhor análise de eficiência'
     }
   ])
 
   const getIcon = (tipo) => {
     switch(tipo) {
-      case 'solo': return '🌱'
-      case 'clima': return '⛅'
-      case 'economia': return '💰'
-      case 'plantio': return '🌾'
-      case 'subsidio': return '📋'
-      case 'produtos': return '📦'
-      default: return '✨'
+      case 'solo': return ''
+      case 'clima': return ''
+      case 'economia': return ''
+      case 'plantio': return ''
+      case 'subsidio': return ''
+      case 'produtos': return ''
+      default: return ''
     }
   }
 
