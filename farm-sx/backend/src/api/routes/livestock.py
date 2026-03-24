@@ -4,6 +4,7 @@ from src.core.database import get_db
 from src.models.livestock_engine import LivestockAnalysisEngine, LivestockVariableSet
 from src.models.database_models import Agricultor
 from src.models.claude_ai import gerar_parecer_pecuaria, MODELOS_DISPONIVEIS, MODELO_PADRAO
+from src.models import gemini_ai
 from typing import Optional
 from datetime import datetime
 import json
@@ -15,14 +16,32 @@ livestock_engine = LivestockAnalysisEngine()
 
 @router.get("/modelos-ia")
 def listar_modelos_ia():
-    """Listar modelos Claude disponíveis para análise"""
+    """Listar modelos de IA disponíveis para análise (Claude e Gemini)"""
     return {
-        "modelos": list(MODELOS_DISPONIVEIS.keys()),
-        "padrao": MODELO_PADRAO,
-        "descricoes": {
-            "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
-            "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
-            "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade",
+        "provedores": {
+            "claude": {
+                "nome": "Claude (Anthropic)",
+                "modelos": list(MODELOS_DISPONIVEIS.keys()),
+                "padrao": MODELO_PADRAO,
+                "descricoes": {
+                    "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
+                    "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
+                    "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade",
+                },
+                "requer_chave": True
+            },
+            "gemini": {
+                "nome": "Google Gemini (Grátis)",
+                "modelos": list(gemini_ai.MODELOS_DISPONIVEIS.keys()),
+                "padrao": gemini_ai.MODELO_PADRAO,
+                "descricoes": {
+                    "gemini-2.0-flash": "Rápido e preciso - completamente grátis",
+                    "gemini-flash": "Rápido e preciso - completamente grátis",
+                    "gemini-pro": "Mais poderoso - análise profunda (grátis)",
+                },
+                "requer_chave": True,
+                "nota": "Usar GEMINI_API_KEY (obtém grátis em ai.google.dev)"
+            }
         }
     }
 
@@ -82,6 +101,7 @@ def analisar_rebanho(
 
     # Claude AI
     modelo_ia: Optional[str] = None,
+    provedor_ia: str = "claude",
 
     db: Session = Depends(get_db)
 ):
@@ -145,9 +165,10 @@ def analisar_rebanho(
             variaveis=variaveis
         )
 
-        # Gerar parecer com Claude AI
-        parecer_claude = None
+        # Gerar parecer com IA (Claude ou Gemini)
+        parecer_ia = None
         modelo_usado = None
+        provedor_usado = provedor_ia.lower()
         try:
             dados_analise = {
                 "receita_bruta_anual": analise.receita_bruta_anual,
@@ -168,18 +189,29 @@ def analisar_rebanho(
                 "potencial_producao_otimizada": analise.potencial_producao_otimizada,
                 "ganho_potencial_anual": analise.ganho_potencial_anual,
             }
-            parecer_claude = gerar_parecer_pecuaria(
-                tipo_rebanho=tipo_rebanho,
-                quantidade_animais=quantidade_animais,
-                raca_predominante=raca_predominante,
-                analise=dados_analise,
-                modelo=modelo_ia,
-            )
-            from src.models.claude_ai import _resolver_modelo
-            modelo_usado = _resolver_modelo(modelo_ia)
+
+            if provedor_usado == "gemini":
+                parecer_ia = gemini_ai.gerar_parecer_pecuaria(
+                    tipo_rebanho=tipo_rebanho,
+                    quantidade_animais=quantidade_animais,
+                    raca_predominante=raca_predominante,
+                    analise=dados_analise,
+                    modelo=modelo_ia,
+                )
+                modelo_usado = gemini_ai._resolver_modelo(modelo_ia)
+            else:  # claude (padrão)
+                parecer_ia = gerar_parecer_pecuaria(
+                    tipo_rebanho=tipo_rebanho,
+                    quantidade_animais=quantidade_animais,
+                    raca_predominante=raca_predominante,
+                    analise=dados_analise,
+                    modelo=modelo_ia,
+                )
+                from src.models.claude_ai import _resolver_modelo
+                modelo_usado = _resolver_modelo(modelo_ia)
         except Exception as e:
-            print(f"Aviso: Claude API indisponível ({str(e)}). Usando parecer local.")
-            parecer_claude = None
+            print(f"Aviso: API de IA indisponível ({str(e)}). Usando parecer local.")
+            parecer_ia = None
 
         # Preparar resposta estruturada
         resposta = {
@@ -202,11 +234,12 @@ def analisar_rebanho(
                 "score_qualidade": round(analise.score_qualidade, 2)
             },
 
-            # Parecer Claude AI
-            "parecer_claude_ai": {
-                "disponivel": parecer_claude is not None,
+            # Parecer IA
+            "parecer_ia": {
+                "disponivel": parecer_ia is not None,
+                "provedor": provedor_usado,
                 "modelo_utilizado": modelo_usado,
-                "parecer": parecer_claude,
+                "parecer": parecer_ia,
             },
 
             # Produção
