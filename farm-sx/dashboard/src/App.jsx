@@ -6,6 +6,9 @@ import Dashboard from './pages/Dashboard'
 import SoilAnalysis from './pages/SoilAnalysis'
 import ProductManagement from './pages/ProductManagement'
 import SubsidiesOpportunities from './pages/SubsidiesOpportunities'
+import Predictions from './pages/Predictions'
+import Economics from './pages/Economics'
+import Recommendations from './pages/Recommendations'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -22,6 +25,9 @@ export default function App() {
               <Route path="/solo" element={<SoilAnalysis />} />
               <Route path="/produtos" element={<ProductManagement />} />
               <Route path="/subsidios" element={<SubsidiesOpportunities />} />
+              <Route path="/previsoes" element={<Predictions />} />
+              <Route path="/economia" element={<Economics />} />
+              <Route path="/recomendacoes" element={<Recommendations />} />
             </Routes>
           </main>
         </div>

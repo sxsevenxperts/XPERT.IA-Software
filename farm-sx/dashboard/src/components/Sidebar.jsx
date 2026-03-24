@@ -1,13 +1,16 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { BarChart3, Leaf, Package, DollarSign, X } from 'lucide-react'
+import { BarChart3, Leaf, Package, DollarSign, TrendingUp, BarChart2, Lightbulb, X } from 'lucide-react'
 
 export default function Sidebar({ open, onClose }) {
   const links = [
     { path: '/', label: 'Dashboard', icon: BarChart3 },
     { path: '/solo', label: 'Análise de Solo', icon: Leaf },
     { path: '/produtos', label: 'Gestão de Produtos', icon: Package },
-    { path: '/subsidios', label: 'Oportunidades', icon: DollarSign },
+    { path: '/previsoes', label: 'Previsões', icon: TrendingUp },
+    { path: '/economia', label: 'Economia', icon: BarChart2 },
+    { path: '/subsidios', label: 'Subsídios', icon: DollarSign },
+    { path: '/recomendacoes', label: 'Recomendações', icon: Lightbulb },
   ]
 
   return (
