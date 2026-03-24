@@ -5,7 +5,8 @@ from src.core.database import init_db
 from src.api.routes import (
     soil_analysis, products, subsidies,
     predictions, market, climate, economics,
-    consumption, recommendations, farmers, auth, livestock
+    consumption, recommendations, farmers, auth, livestock,
+    quality_and_market
 )
 
 # Initialize database
@@ -40,6 +41,7 @@ app.include_router(economics.router)
 app.include_router(consumption.router)
 app.include_router(recommendations.router)
 app.include_router(livestock.router)
+app.include_router(quality_and_market.router)
 
 @app.get("/")
 def read_root():
