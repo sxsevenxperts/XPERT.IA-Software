@@ -38,7 +38,12 @@ cp .env.example .env
 
 # Editar .env com suas credenciais
 nano .env  # ou use seu editor favorito
+
+# Adicionar ANTHROPIC_API_KEY para geração de pareceres com IA
+# export ANTHROPIC_API_KEY="sua-chave-api-claude"
 ```
+
+**Nota**: A chave `ANTHROPIC_API_KEY` é necessária para usar a funcionalidade de geração de pareceres inteligentes (parecer_claude_ai) nos módulos de Agricultura e Pecuária. Sem esta chave, os endpoints funcionarão normalmente, mas o campo `parecer_claude_ai` retornará `disponivel: false`.
 
 ### 3. Inicializar Banco de Dados
 
@@ -57,6 +62,60 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 Acesse: http://localhost:8000/docs para documentação interativa
+
+### 5. Integração Claude AI (Pareceres Inteligentes)
+
+O sistema inclui integração com Claude AI para geração automática de pareceres analíticos em Agricultura e Pecuária.
+
+#### Modelos Disponíveis
+
+```bash
+# Listar modelos Claude disponíveis
+curl http://localhost:8000/api/v1/predictions/modelos-ia
+
+# Resposta:
+{
+  "modelos": ["opus", "sonnet", "haiku", "claude-opus-4-6", ...],
+  "padrao": "claude-opus-4-6",
+  "descricoes": {
+    "claude-opus-4-6": "Mais poderoso - análise mais profunda e detalhada",
+    "claude-sonnet-4-6": "Balanceado - boa qualidade com menor custo",
+    "claude-haiku-4-5": "Mais rápido - análise básica com alta velocidade"
+  }
+}
+```
+
+#### Gerar Parecer (Agricultura)
+
+```bash
+curl -X POST http://localhost:8000/api/v1/predictions/parecer \
+  -H "Content-Type: application/json" \
+  -d '{
+    "cultura": "Milho",
+    "municipio": "Fortaleza",
+    "area_hectares": 10,
+    "ph": 6.2,
+    "modelo_ia": "sonnet"
+  }'
+```
+
+#### Gerar Parecer (Pecuária)
+
+```bash
+curl -X POST http://localhost:8000/api/v1/livestock/analise \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tipo_rebanho": "Bovino",
+    "quantidade_animais": 50,
+    "raca_predominante": "Nelore",
+    "modelo_ia": "opus"
+  }'
+```
+
+A resposta incluirá um objeto `parecer_claude_ai` com:
+- `disponivel`: boolean (true se ANTHROPIC_API_KEY está configurada)
+- `modelo_utilizado`: string (qual modelo Claude foi usado)
+- `parecer`: string (parecer gerado com 6-7 seções estruturadas)
 
 ## 💻 Configuração do Dashboard
 
