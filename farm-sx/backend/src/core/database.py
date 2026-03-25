@@ -4,7 +4,11 @@ from sqlalchemy.pool import NullPool
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env file if it exists (optional, for local development)
+try:
+    load_dotenv()
+except Exception:
+    pass  # Continue without .env file (will use environment variables)
 
 # PostgreSQL connection string
 DATABASE_URL = os.getenv(
