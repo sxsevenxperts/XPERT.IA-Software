@@ -2,13 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import NullPool
 import os
-from dotenv import load_dotenv
 
-# Load .env file if it exists (optional, for local development)
-try:
-    load_dotenv()
-except Exception:
-    pass  # Continue without .env file (will use environment variables)
+# Note: In production (EasyPanel), environment variables are set directly
+# In local development, create a .env file or set environment variables manually
+# We don't call load_dotenv() here to avoid file I/O issues during deployment
 
 # PostgreSQL connection string
 DATABASE_URL = os.getenv(
