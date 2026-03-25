@@ -1,0 +1,24 @@
+[build]
+cmd = "cd backend && pip install -r requirements.txt"
+
+[[providers]]
+name = "python"
+
+[providers.python]
+nixpkgs = "python310"
+includeBuildInputs = true
+
+[[providers]]
+name = "nodejs"
+
+[[phases]]
+name = "setup"
+cmds = ["cd backend"]
+
+[[phases]]
+name = "build"
+cmds = ["pip install --no-cache-dir -r requirements.txt"]
+
+[[phases]]
+name = "start"
+cmd = "cd backend && uvicorn src.api.main:app --host 0.0.0.0 --port 8000"
