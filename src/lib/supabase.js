@@ -259,26 +259,36 @@ export async function changeLojaPassword(lojaId, currentPassword, newPassword) {
   if (!supabase) return null
 
   try {
-    // Verificar senha atual
-    const { data: loja, error: fetchError } = await supabase
-      .from('lojas')
-      .select('senha_usuario')
-      .eq('id', lojaId)
-      .single()
+    // Verificar sessão atual do Supabase Auth
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.email) return { error: 'Sessão expirada. Faça login novamente.' }
 
-    if (fetchError || !loja) return { error: 'Loja não encontrada' }
-    if (loja.senha_usuario !== currentPassword) return { error: 'Senha atual incorreta' }
+    // Validar senha atual re-autenticando
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: session.user.email,
+      password: currentPassword.replace(/\D/g, '') || currentPassword
+    })
 
-    // Atualizar senha
-    const { data, error } = await supabase
+    // Se falhou, tentar sem remover formatação
+    if (signInError) {
+      const { error: signInError2 } = await supabase.auth.signInWithPassword({
+        email: session.user.email,
+        password: currentPassword
+      })
+      if (signInError2) return { error: 'Senha atual incorreta' }
+    }
+
+    // Atualizar senha no Supabase Auth (bcrypt automático, seguro)
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
+    if (updateError) return { error: 'Erro ao alterar senha' }
+
+    // Atualizar backup no banco
+    await supabase
       .from('lojas')
       .update({ senha_usuario: newPassword })
       .eq('id', lojaId)
-      .select()
-      .single()
 
-    if (error) return { error: 'Erro ao alterar senha' }
-    return { success: true, data }
+    return { success: true }
   } catch (err) {
     return { error: err.message }
   }

@@ -1,42 +1,29 @@
 import { useState, useEffect } from 'react'
-import { supabase, checkSubscription, checkIsAdmin } from './lib/supabase'
+import { supabase, getLojaSubscription } from './lib/supabase'
 import NavBar from './components/NavBar'
 import AlertToast from './components/AlertToast'
 import PaymentPendingWarning from './pages/PaymentPendingWarning'
 import Dashboard from './pages/Dashboard'
-import ActiveTrip from './pages/ActiveTrip'
-import History from './pages/History'
 import Settings from './pages/Settings'
-import Stats from './pages/Stats'
 import Chat from './pages/Chat'
 import Billing from './pages/Billing'
 import Lojas from './pages/Lojas'
-import AdminPanel from './pages/AdminPanel'
-import Login, { SubscriptionExpired } from './pages/Login'
-import { useGPS } from './hooks/useGPS'
+import LoginLoja from './pages/LoginLoja'
 
-function MainApp({ sharedRide, user, subscription, onLogout }) {
+function MainApp({ user, subscription, onLogout }) {
   const [tab, setTab] = useState('dashboard')
   const [showPaymentWarning, setShowPaymentWarning] = useState(false)
   const [daysOverdue, setDaysOverdue] = useState(0)
 
-  // Check subscription status on mount and when subscription changes
   useEffect(() => {
     if (subscription?.expires_at) {
       const expiresAt = new Date(subscription.expires_at)
       const daysOverdueVal = Math.max(0, Math.ceil((Date.now() - expiresAt) / 86400000))
       setDaysOverdue(daysOverdueVal)
-      // Show warning if subscription is overdue
-      if (daysOverdueVal > 0) {
-        setShowPaymentWarning(true)
-      }
+      if (daysOverdueVal > 0) setShowPaymentWarning(true)
     }
   }, [subscription?.expires_at])
 
-  // ⚡ Inicia GPS em tempo real quando app é aberto
-  useGPS()
-
-  // Show payment warning if subscription is overdue
   if (showPaymentWarning) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
@@ -72,9 +59,6 @@ function MainApp({ sharedRide, user, subscription, onLogout }) {
         minHeight: '100dvh', position: 'relative',
       }}>
         {tab === 'dashboard' && <Dashboard onTab={setTab} />}
-        {tab === 'trip'      && <ActiveTrip sharedRide={sharedRide} />}
-        {tab === 'history'   && <History />}
-        {tab === 'stats'     && <Stats />}
         {tab === 'chat'      && <Chat user={user} />}
         {tab === 'settings'  && <Settings user={user} subscription={subscription} onTab={setTab} onLogout={onLogout} />}
 
@@ -96,12 +80,9 @@ function MainApp({ sharedRide, user, subscription, onLogout }) {
 
 export default function App() {
   const [auth, setAuth] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [sharedRide, setSharedRide] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Always load immediately
     const init = async () => {
       if (!supabase) {
         setLoading(false)
@@ -109,19 +90,23 @@ export default function App() {
       }
 
       try {
+        // Verificar se há sessão Supabase Auth ativa (do login anterior)
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
-          try {
-            const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: sub })
-            setIsAdmin(isAdminUser)
-          } catch {
-            // Subscription check failed, still allow login
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
-            setIsAdmin(isAdminUser)
-          }
+          // Buscar loja vinculada ao usuário autenticado
+          const { data: loja } = await supabase
+            .from('lojas')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single()
+
+          const lojaId = loja?.id || session.user.id
+          const subscription = await getLojaSubscription(lojaId)
+
+          setAuth({
+            user: { id: lojaId, email: loja?.login_usuario || session.user.email },
+            subscription
+          })
         }
       } catch (err) {
         console.error('Auth init error:', err)
@@ -129,23 +114,9 @@ export default function App() {
         setLoading(false)
       }
 
-      // Listen for auth changes
-      const { data: { subscription: listener } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          try {
-            const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: sub })
-            setIsAdmin(isAdminUser)
-          } catch {
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
-            setIsAdmin(isAdminUser)
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setAuth(null)
-          setIsAdmin(false)
-        }
+      // Escutar logout
+      const { data: { subscription: listener } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') setAuth(null)
       })
 
       return () => listener?.unsubscribe()
@@ -154,47 +125,39 @@ export default function App() {
     init()
   }, [])
 
-  const handleAuth = async (result) => {
+  const handleAuthSuccess = (result) => {
     setAuth(result)
-    if (result?.user?.id) {
-      const isAdminUser = result.user.email === 'sevenxpertssxacademy@gmail.com'
-      setIsAdmin(isAdminUser)
-    }
   }
 
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut()
     setAuth(null)
-    setIsAdmin(false)
   }
 
   if (loading) {
-    return <div style={{ background: '#000', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#fff', textAlign: 'center' }}>Carregando...</div>
-    </div>
+    return (
+      <div style={{ background: '#0f172a', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#22c55e', textAlign: 'center', fontSize: 14 }}>Carregando...</div>
+      </div>
+    )
   }
 
-  if (auth === null) return <Login onAuth={handleAuth} />
+  // Não autenticado → Login da Loja
+  if (!auth) return <LoginLoja onAuthSuccess={handleAuthSuccess} />
 
-  // Admin panel
-  if (isAdmin && auth?.user) {
-    return <AdminPanel user={auth.user} onLogout={handleLogout} />
+  // Assinatura vencida há 30+ dias → mostrar tela de renovação
+  const sub = auth.subscription
+  if (sub && !sub.active && sub.reason === 'expired') {
+    const expiresAt = sub.expires_at ? new Date(sub.expires_at) : null
+    const daysOverdue = expiresAt ? Math.max(0, Math.ceil((Date.now() - expiresAt) / 86400000)) : 0
+    if (daysOverdue >= 30) {
+      return (
+        <div style={{ background: '#0f172a', minHeight: '100dvh' }}>
+          <PaymentPendingWarning daysOverdue={daysOverdue} onDismiss={handleLogout} />
+        </div>
+      )
+    }
   }
 
-  // Check subscription
-  const subBlocked = auth?.user &&
-    auth.subscription &&
-    !auth.subscription.active &&
-    auth.subscription.reason !== 'not_found'
-
-  if (subBlocked) {
-    return <SubscriptionExpired user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
-  }
-
-  // Driver app
-  if (auth?.user) {
-    return <MainApp sharedRide={sharedRide} user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
-  }
-
-  return <Login onAuth={handleAuth} />
+  return <MainApp user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
 }
