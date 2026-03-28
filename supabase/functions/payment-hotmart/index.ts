@@ -44,6 +44,7 @@ serve(async (req) => {
     if (payload.status === 'approved' || payload.event_type === 'PURCHASE_APPROVED') {
       const buyerEmail = payload.data?.buyer?.email
       const buyerCPF = payload.data?.buyer?.cpf
+      const buyerName = payload.data?.buyer?.name
       const productId = payload.data?.product?.id
       const isAnnual = payload.data?.subscription?.recurrence === 'yearly'
 
@@ -73,6 +74,7 @@ serve(async (req) => {
         .single()
 
       let lojaId: string
+      let userId: string | null = null
 
       if (existingLoja) {
         lojaId = existingLoja.id
@@ -88,13 +90,37 @@ serve(async (req) => {
           })
           .eq('id', lojaId)
       } else {
+        // Create Supabase Auth user first
+        try {
+          const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+            email: buyerEmail,
+            password: cpfClean, // CPF/CNPJ as password
+            email_confirm: true, // Auto-confirm email
+            user_metadata: {
+              nome: buyerName || 'Loja',
+              cpf: cpfClean
+            }
+          })
+
+          if (authError) {
+            console.error('Error creating auth user:', authError)
+            // Continue even if auth user creation fails, just create loja record
+          } else if (authUser) {
+            userId = authUser.user.id
+          }
+        } catch (authErr) {
+          console.error('Auth creation exception:', authErr)
+          // Continue even if auth user creation fails
+        }
+
         // Create new loja
         const { data: newLoja, error: insertError } = await supabase
           .from('lojas')
           .insert({
+            user_id: userId, // Link to Supabase Auth user if created
             login_usuario: buyerEmail,
-            senha_usuario: cpfClean, // Initial password is CPF/CNPJ
-            nome_usuario: payload.data?.buyer?.name || 'Loja',
+            senha_usuario: cpfClean, // Backup password in database
+            nome_usuario: buyerName || 'Loja',
             ativo: true,
             plano: 'premium',
             data_expiracao: expiresAt.toISOString(),

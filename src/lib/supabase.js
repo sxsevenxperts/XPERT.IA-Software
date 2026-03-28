@@ -157,7 +157,35 @@ export async function getMaxLojasByPlan(planoLojas) {
   return planos[planoLojas] || 1
 }
 
-// ── Smart Market: Autenticação de Loja ──
+// ── Smart Market: Autenticação de Loja (Supabase Auth) ──
+export async function authenticateLojaSupabase(email, cpfCnpj) {
+  if (!supabase) return null
+
+  try {
+    // Login com Supabase Auth usando email e CPF/CNPJ como senha
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password: cpfCnpj.replace(/\D/g, '') // Remove formatting from CPF/CNPJ
+    })
+
+    if (error || !data?.user) {
+      return null
+    }
+
+    // Fetch loja data
+    const { data: loja } = await supabase
+      .from('lojas')
+      .select('*')
+      .eq('user_id', data.user.id)
+      .single()
+
+    return loja || { id: data.user.id, email: data.user.email }
+  } catch {
+    return null
+  }
+}
+
+// ── Smart Market: Autenticação de Loja (Fallback - banco de dados) ──
 export async function authenticateLoja(email, cpfCnpj) {
   if (!supabase) return null
 

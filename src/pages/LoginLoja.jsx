@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { LogIn, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react'
 import PaymentPendingWarning from './PaymentPendingWarning'
-import { authenticateLoja, getLojaSubscription } from '../lib/supabase'
+import { authenticateLojaSupabase, authenticateLoja, getLojaSubscription } from '../lib/supabase'
 
 export default function LoginLoja({ onAuthSuccess }) {
   const [email, setEmail] = useState('')
@@ -25,8 +25,13 @@ export default function LoginLoja({ onAuthSuccess }) {
         return
       }
 
-      // Autenticar loja no banco de dados
-      const loja = await authenticateLoja(email, password)
+      // Tentar autenticar via Supabase Auth primeiro (novo padrão)
+      let loja = await authenticateLojaSupabase(email, password)
+
+      // Fallback para autenticação customizada se Supabase Auth falhar
+      if (!loja) {
+        loja = await authenticateLoja(email, password)
+      }
 
       if (!loja) {
         setError('E-mail ou senha incorretos')
@@ -45,7 +50,7 @@ export default function LoginLoja({ onAuthSuccess }) {
       if (daysOverdueVal > 0) {
         setDaysOverdue(daysOverdueVal)
         setLoginData({
-          user: { id: loja.id, email: loja.login_usuario },
+          user: { id: loja.id, email: loja.login_usuario || email },
           subscription
         })
         setShowPaymentWarning(true)
@@ -55,7 +60,7 @@ export default function LoginLoja({ onAuthSuccess }) {
 
       // Sucesso - chamar callback com dados da loja
       onAuthSuccess({
-        user: { id: loja.id, email: loja.login_usuario },
+        user: { id: loja.id, email: loja.login_usuario || email },
         subscription
       })
     } catch (err) {
