@@ -3,7 +3,7 @@
 
 -- Add new columns to lojas table for standalone authentication
 ALTER TABLE public.lojas
-ADD COLUMN IF NOT EXISTS login_usuario VARCHAR(255) UNIQUE,
+ADD COLUMN IF NOT EXISTS login_usuario VARCHAR(255),
 ADD COLUMN IF NOT EXISTS senha_usuario VARCHAR(255),
 ADD COLUMN IF NOT EXISTS plano VARCHAR(50) DEFAULT 'premium', -- 'premium'
 ADD COLUMN IF NOT EXISTS data_expiracao TIMESTAMPTZ,

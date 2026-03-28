@@ -85,8 +85,7 @@ serve(async (req) => {
             ativo: true,
             plano: 'premium',
             data_expiracao: expiresAt.toISOString(),
-            hotmart_product_id: productId,
-            updated_at: new Date().toISOString()
+            hotmart_product_id: productId
           })
           .eq('id', lojaId)
       } else {
@@ -117,23 +116,35 @@ serve(async (req) => {
         const { data: newLoja, error: insertError } = await supabase
           .from('lojas')
           .insert({
-            user_id: userId, // Link to Supabase Auth user if created
-            login_usuario: buyerEmail,
-            senha_usuario: cpfClean, // Backup password in database
+            user_id: userId,
+            nome: buyerName || 'Loja Hotmart',
             nome_usuario: buyerName || 'Loja',
+            login_usuario: buyerEmail,
+            senha_usuario: cpfClean,
             ativo: true,
             plano: 'premium',
             data_expiracao: expiresAt.toISOString(),
-            hotmart_product_id: productId,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            hotmart_product_id: productId
           })
           .select('id')
           .single()
 
         if (insertError) {
           console.error('Error creating loja:', insertError)
-          return new Response(JSON.stringify({ error: 'Failed to create loja' }), {
+          console.error('Attempted data:', {
+            user_id: userId,
+            login_usuario: buyerEmail,
+            senha_usuario: cpfClean,
+            nome_usuario: buyerName,
+            ativo: true,
+            plano: 'premium',
+            data_expiracao: expiresAt.toISOString(),
+            hotmart_product_id: productId
+          })
+          return new Response(JSON.stringify({
+            error: 'Failed to create loja',
+            details: insertError.message || insertError
+          }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' }
           })
@@ -150,8 +161,7 @@ serve(async (req) => {
           valor: payload.data?.payment?.method ? 'R$ 799,90' : null,
           status: 'approved',
           metodo: payload.data?.payment?.method || 'hotmart',
-          referencia_hotmart: payload.data?.id,
-          created_at: new Date().toISOString()
+          referencia_hotmart: payload.data?.id
         })
 
       return new Response(JSON.stringify({
@@ -173,8 +183,7 @@ serve(async (req) => {
         await supabase
           .from('lojas')
           .update({
-            ativo: false,
-            updated_at: new Date().toISOString()
+            ativo: false
           })
           .eq('login_usuario', buyerEmail)
       }
