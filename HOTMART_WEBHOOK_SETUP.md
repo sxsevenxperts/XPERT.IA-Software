@@ -59,9 +59,15 @@ Hotmart provides a test button in the webhook settings. You'll see:
    ```
 
 2. **Automatic Actions:**
-   - ✅ Loja created in database with:
+   - ✅ **Supabase Auth User Created:**
+     - Email: buyer's email
+     - Password: buyer's CPF/CNPJ (cleaned)
+     - Email auto-confirmed
+     - CPF stored in user_metadata
+   - ✅ **Loja record created in database:**
      - `login_usuario`: buyer's email
-     - `senha_usuario`: buyer's CPF/CNPJ (cleaned)
+     - `senha_usuario`: buyer's CPF/CNPJ (backup)
+     - `user_id`: linked to Supabase Auth user
      - `plano`: "premium"
      - `data_expiracao`: 30 days (monthly) or 365 days (annual)
      - `ativo`: true
@@ -72,19 +78,23 @@ Hotmart provides a test button in the webhook settings. You'll see:
    - Email: Same as used in Hotmart checkout
    - Password: Their CPF/CNPJ (e.g., "12345678901")
    - Hint shown in login form: "💡 Use seu CPF/CNPJ como senha"
+   - LoginLoja tries Supabase Auth first, fallback to database if needed
 
 4. **Password Change:**
-   - In Settings → Alterar Senha, customer changes password
-   - Only the password changes; email/CPF/CNPJ remain the same
-   - This prevents login credential changes
+   - In Settings → Alterar Senha, customer changes password via Supabase Auth
+   - Password updated in Supabase Auth, not in database
+   - Email remains the same
 
 ## Database Schema
 
 ### lojas table additions:
 ```sql
+-- Supabase Auth linkage
+user_id UUID REFERENCES auth.users(id) -- Links to Supabase Auth user
+
 -- Authentication fields
 login_usuario VARCHAR(255) UNIQUE      -- email
-senha_usuario VARCHAR(255)             -- CPF/CNPJ (cleaned)
+senha_usuario VARCHAR(255)             -- CPF/CNPJ (cleaned, backup only)
 
 -- Subscription management
 plano VARCHAR(50)                      -- 'premium'
@@ -94,6 +104,14 @@ hotmart_product_id VARCHAR(255)        -- Product ID from Hotmart
 
 -- User info
 nome_usuario VARCHAR(255)              -- Display name
+```
+
+### Supabase Auth user metadata:
+```json
+{
+  "nome": "Customer name",
+  "cpf": "12345678901"
+}
 ```
 
 ### pagamentos table:
@@ -186,11 +204,18 @@ INSERT INTO lojas (
 
 ## Security Notes
 
-⚠️ **Important:**
-- Passwords stored as plain text for MVP (use bcrypt in production)
-- CPF/CNPJ used as default password (customers should change it)
-- Implement webhook signature validation in production
-- Implement RLS policies for loja_id isolation in production
+✅ **Implemented:**
+- Passwords stored securely in Supabase Auth (bcrypt hashing)
+- Supabase Auth handles password security
+- CPF/CNPJ used as initial password (customers should change it)
+- User data linked via Supabase Auth user_id
+
+⚠️ **Recommended for Production:**
+- Implement webhook signature validation from Hotmart
+- Implement RLS policies for loja_id isolation
+- Add HTTPS enforcement
+- Monitor webhook logs for failed operations
+- Backup payment records regularly
 
 ## Next Steps
 
