@@ -5,7 +5,8 @@ import {
   Receipt, ArrowLeft, RefreshCw, Loader, ExternalLink,
 } from 'lucide-react'
 
-const HOTMART_CHECKOUT = 'https://pay.hotmart.com/SEU_PRODUTO_ID' // Substituir pelo link real
+const HOTMART_CHECKOUT_MONTHLY = 'https://pay.hotmart.com/L105118951H?off=rol1yfc0'
+const HOTMART_CHECKOUT_ANNUAL = 'https://pay.hotmart.com/L105118951H?off=848zlnlo'
 
 export default function Billing({ user, subscription, onBack }) {
   const [payments, setPayments] = useState([])
@@ -105,22 +106,39 @@ export default function Billing({ user, subscription, onBack }) {
         )}
       </div>
 
-      {/* Botão de renovação */}
-      <button
-        onClick={() => window.open(HOTMART_CHECKOUT, '_blank')}
-        style={{
-          width: '100%', padding: 16, marginBottom: 20,
-          background: isActive ? '#1e293b' : 'linear-gradient(135deg, #22c55e, #16a34a)',
-          border: isActive ? '1px solid #334155' : 'none',
-          borderRadius: 14, color: '#fff', fontSize: 15,
-          fontWeight: 700, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}
-      >
-        <RefreshCw size={16} />
-        {isActive ? 'Renovar Antecipadamente' : 'Renovar Agora'}
-        <ExternalLink size={14} style={{ opacity: 0.6 }} />
-      </button>
+      {/* Botões de renovação - Mensal e Anual */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+        <button
+          onClick={() => window.open(HOTMART_CHECKOUT_MONTHLY, '_blank')}
+          style={{
+            padding: 14, marginBottom: 0,
+            background: isActive ? '#1e293b' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+            border: isActive ? '1px solid #334155' : 'none',
+            borderRadius: 12, color: '#fff', fontSize: 13,
+            fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}
+        >
+          <RefreshCw size={14} />
+          Mensal
+          <ExternalLink size={12} style={{ opacity: 0.6 }} />
+        </button>
+        <button
+          onClick={() => window.open(HOTMART_CHECKOUT_ANNUAL, '_blank')}
+          style={{
+            padding: 14, marginBottom: 0,
+            background: isActive ? '#1e293b' : 'linear-gradient(135deg, #22c55e, #16a34a)',
+            border: isActive ? '1px solid #334155' : 'none',
+            borderRadius: 12, color: '#fff', fontSize: 13,
+            fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}
+        >
+          <RefreshCw size={14} />
+          Anual 12x
+          <ExternalLink size={12} style={{ opacity: 0.6 }} />
+        </button>
+      </div>
 
       {/* Métodos de pagamento aceitos */}
       <div style={{
@@ -305,6 +323,27 @@ export default function Billing({ user, subscription, onBack }) {
           ))}
         </div>
       )}
+
+      {/* Informações de Login */}
+      <div style={{
+        background: '#0f172a', borderRadius: 14, padding: 16,
+        border: '1px solid #334155', marginBottom: 20, marginTop: 20,
+      }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', marginBottom: 10 }}>
+          📝 Após o Pagamento
+        </p>
+        <div style={{ fontSize: 12, color: '#94a3b8', lineHeight: 1.8 }}>
+          <p style={{ marginBottom: 8 }}>
+            <strong style={{ color: '#f1f5f9' }}>E-mail:</strong> O endereço de e-mail usado no cadastro
+          </p>
+          <p style={{ marginBottom: 8 }}>
+            <strong style={{ color: '#f1f5f9' }}>Senha:</strong> O CPF ou CNPJ da sua empresa (sem máscaras)
+          </p>
+          <p style={{ marginBottom: 0, fontSize: 11, color: '#64748b' }}>
+            💡 Você receberá um e-mail de confirmação com instruções completas
+          </p>
+        </div>
+      </div>
 
       {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: 30, padding: '10px 0' }}>
