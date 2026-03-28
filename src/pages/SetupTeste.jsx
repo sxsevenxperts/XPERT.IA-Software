@@ -1,156 +1,238 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
+const SUPABASE_URL = 'https://qfkwqfrnemqregjqxkcr.supabase.co'
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFma3dxZnJuZW1xcmVnanF4a2NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNDA2NjYsImV4cCI6MjA4OTYxNjY2Nn0.YbAdy56R0QK_F1lhAB09iggl2PcazRpoc1U-CRd8miA'
+const SMART_MARKET_URL = 'https://diversos-smartmarket.yuhqmc.easypanel.host'
+
+// Dados de teste — mude para testar com outros usuários
+const TEST_EMAIL = `teste.${Date.now()}@smartmarket.com.br`
+const TEST_CPF   = '12345678901'
+const TEST_NAME  = 'Loja Teste Smart Market'
+
 export default function SetupTeste() {
-  const [status, setStatus] = useState('Aguardando...')
   const [log, setLog] = useState([])
+  const [status, setStatus] = useState('Aguardando...')
   const [done, setDone] = useState(false)
+  const [lojaId, setLojaId] = useState(null)
+  const [running, setRunning] = useState(false)
 
-  const addLog = (msg) => setLog(prev => [...prev, msg])
+  const addLog = (msg, tipo = 'info') => setLog(prev => [...prev, { msg, tipo }])
 
-  const runSetup = async () => {
-    const email = 'cliente.teste@smartmarket.com.br'
-    const cpf = '12345678901234'
-
+  const runFluxo = async () => {
+    setRunning(true)
+    setLog([])
+    setDone(false)
+    setLojaId(null)
     setStatus('Executando...')
 
     try {
-      // Passo 1: Criar usuário via signUp
-      addLog('1️⃣ Criando usuário via Hotmart webhook simulado...')
-      const { data: signupData, error: signupError } = await supabase.auth.signUp({
-        email,
-        password: cpf
-      })
+      // ── PASSO 1: Simular webhook Hotmart ──────────────────────────────────
+      addLog('━━━ PASSO 1: Simular compra Hotmart ━━━', 'sep')
+      addLog(`📧 E-mail: ${TEST_EMAIL}`)
+      addLog(`🔐 CPF: ${TEST_CPF}`)
 
-      if (signupError && signupError.message !== 'User already registered') {
-        addLog('⚠️ ' + signupError.message)
-      } else if (signupData?.user?.id) {
-        addLog('✅ Usuário criado: ' + signupData.user.id)
-      } else {
-        addLog('ℹ️ Usuário já existe, continuando...')
+      const payload = {
+        status: 'approved',
+        event_type: 'PURCHASE_APPROVED',
+        data: {
+          id: `test-${Date.now()}`,
+          buyer: {
+            email: TEST_EMAIL,
+            name: TEST_NAME,
+            cpf: TEST_CPF,
+          },
+          product: { id: 'prod_smartmarket_001', name: 'Smart Market Premium' },
+          subscription: { status: 'active', recurrence: 'monthly' },
+          payment: { method: 'credit_card' },
+        },
       }
 
-      // Passo 2: Criar loja (sem user_id - fallback auth)
-      addLog('2️⃣ Criando loja de teste...')
-      const { data: lojaData, error: lojaError } = await supabase
+      const webhookResp = await fetch(`${SUPABASE_URL}/functions/v1/payment-hotmart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${ANON_KEY}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const webhookData = await webhookResp.json()
+
+      if (!webhookResp.ok || !webhookData.success) {
+        addLog(`❌ Webhook falhou (${webhookResp.status}): ${webhookData.error || JSON.stringify(webhookData)}`, 'erro')
+        setStatus('❌ Falha no webhook')
+        setRunning(false)
+        return
+      }
+
+      const novoLojaId = webhookData.loja_id
+      setLojaId(novoLojaId)
+      addLog(`✅ Webhook OK! loja_id: ${novoLojaId}`, 'ok')
+
+      // ── PASSO 2: Verificar loja no banco ─────────────────────────────────
+      addLog('━━━ PASSO 2: Verificar loja criada ━━━', 'sep')
+
+      const { data: loja, error: lojaErr } = await supabase
         .from('lojas')
-        .insert({
-          nome: 'Loja de Teste Smart Market',
-          nome_usuario: 'Cliente Teste',
-          login_usuario: email,
-          senha_usuario: cpf,
-          ativo: true,
-          plano: 'premium',
-          data_expiracao: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-          latitude: -23.5505,
-          longitude: -46.6333,
-          cidade: 'São Paulo',
-          estado: 'SP'
-        })
-        .select()
+        .select('id, nome, login_usuario, plano, ativo, data_expiracao')
+        .eq('id', novoLojaId)
         .single()
 
-      if (lojaError) {
-        if (lojaError.code === '23505') {
-          addLog('ℹ️ Loja já existe (OK)')
-        } else {
-          addLog('⚠️ Loja: ' + lojaError.message)
-        }
-      } else {
-        addLog('✅ Loja criada: ' + lojaData.id)
+      if (lojaErr || !loja) {
+        addLog(`❌ Loja não encontrada: ${lojaErr?.message}`, 'erro')
+        setStatus('❌ Loja não criada')
+        setRunning(false)
+        return
       }
 
-      // Passo 3: Testar login
-      addLog('3️⃣ Testando login com as credenciais...')
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password: cpf
+      addLog(`✅ Loja encontrada: ${loja.nome}`, 'ok')
+      addLog(`   Plano: ${loja.plano} | Ativo: ${loja.ativo}`)
+      addLog(`   Expira: ${loja.data_expiracao?.slice(0, 10)}`)
+
+      // ── PASSO 3: Login via Supabase Auth ──────────────────────────────────
+      addLog('━━━ PASSO 3: Testar login (Supabase Auth) ━━━', 'sep')
+
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        email: TEST_EMAIL,
+        password: TEST_CPF,
       })
 
-      if (loginError) {
-        // Tentar fallback - buscar loja direto
-        addLog('ℹ️ Auth: ' + loginError.message + ' — tentando fallback...')
-        const { data: lojaFallback } = await supabase
+      if (authErr) {
+        addLog(`⚠️  Auth: ${authErr.message}`, 'aviso')
+        addLog('   → Tentando fallback por tabela lojas...', 'info')
+
+        // ── PASSO 3B: Fallback DB ─────────────────────────────────────────
+        const { data: lojaFallback, error: fbErr } = await supabase
           .from('lojas')
           .select('*')
-          .eq('login_usuario', email)
-          .eq('senha_usuario', cpf)
+          .eq('login_usuario', TEST_EMAIL)
+          .eq('senha_usuario', TEST_CPF)
           .single()
 
-        if (lojaFallback) {
-          addLog('✅ Login via fallback OK! Loja: ' + lojaFallback.nome)
-          addLog('')
-          addLog('━━━━━━━━━━━━━━━━━━━━━━━━')
-          addLog('✅ TESTE COMPLETO!')
-          addLog('📧 Email: ' + email)
-          addLog('🔐 CPF: ' + cpf)
-          addLog('🏪 Loja: ' + lojaFallback.nome)
-          addLog('📍 Cidade: ' + (lojaFallback.cidade || 'São Paulo'))
-          addLog('💳 Plano: ' + lojaFallback.plano)
-          setStatus('✅ SUCESSO via fallback!')
-          setDone(true)
-        } else {
-          addLog('❌ Nenhuma loja encontrada')
-          setStatus('❌ Erro no login')
+        if (fbErr || !lojaFallback) {
+          addLog(`❌ Fallback falhou: ${fbErr?.message}`, 'erro')
+          setStatus('❌ Login falhou')
+          setRunning(false)
+          return
         }
+
+        addLog(`✅ Login via fallback OK! Loja: ${lojaFallback.nome}`, 'ok')
       } else {
-        addLog('✅ Login Auth bem-sucedido! User: ' + loginData.user.id)
-
-        // Buscar loja
-        const { data: lojaUser } = await supabase
-          .from('lojas')
-          .select('*')
-          .eq('user_id', loginData.user.id)
-          .single()
-
-        addLog('')
-        addLog('━━━━━━━━━━━━━━━━━━━━━━━━')
-        addLog('✅ TESTE COMPLETO!')
-        addLog('📧 Email: ' + email)
-        addLog('🔐 CPF: ' + cpf)
-        addLog('👤 User ID: ' + loginData.user.id)
-        addLog('🏪 Loja: ' + (lojaUser?.nome || 'sem loja vinculada'))
-        addLog('💳 Plano: ' + (lojaUser?.plano || 'premium'))
-        setStatus('✅ SUCESSO COMPLETO!')
-        setDone(true)
+        addLog(`✅ Login Auth OK! User ID: ${authData.user.id}`, 'ok')
+        await supabase.auth.signOut()
       }
+
+      // ── RESULTADO FINAL ───────────────────────────────────────────────────
+      addLog('━━━ FLUXO COMPLETO ━━━', 'sep')
+      addLog(`✅ Webhook Hotmart → Loja criada`, 'ok')
+      addLog(`✅ Login funcionando`, 'ok')
+      addLog(`🏪 Loja ID: ${novoLojaId}`, 'ok')
+      addLog(`📧 Email: ${TEST_EMAIL}`, 'ok')
+      addLog(`🔐 Senha: ${TEST_CPF}`, 'ok')
+
+      setStatus('✅ FLUXO COMPLETO!')
+      setDone(true)
     } catch (err) {
-      addLog('❌ Erro inesperado: ' + err.message)
+      addLog(`❌ Erro inesperado: ${err.message}`, 'erro')
       setStatus('❌ Erro')
     }
+
+    setRunning(false)
   }
+
+  const corPorTipo = (tipo) => ({
+    ok: '#22c55e',
+    erro: '#ef4444',
+    aviso: '#f59e0b',
+    sep: '#3b82f6',
+    info: '#94a3b8',
+  }[tipo] || '#94a3b8')
 
   return (
     <div style={{
       minHeight: '100dvh', background: '#0f172a', color: '#f1f5f9',
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      justifyContent: 'center', padding: 24, fontFamily: 'monospace'
+      justifyContent: 'flex-start', padding: '32px 16px', fontFamily: 'monospace',
     }}>
-      <h1 style={{ color: '#22c55e', marginBottom: 8 }}>🧪 Setup de Teste</h1>
-      <p style={{ color: '#94a3b8', marginBottom: 24 }}>Simula compra Hotmart → cria usuário → faz login</p>
+      <h1 style={{ color: '#22c55e', marginBottom: 4, fontSize: 20 }}>🧪 Teste do Fluxo Completo</h1>
+      <p style={{ color: '#64748b', marginBottom: 24, fontSize: 12, textAlign: 'center' }}>
+        Hotmart webhook → criar usuário → criar loja → login
+      </p>
 
-      <div style={{ background: '#1e293b', borderRadius: 12, padding: 20, width: '100%', maxWidth: 480, marginBottom: 16 }}>
-        <div style={{ color: '#22c55e', fontWeight: 700, marginBottom: 12 }}>Status: {status}</div>
-        {log.map((l, i) => (
-          <div key={i} style={{ fontSize: 13, color: l.startsWith('✅') ? '#22c55e' : l.startsWith('❌') ? '#ef4444' : l.startsWith('⚠️') ? '#f59e0b' : '#94a3b8', marginBottom: 4 }}>{l}</div>
-        ))}
+      <div style={{
+        background: '#1e293b', borderRadius: 12, padding: 20,
+        width: '100%', maxWidth: 520, marginBottom: 16,
+        border: '1px solid #334155',
+      }}>
+        <div style={{ color: '#f1f5f9', fontWeight: 700, marginBottom: 12, fontSize: 13 }}>
+          Status: <span style={{ color: status.startsWith('✅') ? '#22c55e' : status.startsWith('❌') ? '#ef4444' : '#f59e0b' }}>{status}</span>
+        </div>
+
+        {log.length === 0 && (
+          <p style={{ color: '#475569', fontSize: 12, margin: 0 }}>
+            Clique em "Executar Teste" para iniciar o fluxo completo.
+          </p>
+        )}
+
+        <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+          {log.map((l, i) => (
+            <div key={i} style={{ fontSize: 12, color: corPorTipo(l.tipo), marginBottom: 3, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              {l.msg}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {!done && log.length === 0 && (
+      {!running && !done && (
         <button
-          onClick={runSetup}
-          style={{ background: '#22c55e', color: '#0f172a', border: 'none', borderRadius: 8, padding: '12px 32px', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}
+          onClick={runFluxo}
+          style={{
+            background: '#22c55e', color: '#0f172a', border: 'none',
+            borderRadius: 8, padding: '12px 32px', fontSize: 15,
+            fontWeight: 700, cursor: 'pointer',
+          }}
         >
           Executar Teste
         </button>
       )}
 
+      {running && (
+        <div style={{ color: '#64748b', fontSize: 13 }}>⏳ Executando...</div>
+      )}
+
       {done && (
-        <a href="/"
-          style={{ background: '#22c55e', color: '#0f172a', borderRadius: 8, padding: '12px 32px', fontSize: 16, fontWeight: 700, textDecoration: 'none', display: 'inline-block', marginTop: 16 }}
-        >
-          Ir para Login
-        </a>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <a href="/"
+            style={{
+              background: '#22c55e', color: '#0f172a', borderRadius: 8,
+              padding: '12px 24px', fontSize: 14, fontWeight: 700,
+              textDecoration: 'none', display: 'inline-block',
+            }}
+          >
+            Ir para Login
+          </a>
+          <a href={`${SMART_MARKET_URL}/?loja_id=${lojaId}`}
+            target="_blank" rel="noreferrer"
+            style={{
+              background: '#3b82f6', color: '#fff', borderRadius: 8,
+              padding: '12px 24px', fontSize: 14, fontWeight: 700,
+              textDecoration: 'none', display: 'inline-block',
+            }}
+          >
+            Abrir Smart Market
+          </a>
+          <button
+            onClick={runFluxo}
+            style={{
+              background: '#334155', color: '#f1f5f9', border: 'none',
+              borderRadius: 8, padding: '12px 24px', fontSize: 14,
+              fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            Novo Teste
+          </button>
+        </div>
       )}
     </div>
   )

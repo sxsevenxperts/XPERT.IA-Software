@@ -2,10 +2,15 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 interface HotmartWebhookPayload {
   status: string
@@ -23,7 +28,7 @@ interface HotmartWebhookPayload {
     }
     subscription?: {
       status?: string
-      recurrence?: string // 'monthly' or 'yearly'
+      recurrence?: string
     }
     payment?: {
       method?: string
@@ -32,9 +37,13 @@ interface HotmartWebhookPayload {
 }
 
 serve(async (req) => {
-  // Only handle POST requests
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
   }
 
   try {
@@ -51,14 +60,12 @@ serve(async (req) => {
       if (!buyerEmail || !buyerCPF) {
         return new Response(JSON.stringify({ error: 'Missing buyer email or CPF' }), {
           status: 400,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
         })
       }
 
-      // Remove CPF formatting (if any) - keep only numbers
       const cpfClean = buyerCPF.replace(/\D/g, '')
 
-      // Calculate expiration date
       const expiresAt = new Date()
       if (isAnnual) {
         expiresAt.setFullYear(expiresAt.getFullYear() + 1)
@@ -78,7 +85,6 @@ serve(async (req) => {
 
       if (existingLoja) {
         lojaId = existingLoja.id
-        // Update existing loja subscription
         await supabase
           .from('lojas')
           .update({
@@ -89,30 +95,30 @@ serve(async (req) => {
           })
           .eq('id', lojaId)
       } else {
-        // Create Supabase Auth user first
+        // Create Supabase Auth user (email auto-confirmed)
         try {
           const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
             email: buyerEmail,
-            password: cpfClean, // CPF/CNPJ as password
-            email_confirm: true, // Auto-confirm email
-            user_metadata: {
-              nome: buyerName || 'Loja',
-              cpf: cpfClean
-            }
+            password: cpfClean,
+            email_confirm: true,
+            user_metadata: { nome: buyerName || 'Loja', cpf: cpfClean }
           })
 
           if (authError) {
-            console.error('Error creating auth user:', authError)
-            // Continue even if auth user creation fails, just create loja record
-          } else if (authUser) {
+            // User might already exist in auth — try to get the id
+            if (authError.message?.includes('already') || authError.message?.includes('exists')) {
+              const { data: existingUser } = await supabase.auth.admin.listUsers()
+              const found = existingUser?.users?.find(u => u.email === buyerEmail)
+              if (found) userId = found.id
+            }
+            console.error('Auth user error:', authError.message)
+          } else if (authUser?.user) {
             userId = authUser.user.id
           }
         } catch (authErr) {
           console.error('Auth creation exception:', authErr)
-          // Continue even if auth user creation fails
         }
 
-        // Create new loja
         const { data: newLoja, error: insertError } = await supabase
           .from('lojas')
           .insert({
@@ -131,22 +137,12 @@ serve(async (req) => {
 
         if (insertError) {
           console.error('Error creating loja:', insertError)
-          console.error('Attempted data:', {
-            user_id: userId,
-            login_usuario: buyerEmail,
-            senha_usuario: cpfClean,
-            nome_usuario: buyerName,
-            ativo: true,
-            plano: 'premium',
-            data_expiracao: expiresAt.toISOString(),
-            hotmart_product_id: productId
-          })
           return new Response(JSON.stringify({
             error: 'Failed to create loja',
-            details: insertError.message || insertError
+            details: insertError.message
           }), {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
           })
         }
 
@@ -154,15 +150,15 @@ serve(async (req) => {
       }
 
       // Log payment event
-      await supabase
-        .from('pagamentos')
-        .insert({
+      try {
+        await supabase.from('pagamentos').insert({
           loja_id: lojaId,
-          valor: payload.data?.payment?.method ? 'R$ 799,90' : null,
+          valor: 'R$ 799,90',
           status: 'approved',
           metodo: payload.data?.payment?.method || 'hotmart',
           referencia_hotmart: payload.data?.id
         })
+      } catch (_) {}
 
       return new Response(JSON.stringify({
         success: true,
@@ -170,41 +166,32 @@ serve(async (req) => {
         loja_id: lojaId
       }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
       })
     }
 
-    // Handle purchase canceled/refunded
+    // Handle cancellation/refund
     if (payload.status === 'refused' || payload.event_type === 'PURCHASE_CANCELED' || payload.event_type === 'PURCHASE_REFUNDED') {
       const buyerEmail = payload.data?.buyer?.email
-
       if (buyerEmail) {
-        // Mark loja as inactive
-        await supabase
-          .from('lojas')
-          .update({
-            ativo: false
-          })
-          .eq('login_usuario', buyerEmail)
+        await supabase.from('lojas').update({ ativo: false }).eq('login_usuario', buyerEmail)
       }
-
       return new Response(JSON.stringify({ success: true, message: 'Loja marked as inactive' }), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
       })
     }
 
-    // Unknown event
     return new Response(JSON.stringify({ success: true, message: 'Event received' }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
     })
 
   } catch (error) {
     console.error('Webhook error:', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
     })
   }
 })
