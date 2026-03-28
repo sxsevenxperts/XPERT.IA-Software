@@ -100,61 +100,114 @@ TOTAL: R$ 0.105 ≈ R$ 0.11 por análise
 
 ---
 
-## 4. Tokens Inclusos por Plano
+## 4. Plano Único: PREMIUM
 
-### Recomendação de Alocação
+### Modelo de Faturamento Consolidado
 
 ```
 ┌─────────────────────────────────────────────┐
-│ PLANO STARTER - R$ 99,90/mês                │
+│ PLANO PREMIUM - ÚNICA OFERTA                │
 ├─────────────────────────────────────────────┤
 │                                             │
-│ Análises incluídas: 5/mês                  │
-│ Custo de tokens: 5 × R$ 0.31 = R$ 1.55    │
+│ Modalidade 1: Mensal                       │
+│   Preço: R$ 799,90/mês                    │
+│   Faturamento: mensal                      │
 │                                             │
-│ Tokens inclusos: 18.000 tokens             │
-│ (suficiente para ~5 análises)              │
+│ Modalidade 2: Anual em 12x                │
+│   Preço: 12 × R$ 699,00 = R$ 8.388/ano   │
+│   Economia: R$ 1.210,80/ano (12.6% off)  │
+│   Faturamento: 12 parcelas de R$ 699      │
 │                                             │
-│ Margem: R$ 99,90 - R$ 1,55 = R$ 98,35    │
+├─────────────────────────────────────────────┤
+│ TOKENS INCLUSOS: 500.000/mês                │
+│ CUSTO REAL: ~R$ 50,00/mês                 │
+│ MARGEM: R$ 749,90/mês (94%)               │
 │                                             │
-│ ✓ Tokens adicionais: R$ 0,30 por 1.000    │
-│ ✓ Max 20 análises/mês (soft limit)        │
+├─────────────────────────────────────────────┤
+│ INCLUÍDO NO PLANO:                         │
+│                                             │
+│ ✓ Análises IA ilimitadas                  │
+│   - Estoque real-time                     │
+│   - Comportamento cliente (RFM)           │
+│   - Previsão demanda (90-95% acurácia)   │
+│   - Oportunidades upsell/cross-sell       │
+│   - Detecção churn com plano de resgate   │
+│                                             │
+│ ✓ Dashboard premium                       │
+│   - 4 abas (Overview, Estoques,           │
+│     Clientes, Insights)                   │
+│   - Widgets real-time                     │
+│   - Export PDF/CSV ilimitado              │
+│   - Múltiplos dashboards personalizados   │
+│                                             │
+│ ✓ Integração PDV avançada                 │
+│   - REST API ilimitado                    │
+│   - Escalas (TCP/IP + MQTT + Serial)      │
+│   - Webhooks customizados (5+)            │
+│   - Múltiplas PDVs simultâneas            │
+│                                             │
+│ ✓ Notificações premium                    │
+│   - Email, SMS, Push, In-app              │
+│   - Templates customizados                │
+│   - Agendamento inteligente               │
+│                                             │
+│ ✓ Relatórios & Analytics                 │
+│   - Diários, semanais, mensais            │
+│   - Comparativos históricos               │
+│   - Seasonalidade e forecasting           │
+│   - Heatmaps de vendas                    │
+│                                             │
+│ ✓ Suporte & Consultoria 24/7             │
+│   - Chat em tempo real (<5 min)           │
+│   - Email (<1 hora)                       │
+│   - Telefone + WhatsApp                   │
+│   - Consultor BI dedicado                 │
+│   - Treinamento até 5 pessoas             │
+│                                             │
+│ ✓ Segurança Enterprise                    │
+│   - SSL/TLS + RLS por loja_id             │
+│   - Auditoria completa                    │
+│   - Backup diário automático              │
+│   - GDPR compliant                        │
+│   - 2FA e criptografia E2E                │
+│                                             │
+│ ✓ API avançada                            │
+│   - OAuth 2.0 nativo                      │
+│   - Rate limit 10k req/min                │
+│   - GraphQL + REST                        │
+│   - Webhooks em produção                  │
+│   - Versionamento API                     │
+│                                             │
+│ ✓ White-label completo                   │
+│   - Cores e logo personalizados           │
+│   - Domínio customizado                   │
+│   - Prompts ajustáveis por loja           │
+│   - Campos extras na database             │
+│                                             │
+│ ✓ Performance premium                     │
+│   - CDN Cloudflare global                 │
+│   - Latência <100ms                       │
+│   - SLA 99.9% uptime                      │
+│   - DDoS protection                       │
 │                                             │
 └─────────────────────────────────────────────┘
+```
 
-┌─────────────────────────────────────────────┐
-│ PLANO PROFESSIONAL - R$ 199,90/mês         │
-├─────────────────────────────────────────────┤
-│                                             │
-│ Análises incluídas: 20/mês                 │
-│ Custo de tokens: 20 × R$ 0.31 = R$ 6.20  │
-│                                             │
-│ Tokens inclusos: 75.000 tokens             │
-│ (suficiente para ~20 análises)             │
-│                                             │
-│ Margem: R$ 199,90 - R$ 6,20 = R$ 193,70 │
-│                                             │
-│ ✓ Tokens adicionais: R$ 0,25 por 1.000    │
-│ ✓ Max 50 análises/mês (soft limit)        │
-│                                             │
-└─────────────────────────────────────────────┘
+### Comparativo: Modalidades de Pagamento
 
-┌─────────────────────────────────────────────┐
-│ PLANO ENTERPRISE - R$ 499,90/mês           │
-├─────────────────────────────────────────────┤
-│                                             │
-│ Análises incluídas: ILIMITADO              │
-│ Custo de tokens: ~R$ 25,00/mês (est.)     │
-│                                             │
-│ Tokens inclusos: 200.000 tokens/mês        │
-│ (ilimitado na prática)                     │
-│                                             │
-│ Margem: R$ 499,90 - R$ 25 = R$ 474,90   │
-│                                             │
-│ ✓ Tokens adicionais: R$ 0,20 por 1.000    │
-│ ✓ Sem limite de análises                  │
-│                                             │
-└─────────────────────────────────────────────┘
+```
+MENSAL                          ANUAL (12x)
+┌─────────────────────┐        ┌─────────────────────┐
+│ R$ 799,90           │        │ 12 × R$ 699,00     │
+│ Sem compromisso     │        │ = R$ 8.388,00      │
+│                     │        │                     │
+│ Ideal para testes   │        │ Economiza:          │
+│ e avaliação         │        │ R$ 1.210,80/ano    │
+│                     │        │ (12,6% discount)   │
+│                     │        │                     │
+│ Cancelamento livre  │        │ Ideal para lojas    │
+│                     │        │ que já usam         │
+└─────────────────────┘        └─────────────────────┘
 ```
 
 ---
@@ -226,42 +279,45 @@ ROI em RFM:
 
 ---
 
-## 7. Fórmula de Precificação
+## 7. Modelo de Faturamento (Única Oferta)
 
-### Recomendado
-
-```
-STARTER:
-  Preço: R$ 99,90/mês
-  Tokens: 18.000
-  Custo real: R$ 1,55
-  Margem: 98%
-  
-PROFESSIONAL:
-  Preço: R$ 199,90/mês
-  Tokens: 75.000
-  Custo real: R$ 6,20
-  Margem: 97%
-  
-ENTERPRISE:
-  Preço: R$ 499,90/mês
-  Tokens: 200.000
-  Custo real: ~R$ 25,00
-  Margem: 95%
-```
-
-### Alternativa (Mais Agressivo)
+### PREMIUM - Único Plano
 
 ```
-STARTER: R$ 149,90/mês
-  - +50% margem
-  - Ainda muito mais barato que ML tradicional
-  
-PROFESSIONAL: R$ 249,90/mês
-  - +25% margem
-  
-ENTERPRISE: R$ 599,90/mês
-  - +20% margem
+OPÇÃO 1: Mensal
+  Preço: R$ 799,90/mês
+  Tokens: 500.000/mês
+  Custo real: ~R$ 50,00/mês
+  Margem: R$ 749,90/mês (94%)
+  Cancelamento: Livre a qualquer momento
+
+OPÇÃO 2: Anual em 12 Parcelas
+  Preço: 12 × R$ 699,00 = R$ 8.388/ano
+  Tokens: 500.000/mês × 12 = 6.000.000/ano
+  Custo real: ~R$ 600,00/ano
+  Margem total: R$ 7.788,00/ano
+  Economiza: R$ 1.210,80/ano (12,6% desconto)
+  Recomendado para: Lojas com commitmentato anual
+```
+
+### Justificativa Econômica
+
+```
+Para a Loja:
+  Investimento (mensal): R$ 799,90
+  Retorno estimado: R$ 14.000/mês
+  - Redução de perdas: R$ 5.000
+  - Upsell/Cross-sell: R$ 4.000
+  - Retenção de clientes: R$ 3.000
+  - Eficiência operacional: R$ 2.000
+
+  ROI: 1.750%
+  Payback: 26 dias
+
+Investimento (anual): R$ 8.388
+  Retorno estimado: R$ 168.000/ano
+  Economiza: R$ 1.210,80
+  ROI Total: 1.883%
 ```
 
 ---
@@ -409,19 +465,20 @@ Opção C: API para terceiros
 
 ---
 
-## 12. Resumo Executivo
+## 12. Resumo Executivo - Modelo Consolidado
 
 | Métrica | Valor |
 |---------|-------|
-| **Custo por análise** | R$ 0,31 |
-| **Custo entrada (input)** | R$ 0,000015/token |
-| **Custo saída (output)** | R$ 0,000075/token |
-| **Starter tokens inclusos** | 18.000/mês |
-| **Professional tokens inclusos** | 75.000/mês |
-| **Enterprise tokens inclusos** | 200.000/mês |
-| **Margem média** | 95% |
-| **Payback cliente** | 3 dias |
-| **ROI em vendas** | 400% em 6 meses |
+| **Plano único** | PREMIUM |
+| **Preço mensal** | R$ 799,90 |
+| **Preço anual (12x)** | 12 × R$ 699,00 = R$ 8.388,00 |
+| **Desconto anual** | R$ 1.210,80 (12,6% off) |
+| **Tokens inclusos/mês** | 500.000 |
+| **Custo real por análise** | R$ 0,31 |
+| **Margem mensal** | R$ 749,90 (94%) |
+| **Suporte** | 24/7 com consultor BI dedicado |
+| **Payback do cliente** | 26 dias |
+| **ROI estimado** | 1.750% (mensal) / 1.883% (anual) |
 
 ---
 

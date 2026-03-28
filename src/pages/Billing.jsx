@@ -149,32 +149,45 @@ export default function Billing({ user, subscription, onBack }) {
         </div>
       </div>
 
-      {/* Planos de Lojas */}
+      {/* Plano Premium (Único) */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <span style={{ fontSize: 16 }}>🏪</span>
+          <span style={{ fontSize: 16 }}>⭐</span>
           <h2 style={{ fontSize: 13, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
-            Planos para Múltiplas Lojas
+            Plano Premium
           </h2>
         </div>
+
+        {/* Modalidades de Pagamento */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
-            { id: 'loja_1', nome: '1 Loja', preco: 'R$ 99,90', features: ['1 estabelecimento', 'Relatórios'] },
-            { id: 'loja_2', nome: '2 Lojas', preco: 'R$ 149,90', features: ['2 estabelecimentos', 'Relatórios', 'Integração NF-e'] },
-            { id: 'loja_3', nome: '3 Lojas', preco: 'R$ 199,90', features: ['3 estabelecimentos', 'Relatórios', 'Integração NF-e'] },
-            { id: 'loja_rede', nome: 'Rede Completa', preco: 'R$ 399,90', features: ['Ilimitado', 'API', 'Suporte'] },
+            {
+              id: 'premium_monthly',
+              nome: 'Premium',
+              periodo: 'Mensal',
+              preco: 'R$ 799,90',
+              features: ['Análises IA ilimitadas', 'Dashboard premium', 'Integração PDV', 'Suporte 24/7', 'Consultor BI dedicado']
+            },
+            {
+              id: 'premium_annual',
+              nome: 'Premium',
+              periodo: 'Anual',
+              preco: '12× R$ 699',
+              subpreco: '(R$ 8.388/ano)',
+              features: ['Tudo mensal +', 'Economiza R$ 1.210', 'Melhor custo/benefício', 'Ideal para committed', '12,6% desconto']
+            },
           ].map(plan => (
             <div
               key={plan.id}
               style={{
-                background: subscription?.plano_lojas === plan.id ? '#10b98130' : '#1e293b',
-                border: subscription?.plano_lojas === plan.id ? '2px solid #10b981' : '1px solid #334155',
+                background: subscription?.plan === plan.id ? '#10b98130' : '#1e293b',
+                border: subscription?.plan === plan.id ? '2px solid #10b981' : '1px solid #334155',
                 borderRadius: 12,
                 padding: 14,
                 position: 'relative',
               }}
             >
-              {subscription?.plano_lojas === plan.id && (
+              {subscription?.plan === plan.id && (
                 <div style={{
                   position: 'absolute',
                   top: 8,
@@ -186,15 +199,23 @@ export default function Billing({ user, subscription, onBack }) {
                   fontSize: 10,
                   fontWeight: 700,
                 }}>
-                  ATUAL
+                  ATIVO
                 </div>
               )}
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 6 }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 4 }}>
                 {plan.nome}
               </h4>
-              <p style={{ fontSize: 15, fontWeight: 800, color: '#10b981', marginBottom: 10 }}>
-                {plan.preco}/mês
+              <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 8 }}>
+                {plan.periodo}
               </p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#10b981', marginBottom: 4 }}>
+                {plan.preco}
+              </p>
+              {plan.subpreco && (
+                <p style={{ fontSize: 10, color: '#64748b', marginBottom: 10 }}>
+                  {plan.subpreco}
+                </p>
+              )}
               <ul style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.6 }}>
                 {plan.features.map((f, i) => (
                   <li key={i} style={{ marginBottom: 4 }}>✓ {f}</li>
@@ -202,6 +223,25 @@ export default function Billing({ user, subscription, onBack }) {
               </ul>
             </div>
           ))}
+        </div>
+
+        {/* Info Box */}
+        <div style={{
+          background: '#0f172a', borderRadius: 12, padding: 12,
+          border: '1px solid #334155', marginTop: 12,
+          fontSize: 11, color: '#94a3b8', lineHeight: 1.6
+        }}>
+          <p style={{ fontWeight: 600, color: '#64748b', marginBottom: 6 }}>
+            ℹ️ Incluso em ambas modalidades:
+          </p>
+          <ul style={{ marginLeft: 12 }}>
+            <li>✓ 500.000 tokens/mês para análises</li>
+            <li>✓ Análises IA ilimitadas (estoque, comportamento, previsão, etc)</li>
+            <li>✓ API REST, Webhooks customizados, Escalas TCP/IP+MQTT+Serial</li>
+            <li>✓ Relatórios diários, semanais e mensais</li>
+            <li>✓ White-label completo (cores, logo, domínio customizado)</li>
+            <li>✓ Segurança enterprise (RLS, auditoria, GDPR, 2FA)</li>
+          </ul>
         </div>
       </div>
 
