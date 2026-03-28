@@ -1,4 +1,4 @@
-import { LayoutDashboard, Navigation, History, Trophy, Settings, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Navigation, History, Trophy, Settings, MessageCircle, CreditCard } from 'lucide-react'
 import { useStore } from '../store'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -8,6 +8,7 @@ const tabs = [
   { id: 'history',   icon: History,         label: 'Histórico' },
   { id: 'chat',      icon: MessageCircle,   label: 'Chat' },
   { id: 'stats',     icon: Trophy,          label: 'Stats' },
+  { id: 'billing',   icon: CreditCard,      label: 'Faturamento' },
   { id: 'settings',  icon: Settings,        label: 'Config' },
 ]
 
