@@ -102,3 +102,57 @@ export async function checkIsAdmin(userId) {
     .single()
   return data?.role === 'admin'
 }
+
+// ── Gerenciar Lojas ──
+export async function getLojas(userId) {
+  if (!supabase) return []
+  const { data } = await supabase
+    .from('lojas')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function createLoja(userId, lojaData) {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('lojas')
+    .insert([{ ...lojaData, user_id: userId }])
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateLoja(lojaId, lojaData) {
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('lojas')
+    .update({ ...lojaData, updated_at: new Date().toISOString() })
+    .eq('id', lojaId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteLoja(lojaId) {
+  if (!supabase) return null
+  const { error } = await supabase
+    .from('lojas')
+    .delete()
+    .eq('id', lojaId)
+  if (error) throw error
+  return true
+}
+
+export async function getMaxLojasByPlan(planoLojas) {
+  const planos = {
+    'loja_1': 1,
+    'loja_2': 2,
+    'loja_3': 3,
+    'loja_rede': 999,
+  }
+  return planos[planoLojas] || 1
+}

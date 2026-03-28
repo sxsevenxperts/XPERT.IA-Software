@@ -467,6 +467,19 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         Exportar dados (JSON)
       </button>
 
+      {/* Lojas */}
+      {onTab && (
+        <button onClick={() => onTab('lojas')} style={{
+          width: '100%', padding: '14px', background: '#10b98115', border: '1px solid #10b98140',
+          borderRadius: 14, color: '#10b981', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 16 }}>🏪</div>
+          Gerenciar Lojas
+        </button>
+      )}
+
       {/* Faturamento */}
       {onTab && (
         <button onClick={() => onTab('billing')} style={{

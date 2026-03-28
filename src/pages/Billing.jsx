@@ -149,6 +149,62 @@ export default function Billing({ user, subscription, onBack }) {
         </div>
       </div>
 
+      {/* Planos de Lojas */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 16 }}>🏪</span>
+          <h2 style={{ fontSize: 13, fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
+            Planos para Múltiplas Lojas
+          </h2>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[
+            { id: 'loja_1', nome: '1 Loja', preco: 'R$ 99,90', features: ['1 estabelecimento', 'Relatórios'] },
+            { id: 'loja_2', nome: '2 Lojas', preco: 'R$ 149,90', features: ['2 estabelecimentos', 'Relatórios', 'Integração NF-e'] },
+            { id: 'loja_3', nome: '3 Lojas', preco: 'R$ 199,90', features: ['3 estabelecimentos', 'Relatórios', 'Integração NF-e'] },
+            { id: 'loja_rede', nome: 'Rede Completa', preco: 'R$ 399,90', features: ['Ilimitado', 'API', 'Suporte'] },
+          ].map(plan => (
+            <div
+              key={plan.id}
+              style={{
+                background: subscription?.plano_lojas === plan.id ? '#10b98130' : '#1e293b',
+                border: subscription?.plano_lojas === plan.id ? '2px solid #10b981' : '1px solid #334155',
+                borderRadius: 12,
+                padding: 14,
+                position: 'relative',
+              }}
+            >
+              {subscription?.plano_lojas === plan.id && (
+                <div style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  background: '#10b981',
+                  color: '#fff',
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}>
+                  ATUAL
+                </div>
+              )}
+              <h4 style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9', marginBottom: 6 }}>
+                {plan.nome}
+              </h4>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#10b981', marginBottom: 10 }}>
+                {plan.preco}/mês
+              </p>
+              <ul style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.6 }}>
+                {plan.features.map((f, i) => (
+                  <li key={i} style={{ marginBottom: 4 }}>✓ {f}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Histórico de pagamentos */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <Receipt size={14} color='#64748b' />

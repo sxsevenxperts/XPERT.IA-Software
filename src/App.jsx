@@ -9,6 +9,7 @@ import Settings from './pages/Settings'
 import Stats from './pages/Stats'
 import Chat from './pages/Chat'
 import Billing from './pages/Billing'
+import Lojas from './pages/Lojas'
 import AdminPanel from './pages/AdminPanel'
 import Login, { SubscriptionExpired } from './pages/Login'
 import { useGPS } from './hooks/useGPS'
@@ -23,6 +24,14 @@ function MainApp({ sharedRide, user, subscription, onLogout }) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
         <Billing user={user} subscription={subscription} onBack={() => setTab('dashboard')} />
+      </div>
+    )
+  }
+
+  if (tab === 'lojas') {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
+        <Lojas user={user} subscription={subscription} onBack={() => setTab('settings')} />
       </div>
     )
   }
