@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase, checkSubscription, checkIsAdmin } from './lib/supabase'
 import NavBar from './components/NavBar'
 import AlertToast from './components/AlertToast'
+import PaymentPendingWarning from './pages/PaymentPendingWarning'
 import Dashboard from './pages/Dashboard'
 import ActiveTrip from './pages/ActiveTrip'
 import History from './pages/History'
@@ -16,9 +17,36 @@ import { useGPS } from './hooks/useGPS'
 
 function MainApp({ sharedRide, user, subscription, onLogout }) {
   const [tab, setTab] = useState('dashboard')
+  const [showPaymentWarning, setShowPaymentWarning] = useState(false)
+  const [daysOverdue, setDaysOverdue] = useState(0)
+
+  // Check subscription status on mount and when subscription changes
+  useEffect(() => {
+    if (subscription?.expires_at) {
+      const expiresAt = new Date(subscription.expires_at)
+      const daysOverdueVal = Math.max(0, Math.ceil((Date.now() - expiresAt) / 86400000))
+      setDaysOverdue(daysOverdueVal)
+      // Show warning if subscription is overdue
+      if (daysOverdueVal > 0) {
+        setShowPaymentWarning(true)
+      }
+    }
+  }, [subscription?.expires_at])
 
   // ⚡ Inicia GPS em tempo real quando app é aberto
   useGPS()
+
+  // Show payment warning if subscription is overdue
+  if (showPaymentWarning) {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
+        <PaymentPendingWarning
+          daysOverdue={daysOverdue}
+          onDismiss={() => setShowPaymentWarning(false)}
+        />
+      </div>
+    )
+  }
 
   if (tab === 'billing') {
     return (

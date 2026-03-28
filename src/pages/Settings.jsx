@@ -605,6 +605,7 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         <ChangePasswordModal
           onClose={() => setShowChangePassword(false)}
           lojaEmail={user?.email || 'sua-loja@email.com'}
+          lojaId={user?.id}
         />
       )}
     </div>

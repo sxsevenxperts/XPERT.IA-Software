@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { X, Lock, Eye, EyeOff, Check, AlertCircle } from 'lucide-react'
+import { changeLojaPassword } from '../lib/supabase'
 
-export default function ChangePasswordModal({ onClose, lojaEmail }) {
+export default function ChangePasswordModal({ onClose, lojaEmail, lojaId }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -35,9 +36,20 @@ export default function ChangePasswordModal({ onClose, lojaEmail }) {
     setLoading(true)
 
     try {
-      // Aqui você conectaria com sua API/Supabase
-      // Por enquanto, simulamos sucesso
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      if (!lojaId) {
+        setError('ID da loja não encontrado')
+        setLoading(false)
+        return
+      }
+
+      // Alterar senha no banco de dados
+      const result = await changeLojaPassword(lojaId, currentPassword, newPassword)
+
+      if (result.error) {
+        setError(result.error)
+        setLoading(false)
+        return
+      }
 
       setSuccess(true)
       setTimeout(() => {
@@ -45,7 +57,6 @@ export default function ChangePasswordModal({ onClose, lojaEmail }) {
       }, 2000)
     } catch (err) {
       setError('Falha ao alterar senha. Tente novamente.')
-    } finally {
       setLoading(false)
     }
   }

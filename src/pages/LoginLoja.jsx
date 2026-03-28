@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { LogIn, AlertCircle, Loader, Eye, EyeOff } from 'lucide-react'
+import PaymentPendingWarning from './PaymentPendingWarning'
+import { authenticateLoja, getLojaSubscription } from '../lib/supabase'
 
 export default function LoginLoja({ onAuthSuccess }) {
   const [email, setEmail] = useState('')
@@ -7,6 +9,9 @@ export default function LoginLoja({ onAuthSuccess }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showPaymentWarning, setShowPaymentWarning] = useState(false)
+  const [daysOverdue, setDaysOverdue] = useState(0)
+  const [loginData, setLoginData] = useState(null)
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -14,26 +19,59 @@ export default function LoginLoja({ onAuthSuccess }) {
     setLoading(true)
 
     try {
-      // Aqui você conectaria com Supabase Auth
-      // Por enquanto, simulamos um login bem-sucedido
       if (!email || !password) {
         setError('E-mail e senha são obrigatórios')
         setLoading(false)
         return
       }
 
-      // Simular delay de autenticação
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Autenticar loja no banco de dados
+      const loja = await authenticateLoja(email, password)
+
+      if (!loja) {
+        setError('E-mail ou senha incorretos')
+        setLoading(false)
+        return
+      }
+
+      // Obter status de assinatura
+      const subscription = await getLojaSubscription(loja.id)
+
+      // Calcular dias de atraso
+      const expiresAt = subscription?.expires_at ? new Date(subscription.expires_at) : null
+      const daysOverdueVal = expiresAt ? Math.max(0, Math.ceil((Date.now() - expiresAt) / 86400000)) : 0
+
+      // Se estiver vencido, mostrar aviso
+      if (daysOverdueVal > 0) {
+        setDaysOverdue(daysOverdueVal)
+        setLoginData({
+          user: { id: loja.id, email: loja.login_usuario },
+          subscription
+        })
+        setShowPaymentWarning(true)
+        setLoading(false)
+        return
+      }
 
       // Sucesso - chamar callback com dados da loja
       onAuthSuccess({
-        user: { id: 'user-123', email },
-        subscription: { active: true, plan: 'premium' }
+        user: { id: loja.id, email: loja.login_usuario },
+        subscription
       })
     } catch (err) {
       setError('Falha ao autenticar. Verifique suas credenciais.')
       setLoading(false)
     }
+  }
+
+  const handleDismissWarning = () => {
+    setShowPaymentWarning(false)
+    setDaysOverdue(0)
+    setLoginData(null)
+  }
+
+  if (showPaymentWarning) {
+    return <PaymentPendingWarning daysOverdue={daysOverdue} onDismiss={handleDismissWarning} />
   }
 
   return (

@@ -156,3 +156,102 @@ export async function getMaxLojasByPlan(planoLojas) {
   }
   return planos[planoLojas] || 1
 }
+
+// ── Smart Market: Autenticação de Loja ──
+export async function authenticateLoja(email, cpfCnpj) {
+  if (!supabase) return null
+
+  try {
+    const { data, error } = await supabase
+      .from('lojas')
+      .select('*')
+      .eq('login_usuario', email)
+      .eq('senha_usuario', cpfCnpj.replace(/\D/g, '')) // Remove formatting
+      .single()
+
+    if (error || !data) {
+      return null
+    }
+
+    return data
+  } catch {
+    return null
+  }
+}
+
+// ── Smart Market: Obter status de assinatura da loja ──
+export async function getLojaSubscription(lojaId) {
+  if (!supabase) return { active: true, plan: 'premium' }
+
+  try {
+    const { data, error } = await supabase
+      .from('lojas')
+      .select('id, plano, data_expiracao, ativo')
+      .eq('id', lojaId)
+      .single()
+
+    if (error || !data) {
+      return { active: false, reason: 'not_found' }
+    }
+
+    const expiresAt = data.data_expiracao ? new Date(data.data_expiracao) : null
+    const isExpired = expiresAt && expiresAt < new Date()
+    const isActive = data.ativo && !isExpired
+
+    return {
+      active: isActive,
+      plan: data.plano || 'premium',
+      expires_at: data.data_expiracao,
+      reason: isExpired ? 'expired' : (!data.ativo ? 'suspended' : null),
+    }
+  } catch {
+    return { active: true, plan: 'premium', offline: true }
+  }
+}
+
+// ── Smart Market: Obter histórico de pagamentos da loja ──
+export async function getLojaPaymentHistory(lojaId) {
+  if (!supabase) return []
+
+  try {
+    const { data } = await supabase
+      .from('pagamentos')
+      .select('*')
+      .eq('loja_id', lojaId)
+      .order('created_at', { ascending: false })
+
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+// ── Smart Market: Alterar senha da loja ──
+export async function changeLojaPassword(lojaId, currentPassword, newPassword) {
+  if (!supabase) return null
+
+  try {
+    // Verificar senha atual
+    const { data: loja, error: fetchError } = await supabase
+      .from('lojas')
+      .select('senha_usuario')
+      .eq('id', lojaId)
+      .single()
+
+    if (fetchError || !loja) return { error: 'Loja não encontrada' }
+    if (loja.senha_usuario !== currentPassword) return { error: 'Senha atual incorreta' }
+
+    // Atualizar senha
+    const { data, error } = await supabase
+      .from('lojas')
+      .update({ senha_usuario: newPassword })
+      .eq('id', lojaId)
+      .select()
+      .single()
+
+    if (error) return { error: 'Erro ao alterar senha' }
+    return { success: true, data }
+  } catch (err) {
+    return { error: err.message }
+  }
+}
