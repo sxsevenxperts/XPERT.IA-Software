@@ -9,6 +9,7 @@ import Chat from './pages/Chat'
 import Billing from './pages/Billing'
 import Lojas from './pages/Lojas'
 import LoginLoja from './pages/LoginLoja'
+import SetupTeste from './pages/SetupTeste'
 
 function MainApp({ user, subscription, onLogout }) {
   const [tab, setTab] = useState('dashboard')
@@ -81,6 +82,11 @@ function MainApp({ user, subscription, onLogout }) {
 export default function App() {
   const [auth, setAuth] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Rota de teste: /setup-teste
+  if (window.location.pathname === '/setup-teste') {
+    return <SetupTeste />
+  }
 
   useEffect(() => {
     const init = async () => {
