@@ -5,6 +5,7 @@ import { useTheme } from '../hooks/useTheme'
 import { fmt } from '../utils/format'
 import { Save, Fuel, User, Car, DollarSign, Download, Target, Bell, BellOff, Sun, Moon, Monitor, CreditCard, LogOut, Lock, Eye, EyeOff, CheckCircle, Wrench, Plus, Trash2, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import ChangePasswordModal from '../components/ChangePasswordModal'
 import {
   getPermissionStatus,
   requestNotificationPermission,
@@ -45,7 +46,7 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({ ...settings })
   const [notifStatus, setNotifStatus] = useState(getPermissionStatus())
-  // change password state
+  const [showChangePassword, setShowChangePassword] = useState(false)
   const [pwdForm, setPwdForm] = useState({ new: '', confirm: '' })
   const [pwdLoading, setPwdLoading] = useState(false)
   const [pwdError, setPwdError] = useState('')
@@ -496,6 +497,17 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         </button>
       )}
 
+      {/* Alterar Senha */}
+      <button onClick={() => setShowChangePassword(true)} style={{
+        width: '100%', padding: '14px', background: '#a855f715', border: '1px solid #a855f740',
+        borderRadius: 14, color: '#a855f7', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        marginBottom: 12,
+      }}>
+        <Lock size={16} />
+        Alterar Senha
+      </button>
+
       {/* ═════ SEÇÃO DE CONTROLE ═════ */}
       <div style={{ marginBottom: 16, padding: 14, background: 'var(--bg3)', borderRadius: 14, border: '1px solid var(--border)' }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', marginBottom: 12, textTransform: 'uppercase' }}>⚙️ Controle</p>
@@ -586,6 +598,14 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Alterar Senha */}
+      {showChangePassword && (
+        <ChangePasswordModal
+          onClose={() => setShowChangePassword(false)}
+          lojaEmail={user?.email || 'sua-loja@email.com'}
+        />
       )}
     </div>
   )
