@@ -219,10 +219,360 @@ Deve chamar endpoint que:
 
 ---
 
+---
+
+## 🔌 **Integração com PDVs e Balanças**
+
+### Arquitetura de Conexão
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              Smart Market Backend (Supabase)             │
+└──────────────────┬──────────────────────────────────────┘
+                   │
+        ┌──────────┼──────────┐
+        │          │          │
+   ┌────▼────┐ ┌──▼───────┐ ┌▼─────────┐
+   │   API   │ │WebSocket │ │  MQTT    │
+   │ REST    │ │(Real-     │ │ (IoT)    │
+   │(/api)   │ │time)      │ │          │
+   └────┬────┘ └──┬────────┘ └┬─────────┘
+        │         │           │
+        │    ┌────┴─────┬─────┴──────┐
+        │    │          │            │
+   ┌────▼────▼──┐   ┌──▼──────┐ ┌───▼──────┐
+   │  PDVs      │   │Balanças  │ │Câmeras/  │
+   │(Gerenciador│   │(Eletrônicas
+   │ como Tef)  │   │TCP/IP)   │ │Sensores  │
+   └────────────┘   └──────────┘ └──────────┘
+```
+
+### 1️⃣ **PDV (Sistema de Ponto de Venda)**
+
+#### Opções de Integração
+
+**Opção A: API REST (Padrão)**
+```
+PDV → HTTP POST → Smart Market API
+      [vendas, cliente_id, itens, valor]
+            ↓
+         Supabase
+         (salva em trips/estoque)
+```
+
+**Opção B: Sincronização em Lote**
+```
+PDV → JSON exportado a cada 1h → Smart Market
+      (arquivo ou FTP)
+            ↓
+         Parser
+            ↓
+      Salva em Supabase
+```
+
+**Opção C: Webhook do PDV**
+```
+Evento de venda no PDV
+            ↓
+Webhook automático → Smart Market
+            ↓
+         Registra na loja
+```
+
+#### Dados Necessários do PDV
+```json
+{
+  "loja_id": "uuid-xxx",
+  "transacao_id": "PDV-20250328-001",
+  "data_hora": "2025-03-28T14:32:00Z",
+  "cliente_id": "CLI-12345",
+  "itens": [
+    { "produto_id": "SKU-001", "nome": "Óleo Soja 900ml", "qtd": 2, "valor_unitario": 8.50 },
+    { "produto_id": "SKU-002", "nome": "Pão Francês", "qtd": 4, "valor_unitario": 0.80 }
+  ],
+  "subtotal": 20.40,
+  "desconto": 0.00,
+  "total": 20.40,
+  "metodo_pagamento": "dinheiro|cartao|pix",
+  "operador": "Maria Silva"
+}
+```
+
+#### Fluxo de Integração
+```
+┌─ PDV Sistema ─────────────────┐
+│                               │
+│ 1. Cliente compra items      │
+│ 2. Total R$ 150,00           │
+│ 3. Paga                      │
+│ 4. Gera transação            │
+└─────────────┬─────────────────┘
+              │
+        [HTTP POST]
+              │
+         ┌────▼────────────┐
+         │ Smart Market    │
+         │ /api/vendas     │
+         └────┬────────────┘
+              │
+         ┌────▼─────────────────┐
+         │ Supabase             │
+         │ INSERT trips         │
+         │ UPDATE estoque       │
+         │ UPDATE RFM scores    │
+         └──────────────────────┘
+              │
+         ┌────▼─────────────────┐
+         │ Claude AI            │
+         │ (análise noturna)    │
+         │ - Previsão de vendas │
+         │ - RFM atualizado     │
+         └──────────────────────┘
+```
+
+---
+
+### 2️⃣ **Balanças Eletrônicas**
+
+#### Protocolo de Comunicação
+
+**Opção A: TCP/IP Direto**
+```
+Balança Eletrônica
+    (IP: 192.168.1.100:5000)
+              ↓
+       [TCP Connection]
+              ↓
+    Smart Market Agent
+    (roda na loja ou nuvem)
+              ↓
+    Recebe peso + sku
+    {sku: "SKU-001", peso: 2.350kg, valor: R$ 19.95}
+              ↓
+    Envia para Supabase
+```
+
+**Opção B: MQTT (IoT padrão)**
+```
+Balança Eletrônica
+    (conectada ao Wi-Fi)
+              ↓
+    Publica: /lojas/{id}/balanca/leitura
+    {peso: 2.350, sku: "SKU-001"}
+              ↓
+    Broker MQTT (Mosquitto)
+              ↓
+    Smart Market subscribe
+              ↓
+    Processa + Supabase
+```
+
+**Opção C: Serial RS-232/USB**
+```
+Balança Eletrônica
+    (USB ou Serial)
+              ↓
+    Agent local (roda no caixa)
+              ↓
+    Lê porta serial
+    {peso, sku}
+              ↓
+    Envia HTTP → Cloud
+```
+
+#### Dados de Balança
+```json
+{
+  "loja_id": "uuid-xxx",
+  "balanca_id": "BAL-001",
+  "timestamp": "2025-03-28T14:35:22Z",
+  "produto_sku": "SKU-TOMATE-001",
+  "peso_kg": 2.350,
+  "valor_calculado": 19.95,
+  "status": "pronto|pesando|erro"
+}
+```
+
+#### Fluxo Integrado PDV + Balança
+```
+Cliente compra tomates na balança
+         │
+         ├─→ Balança mede: 2.350kg
+         │         │
+         │    [TCP/MQTT]
+         │         │
+         │    Smart Market
+         │         │
+         │    Calcula: R$ 19.95
+         │         │
+         ├─→ Envia para PDV
+         │         │
+         ├─→ PDV registra na venda
+         │         │
+         └─→ Armazena em Supabase
+                   │
+              ┌────▼────────────┐
+              │ trips table      │
+              │ + estoque baixo  │
+              └─────────────────┘
+```
+
+---
+
+### 3️⃣ **Agent Local (Software na Loja)**
+
+Para lojas que não têm Internet estável, é necessário um **Agent Local**:
+
+```typescript
+// agent-local.ts (roda na loja em um mini-PC/Raspberry Pi)
+
+class AgenteLoja {
+  lojaId: string
+  balancas: Map<string, Balanca> = new Map()
+  pdvConnected: boolean = false
+  
+  constructor(loja_id: string) {
+    this.lojaId = loja_id
+    
+    // Conectar à balança via Serial/MQTT
+    this.conectarBalanca()
+    
+    // Conectar ao PDV
+    this.conectarPDV()
+    
+    // Queue local (se internet cair, enfileira)
+    this.initQueue()
+  }
+  
+  async conectarBalanca() {
+    // Ouve porta serial ou MQTT
+    // Quando peso chega, valida e envia para nuvem
+  }
+  
+  async conectarPDV() {
+    // HTTP/WebSocket com PDV
+    // Recebe vendas
+    // Sincroniza dados
+  }
+  
+  async processarVenda(venda) {
+    try {
+      // Tentar enviar para nuvem
+      await fetch('/api/vendas', { body: JSON.stringify(venda) })
+    } catch (e) {
+      // Internet caiu? Enfileira localmente
+      this.queue.push(venda)
+    }
+  }
+  
+  async sincronizar() {
+    // A cada 5 min, tenta enviar fila
+    while (this.queue.length > 0) {
+      const venda = this.queue.shift()
+      await this.enviarParaNuvem(venda)
+    }
+  }
+}
+```
+
+---
+
+### 4️⃣ **Implementação por Fases**
+
+#### **Fase 1: MVP (Próximas 2 semanas)**
+- [ ] API REST `/api/vendas` para PDVs
+- [ ] Receber dados de venda (cliente, itens, valor)
+- [ ] Salvar em `trips` table
+- [ ] Sincronizar com Supabase
+
+#### **Fase 2: Balanças (Próximas 4 semanas)**
+- [ ] Integração TCP/IP com balanças eletrônicas
+- [ ] Protocolo de comunicação (peso + SKU)
+- [ ] Validação de peso vs estoque
+- [ ] Cálculo automático de valor
+
+#### **Fase 3: Agent Local (Próximas 6 semanas)**
+- [ ] Software para lojas sem internet estável
+- [ ] Queue local para sincronização
+- [ ] Offline-first architecture
+
+#### **Fase 4: Webhooks Inteligentes**
+- [ ] PDV dispara webhook ao final do dia
+- [ ] Reconciliação automática
+- [ ] Alertas de discrepâncias
+
+---
+
+### 5️⃣ **Segurança na Integração**
+
+```
+PDV → HTTPS + API Key + JWT Token
+         ↓
+Valida origem (IP da loja)
+         ↓
+Autentica com chave da loja
+         ↓
+Registra em auditoria_lojas
+         ↓
+Salva em Supabase (RLS protege)
+```
+
+#### Variáveis de Ambiente por Loja
+```bash
+LOJA_API_KEY_uuid-xxx = "sk_live_..."
+LOJA_SECRET_uuid-xxx = "sk_secret_..."
+BALANCA_IP_xxx = "192.168.1.100"
+BALANCA_PORTA_xxx = "5000"
+```
+
+---
+
+### 6️⃣ **Exemplo de Implementação**
+
+**PDV chama Smart Market:**
+```bash
+curl -X POST https://smartmarket.com/api/vendas \
+  -H "Authorization: Bearer $LOJA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "loja_id": "uuid-xxx",
+    "transacao_id": "PDV-20250328-001",
+    "data_hora": "2025-03-28T14:32:00Z",
+    "cliente_id": "CLI-12345",
+    "itens": [
+      {"produto_id": "SKU-001", "nome": "Óleo", "qtd": 2, "valor_unitario": 8.50}
+    ],
+    "total": 17.00,
+    "metodo_pagamento": "dinheiro"
+  }'
+
+Response:
+{
+  "success": true,
+  "venda_id": "uuid-venda",
+  "timestamp": "2025-03-28T14:32:05Z",
+  "rfm_score_atualizado": true
+}
+```
+
+**Balança publica peso:**
+```mqtt
+Topic: /lojas/uuid-xxx/balanca/BAL-001
+Payload: {
+  "peso_kg": 2.350,
+  "sku": "SKU-TOMATE-001",
+  "timestamp": "2025-03-28T14:35:22Z"
+}
+```
+
+---
+
 ## 🎯 Próxima Reunião
 
 **Tópicos para Discutir:**
 1. Confirmação do modelo de preços (planos e margins)
 2. Integração exata com Hotmart/Stripe
-3. Timeline de deployment
-4. Prioridades de features (dashboard vs API vs integrações)
+3. **Quais PDVs/balanças o cliente usa atualmente?**
+4. **Preferência: API REST vs MQTT vs Agent Local?**
+5. Timeline de deployment
+6. Prioridades de features (dashboard vs API vs integrações)
