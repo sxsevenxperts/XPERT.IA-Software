@@ -56,7 +56,7 @@ export default function Login({ onLogin }) {
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.6px' }}>PrevOS</h1>
           <p style={{ fontSize: 13, color: 'var(--text3)', marginTop: 5, maxWidth: 280, margin: '5px auto 0' }}>
-            Sistema Operacional da Advocacia Previdenciária
+            Sistema Operacional de Advocacia Inteligente
           </p>
         </div>
 

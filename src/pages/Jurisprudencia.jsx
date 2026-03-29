@@ -1,350 +1,383 @@
 import { useState } from 'react'
-import { Search, BookOpen, ExternalLink, Copy, Star, Filter, ChevronDown, TrendingUp, Zap, AlertCircle } from 'lucide-react'
+import { Search, BookOpen, ChevronDown, ChevronRight, ExternalLink, AlertTriangle, Brain, Sparkles, Star, TrendingUp } from 'lucide-react'
+import { callClaude } from '../lib/claude'
 
-const TRIBUNAIS = ['Todos', 'STJ', 'STF', 'TRF-1', 'TRF-2', 'TRF-3', 'TRF-4', 'TRF-5', 'TNU', 'TST', 'TJSP', 'TJRJ', 'TJMG']
-
-const TEMAS_RAPIDOS = [
-  'Aposentadoria por Idade — tempo mínimo 15F/20M',
-  'BPC/Loas — comprovação de renda familiar',
-  'Revisão do Teto EC 20/1998',
-  'Auxílio-doença — carência acidente de trabalho',
-  'Conversão de tempo especial em comum',
-  'Salário de benefício — exclusão dos 20% menores',
-  'Horas extras — banco de horas — CLT',
-  'Dano moral — quantum indenizatório',
+/* ── Dados mock ── */
+const sumulas = [
+  { id: 'STJ-211', tribunal: 'STJ', tipo: 'Súmula', area: 'Previdenciário', titulo: 'Inadmissível recurso especial quanto à questão que, a despeito da oposição de embargos declaratórios, não foi apreciada pelo Tribunal a quo.', relevancia: 'alta' },
+  { id: 'TNU-10',  tribunal: 'TNU', tipo: 'Súmula', area: 'Previdenciário', titulo: 'O tempo de serviço rural anterior à vigência da Lei 8.213/91, sem o recolhimento de contribuições previdenciárias, pode ser reconhecido para fins de contagem recíproca.', relevancia: 'alta' },
+  { id: 'TST-262', tribunal: 'TST', tipo: 'Súmula', area: 'Trabalhista', titulo: 'As cláusulas regulamentares, que revoguem ou alterem vantagens deferidas anteriormente, só atingirão os trabalhadores admitidos após a revogação ou alteração do regulamento.', relevancia: 'media' },
+  { id: 'STJ-385', tribunal: 'STJ', tipo: 'Súmula', area: 'Cível', titulo: 'Da anotação irregular em cadastro de proteção ao crédito, não cabe indenização por dano moral, quando preexistente legítima inscrição, ressalvado o direito ao cancelamento.', relevancia: 'media' },
+  { id: 'STF-674', tribunal: 'STF', tipo: 'Súmula', area: 'Trabalhista', titulo: 'É inconstitucional a vinculação do reajuste de vencimentos de servidores estaduais ou municipais a índices federais de correção monetária.', relevancia: 'baixa' },
+  { id: 'TNU-47',  tribunal: 'TNU', tipo: 'Súmula', area: 'Previdenciário', titulo: 'Uma vez reconhecida a incapacidade parcial para o trabalho, o juiz deve analisar as condições pessoais e sociais do segurado para a concessão de aposentadoria por invalidez.', relevancia: 'alta' },
 ]
 
-const MOCK_RESULTS = [
-  {
-    tribunal: 'STJ', numero: 'REsp 1.814.768/MG', relator: 'Min. Benedito Gonçalves',
-    data: '11/02/2024', tema: 'Aposentadoria por Idade — Comprovação de Tempo Rural',
-    ementa: 'PREVIDENCIÁRIO. RURÍCOLA. APOSENTADORIA POR IDADE. INÍCIO DE PROVA MATERIAL. DOCUMENTOS EM NOME DE TERCEIROS. POSSIBILIDADE. A jurisprudência desta Corte admite início de prova material de atividade rurícola quando os documentos estão em nome de terceiros (cônjuge, pais), desde que confirmados por prova testemunhal idônea.',
-    decisao: 'PROVIDO. Determinada a concessão do benefício com DIB na data do requerimento administrativo.',
-    relevancia: 95, favoravel: true,
-    link: 'https://stj.jusbrasil.com.br',
-    tags: ['rural', 'aposentadoria', 'prova material'],
-  },
-  {
-    tribunal: 'TNU', numero: 'PEDILEF 0000422-80.2014.4.03.6301', relator: 'Juíza Simone Lazaretti',
-    data: '24/05/2023', tema: 'BPC/Loas — Renda Familiar Per Capita',
-    ementa: 'BENEFÍCIO DE PRESTAÇÃO CONTINUADA. CRITÉRIO DE MISERABILIDADE. POSSIBILIDADE DE ANÁLISE AMPLA. A renda per capita de ¼ do salário mínimo não é o único critério aferidor da condição de miserabilidade, devendo o julgador verificar concretamente a situação socioeconômica do requerente. Súmula 79 TNU.',
-    decisao: 'INCIDENTE CONHECIDO E PROVIDO. Retorno dos autos para análise da situação socioeconômica.',
-    relevancia: 88, favoravel: true,
-    link: 'https://tnu.jus.br',
-    tags: ['BPC', 'miserabilidade', 'renda'],
-  },
-  {
-    tribunal: 'TRF-3', numero: 'AC 5002341-12.2023.4.03.9999', relator: 'Des. Fed. André Nekatschalow',
-    data: '08/01/2024', tema: 'Auxílio-doença — Nexo Causal com Atividade Laborativa',
-    ementa: 'PREVIDENCIÁRIO. AUXÍLIO POR INCAPACIDADE TEMPORÁRIA. PERÍCIA JUDICIAL DIVERGENTE DA ADMINISTRATIVA. Havendo divergência entre o laudo pericial judicial e a conclusão da perícia médica do INSS, deve prevalecer o laudo do perito oficial nomeado pelo juízo, que dispõe de maior imparcialidade.',
-    decisao: 'APELAÇÃO PROVIDA. Benefício concedido com retroatividade à data do requerimento.',
-    relevancia: 82, favoravel: true,
-    link: 'https://trf3.jus.br',
-    tags: ['auxílio-doença', 'perícia', 'incapacidade'],
-  },
-  {
-    tribunal: 'STJ', numero: 'Súmula 729', relator: 'Corte Especial',
-    data: '07/12/2023', tema: 'Atualização Monetária — Benefícios Previdenciários',
-    ementa: 'Nas ações previdenciárias, a correção monetária das prestações em atraso deve observar o INPC, conforme determinado pelo art. 41-A da Lei 8.213/91. Os juros de mora são de 1% ao mês, nos termos da Súmula 204/STJ.',
-    decisao: 'SÚMULA VINCULANTE — aplicação obrigatória a todos os casos análogos.',
-    relevancia: 99, favoravel: true,
-    link: 'https://stj.jusbrasil.com.br',
-    tags: ['correção monetária', 'juros', 'INPC'],
-  },
-  {
-    tribunal: 'TST', numero: 'RR 100200-55.2022.5.01.0065', relator: 'Min. Mauricio Godinho',
-    data: '15/03/2024', tema: 'Horas Extras — Banco de Horas — Validade',
-    ementa: 'HORAS EXTRAS. BANCO DE HORAS. Para que o banco de horas seja válido, é imprescindível que seja celebrado por acordo coletivo, com descrição clara das condições de compensação e limite máximo de acúmulo de horas.',
-    decisao: 'NÃO PROVIDO. Banco de horas individual declarado nulo. Pagamento de horas como extraordinárias.',
-    relevancia: 78, favoravel: false,
-    link: 'https://tst.jus.br',
-    tags: ['horas extras', 'banco de horas', 'trabalhista'],
-  },
+const jurisprudencias = [
+  { id: 'REsp 1.938.289', tribunal: 'STJ', area: 'Previdenciário', relator: 'Min. Regina Helena Costa', data: '15/02/2025', tema: 'BPC/LOAS – Renda familiar per capita', ementa: 'A renda do idoso cujo benefício se postula, bem como a de sua esposa ou companheira, não deve ser levada em consideração para o cálculo da renda familiar per capita para concessão do BPC/LOAS, nos termos do art. 20, §3º, da Lei 8.742/93, com a redação dada pela Lei 13.981/2020.', favoravel: true, citacoes: 142 },
+  { id: 'IRDR TRF5 – Tema 4', tribunal: 'TRF-5', area: 'Previdenciário', relator: 'Des. Federal Cid Marconi', data: '03/03/2025', tema: 'Aposentadoria Especial – Ruído acima de 85 dB', ementa: 'Comprovada a exposição a agentes nocivos (ruído acima de 85 dB) de forma habitual e permanente, faz jus o segurado à aposentadoria especial, independentemente do uso de EPI, por força do decidido no RE 664.335/SC (STF – Repercussão Geral).', favoravel: true, citacoes: 87 },
+  { id: 'RR-1000234-45.2024', tribunal: 'TST', area: 'Trabalhista', relator: 'Min. Alexandre Agra Belmonte', data: '10/01/2025', tema: 'Horas Extras – Banco de Horas – Invalidade', ementa: 'A invalidade do banco de horas não enseja pagamento em dobro das horas extras, mas com o adicional de 50% sobre as horas efetivamente prestadas acima da jornada contratual, nos termos do art. 59 da CLT.', favoravel: false, citacoes: 53 },
+  { id: 'AC 2024.000123-7', tribunal: 'TJSP', area: 'Cível', relator: 'Des. Roberto Maia', data: '22/02/2025', tema: 'Responsabilidade Civil – Dano Moral Digital – LGPD', ementa: 'A exposição indevida de dados pessoais em plataforma digital, sem consentimento do titular, configura dano moral in re ipsa, dispensando prova do efetivo abalo sofrido, nos termos dos arts. 42 e 44 da LGPD (Lei 13.709/2018).', favoravel: true, citacoes: 31 },
 ]
 
-const ANALISE_PREDITIVA = {
-  tema: 'Aposentadoria por Idade — Mulher 62 anos, 16 anos contribuição',
-  acuracia: 91,
-  favoravel: 82,
-  desfavoravel: 18,
-  fundamentos: [
-    { texto: 'Requisito de idade cumprido (62 anos)', peso: 'positivo' },
-    { texto: 'Tempo de contribuição atende mínimo de 15 anos para mulher', peso: 'positivo' },
-    { texto: 'Carência de 180 meses pode ser deficiente — verificar CNIS', peso: 'atencao' },
-    { texto: 'TRF-3 tem posição consolidada em favor do segurado em casos similares', peso: 'positivo' },
+const tesesDB = {
+  'Previdenciário': [
+    { tese: 'BPC/LOAS – Renda per capita abaixo de ¼ salário mínimo', fundamento: 'Art. 20, §3º, Lei 8.742/93 c/c STF RE 567.985 (Repercussão Geral)', pontuacao: 9.2, risco: 'baixo', favoraveis: 'STJ, TNU, TRFs (unanimidade)', contrarias: 'Atos normativos INSS (superados judicialmente)' },
+    { tese: 'Tempo rural não contribuído – contagem recíproca', fundamento: 'Art. 55, §3º, Lei 8.213/91 c/c TNU Súm. 10 c/c STJ pacificado', pontuacao: 8.7, risco: 'baixo', favoraveis: 'TNU, TRFs, STJ', contrarias: 'INSS administrativamente' },
+    { tese: 'Aposentadoria especial – ruído sem EPI eficaz', fundamento: 'RE 664.335 STF (Repercussão Geral) c/c TNU Súm. 9', pontuacao: 9.5, risco: 'muito baixo', favoraveis: 'STF, TNU, TRFs', contrarias: 'Nenhuma posição relevante contrária' },
+    { tese: 'Revisão teto previdenciário – EC 20/1998', fundamento: 'RE 564.354 STF c/c jurisprudência consolidada', pontuacao: 7.4, risco: 'médio', favoraveis: 'STF, alguns TRFs', contrarias: 'Divergência interna TRF-3' },
   ],
-  precedentes: ['STJ REsp 1.814.768', 'TNU PEDILEF 0001234-56', 'TRF-3 AC 5001122-33'],
+  'Trabalhista': [
+    { tese: 'Vínculo empregatício – subordinação jurídica presumida', fundamento: 'Art. 3º CLT c/c OJ 301 SDI-1 TST', pontuacao: 8.1, risco: 'médio', favoraveis: 'TST, TRTs', contrarias: 'Discussão sobre plataformas digitais em curso' },
+    { tese: 'Horas extras – ônus da prova do empregador (ponto)', fundamento: 'Súm. 338 TST c/c Art. 74 CLT', pontuacao: 8.9, risco: 'baixo', favoraveis: 'TST, TRTs (consolidado)', contrarias: 'Controles alternativos aceitos em casos específicos' },
+    { tese: 'Intervalo intrajornada – supressão gera pagamento', fundamento: 'Art. 71, §4º CLT c/c Súm. 437 TST', pontuacao: 8.5, risco: 'baixo', favoraveis: 'TST', contrarias: 'Acordos coletivos podem flexibilizar' },
+  ],
+  'Cível': [
+    { tese: 'Dano moral in re ipsa – vazamento de dados LGPD', fundamento: 'Arts. 42-44 LGPD (Lei 13.709/18) c/c STJ (resp. objetiva)', pontuacao: 7.8, risco: 'médio', favoraveis: 'STJ, TJSP, TJRJ', contrarias: 'Posições que exigem prova do dano' },
+    { tese: 'Juros – Tabela SELIC (art. 406 CC)', fundamento: 'Art. 406 CC c/c STJ Súm. vinculante', pontuacao: 9.1, risco: 'baixo', favoraveis: 'STJ (pacificado)', contrarias: 'Nenhuma relevante' },
+  ],
+  'Família': [
+    { tese: 'Alimentos – binômio necessidade/possibilidade', fundamento: 'Art. 1.694, §1º CC c/c jurisprudência STJ', pontuacao: 8.8, risco: 'baixo', favoraveis: 'STJ, TJs', contrarias: 'Variação casuística' },
+  ],
+  'Consumidor': [
+    { tese: 'Responsabilidade objetiva do fornecedor por fato do produto', fundamento: 'Art. 12 CDC c/c STJ (cláusula geral resp. objetiva)', pontuacao: 9.3, risco: 'muito baixo', favoraveis: 'STJ, TJs (unânime)', contrarias: 'Excludentes: caso fortuito externo' },
+  ],
+}
+
+const AREAS    = ['Todas', 'Previdenciário', 'Trabalhista', 'Cível', 'Família', 'Consumidor', 'Tributário']
+const TRIBUNAIS_LIST = ['Todos', 'STF', 'STJ', 'TST', 'TNU', 'TRF-1', 'TRF-2', 'TRF-3', 'TRF-4', 'TRF-5', 'TJSP', 'TJRJ', 'TJMG']
+
+const riscoCfg = {
+  'muito baixo': { bg: 'var(--green-dim)',  color: 'var(--green)' },
+  'baixo':       { bg: 'var(--green-dim)',  color: 'var(--green)' },
+  'médio':       { bg: 'var(--amber-dim)',  color: 'var(--amber)' },
+  'alto':        { bg: 'var(--red-dim)',    color: 'var(--red)' },
 }
 
 export default function Jurisprudencia() {
-  const [busca, setBusca]           = useState('')
-  const [tribunal, setTribunal]     = useState('Todos')
-  const [resultados, setResultados] = useState([])
-  const [loading, setLoading]       = useState(false)
-  const [tab, setTab]               = useState('busca') // busca | preditiva
+  const [tab, setTab]           = useState('jurisprudencia')
+  const [busca, setBusca]       = useState('')
+  const [area, setArea]         = useState('Todas')
+  const [tribunal, setTribunal] = useState('Todos')
+  const [expanded, setExpanded] = useState(null)
+  const [areaAnalise, setAreaAnalise] = useState('Previdenciário')
+  const [tesesOpen, setTesesOpen]     = useState({})
 
-  function buscar() {
-    if (!busca.trim()) return
-    setLoading(true)
-    setTimeout(() => { setResultados(MOCK_RESULTS); setLoading(false) }, 1200)
-  }
+  // IA States
+  const [iaQuery, setIaQuery]   = useState('')
+  const [iaResult, setIaResult] = useState('')
+  const [iaLoading, setIaLoading] = useState(false)
+  const [iaError, setIaError]   = useState('')
 
-  function copiarEmenta(ementa) {
-    navigator.clipboard.writeText(ementa)
+  const filteredJuris = jurisprudencias.filter(j => {
+    const mA = area === 'Todas' || j.area === area
+    const mT = tribunal === 'Todos' || j.tribunal === tribunal
+    const mB = !busca || j.tema.toLowerCase().includes(busca.toLowerCase()) || j.id.toLowerCase().includes(busca.toLowerCase())
+    return mA && mT && mB
+  })
+
+  const filteredSumulas = sumulas.filter(s => {
+    const mA = area === 'Todas' || s.area === area
+    const mT = tribunal === 'Todos' || s.tribunal === tribunal
+    const mB = !busca || s.titulo.toLowerCase().includes(busca.toLowerCase()) || s.id.toLowerCase().includes(busca.toLowerCase())
+    return mA && mT && mB
+  })
+
+  const teses = tesesDB[areaAnalise] || []
+
+  const handleIaAnalysis = async () => {
+    if (!iaQuery.trim()) return
+    setIaLoading(true)
+    setIaError('')
+    setIaResult('')
+    try {
+      const prompt = `Você é um assistente jurídico especializado em Direito Brasileiro. Analise a seguinte questão jurídica e forneça: 1) Teses relevantes com fundamento legal, 2) Jurisprudência aplicável (STF, STJ, tribunais superiores), 3) Súmulas pertinentes, 4) Avaliação da viabilidade da tese com justificativa. Seja preciso, cite diplomas legais e precedentes reais. NÃO prometa resultados — informe apenas o estado da jurisprudência. Questão: "${iaQuery}"`
+      const result = await callClaude(prompt)
+      setIaResult(result)
+    } catch (err) {
+      setIaError(err.message || 'Configure a chave da API Claude em Configurações para usar este recurso.')
+    } finally {
+      setIaLoading(false)
+    }
   }
 
   return (
-    <div className="fade-in" style={{ padding: '24px', maxWidth: 1300 }}>
+    <div className="fade-in" style={{ padding: 24, maxWidth: 1300 }}>
+
+      {/* Aviso OAB */}
+      <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 10, padding: '10px 16px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 12 }}>
+        <AlertTriangle size={14} color="var(--amber)" style={{ marginTop: 2, flexShrink: 0 }} />
+        <span style={{ color: 'var(--text2)', lineHeight: 1.5 }}>
+          <strong>Ferramenta de pesquisa e suporte à advocacia.</strong> As análises são baseadas em jurisprudência pública e não substituem o juízo do advogado responsável (art. 2º §2º EOAB, Res. 2/2018 OAB). Resultados dependem dos fatos concretos de cada caso.
+        </span>
+      </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg3)', borderRadius: 10, padding: 4, width: 'fit-content', border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 2, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 20, width: 'fit-content' }}>
         {[
-          { id: 'busca',    label: '🔍 Busca Jurídica' },
-          { id: 'preditiva',label: '🎯 Análise Preditiva' },
+          { id: 'jurisprudencia', label: '⚖️ Jurisprudência' },
+          { id: 'sumulas',        label: '📚 Súmulas' },
+          { id: 'analise',        label: '📊 Análise de Teses' },
+          { id: 'ia',             label: '🧠 Pesquisa com IA' },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
-            padding: '8px 18px', borderRadius: 8, border: 'none',
-            background: tab === t.id ? 'var(--bg2)' : 'transparent',
-            color: tab === t.id ? 'var(--text)' : 'var(--text3)',
-            fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-            boxShadow: tab === t.id ? 'var(--shadow-sm)' : 'none',
-            cursor: 'pointer',
+            padding: '8px 16px', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            background: tab === t.id ? 'var(--blue)' : 'transparent',
+            color: tab === t.id ? 'white' : 'var(--text3)', transition: 'all 0.15s',
           }}>
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── BUSCA JURÍDICA ── */}
-      {tab === 'busca' && (
-        <>
-          {/* Search bar */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text4)', pointerEvents: 'none' }} />
-              <input
-                value={busca}
-                onChange={e => setBusca(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && buscar()}
-                placeholder="Pesquise jurisprudência, súmulas, temas... (ex: BPC/Loas renda familiar)"
-                style={{
-                  width: '100%', padding: '12px 14px 12px 42px',
-                  background: 'var(--bg2)', border: '1px solid var(--border)',
-                  borderRadius: 10, fontSize: 14, color: 'var(--text)', outline: 'none',
-                }}
-                onFocus={e => e.target.style.borderColor = 'var(--blue)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'}
-              />
+      {/* Filtros (exceto aba IA) */}
+      {tab !== 'ia' && tab !== 'analise' && (
+        <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+            <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text4)' }} />
+            <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar por tema, ementa, número, CID..."
+              style={{ width: '100%', padding: '8px 12px 8px 30px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 13, color: 'var(--text)', outline: 'none' }}
+              onFocus={e => e.target.style.borderColor = 'var(--blue)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            />
+          </div>
+          <select value={area} onChange={e => setArea(e.target.value)} style={{ padding: '8px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 13, color: 'var(--text2)' }}>
+            {AREAS.map(a => <option key={a}>{a}</option>)}
+          </select>
+          <select value={tribunal} onChange={e => setTribunal(e.target.value)} style={{ padding: '8px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 13, color: 'var(--text2)' }}>
+            {TRIBUNAIS_LIST.map(t => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+      )}
+
+      {/* ── JURISPRUDÊNCIA ── */}
+      {tab === 'jurisprudencia' && filteredJuris.map(j => (
+        <div key={j.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '16px 18px', cursor: 'pointer' }} onClick={() => setExpanded(expanded === j.id ? null : j.id)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text4)', fontFamily: 'monospace' }}>{j.id}</span>
+                <span style={{ fontSize: 10, padding: '1.5px 7px', background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: 4, color: 'var(--blue)', fontWeight: 700 }}>{j.tribunal}</span>
+                <span style={{ fontSize: 10, padding: '1.5px 6px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text4)' }}>{j.area}</span>
+                <span style={{ fontSize: 10, padding: '1.5px 7px', background: j.favoravel ? 'var(--green-dim)' : 'var(--red-dim)', color: j.favoravel ? 'var(--green)' : 'var(--red)', borderRadius: 4, fontWeight: 700 }}>
+                  {j.favoravel ? '✓ Favorável' : '✗ Desfavorável'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 11, color: 'var(--text4)' }}>📌 {j.citacoes}</span>
+                {expanded === j.id ? <ChevronDown size={14} color="var(--text4)" /> : <ChevronRight size={14} color="var(--text4)" />}
+              </div>
             </div>
-            <select value={tribunal} onChange={e => setTribunal(e.target.value)} style={{
-              padding: '0 14px', background: 'var(--bg2)', border: '1px solid var(--border)',
-              borderRadius: 10, fontSize: 13.5, color: 'var(--text)', outline: 'none', minWidth: 100,
-            }}>
-              {TRIBUNAIS.map(t => <option key={t}>{t}</option>)}
-            </select>
-            <button onClick={buscar} style={{
-              padding: '0 24px', background: 'linear-gradient(135deg, var(--blue), var(--purple))',
-              border: 'none', borderRadius: 10, color: 'white',
-              fontSize: 14, fontWeight: 700,
-              display: 'flex', alignItems: 'center', gap: 7,
-              boxShadow: '0 4px 14px rgba(59,130,246,0.3)',
-            }}>
-              <Search size={15} /> Buscar
-            </button>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{j.tema}</div>
+            <p style={{ fontSize: 12.5, color: 'var(--text2)', lineHeight: 1.5 }}>{j.ementa.slice(0, 180)}...</p>
+          </div>
+          {expanded === j.id && (
+            <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--border)' }}>
+              <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '14px', margin: '14px 0' }}>
+                <p style={{ fontSize: 12.5, fontStyle: 'italic', lineHeight: 1.6, color: 'var(--text)' }}>"{j.ementa}"</p>
+                <p style={{ fontSize: 11, color: 'var(--text4)', marginTop: 8 }}>Rel. {j.relator} · {j.tribunal} · {j.data}</p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button style={{ padding: '7px 14px', background: 'var(--blue-dim)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ExternalLink size={12} /> JusBrasil
+                </button>
+                <button style={{ padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text2)', fontSize: 12, cursor: 'pointer' }}>
+                  📄 Usar na Petição
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* ── SÚMULAS ── */}
+      {tab === 'sumulas' && filteredSumulas.map(s => {
+        const rc = { alta: { bg:'var(--red-dim)', color:'var(--red)' }, media: { bg:'var(--amber-dim)', color:'var(--amber)' }, baixa: { bg:'var(--green-dim)', color:'var(--green)' } }[s.relevancia]
+        return (
+          <div key={s.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px', marginBottom: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--blue)', fontFamily: 'monospace' }}>Súm. {s.id}</span>
+                <span style={{ fontSize: 10, padding: '1.5px 7px', background: 'rgba(59,130,246,0.1)', borderRadius: 4, color: 'var(--blue)', fontWeight: 600 }}>{s.tribunal}</span>
+                <span style={{ fontSize: 10, padding: '1.5px 6px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text4)' }}>{s.area}</span>
+              </div>
+              <span style={{ fontSize: 10, padding: '2px 8px', background: rc.bg, color: rc.color, borderRadius: 5, fontWeight: 700 }}>RELEVÂNCIA {s.relevancia.toUpperCase()}</span>
+            </div>
+            <p style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.55 }}>{s.titulo}</p>
+            <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+              <button style={{ padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--blue)', fontSize: 11.5, cursor: 'pointer', fontWeight: 600 }}>
+                📄 Usar na Petição
+              </button>
+              <button style={{ padding: '5px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text3)', fontSize: 11.5, cursor: 'pointer' }}>
+                🔗 Inteiro teor
+              </button>
+            </div>
+          </div>
+        )
+      })}
+
+      {/* ── ANÁLISE DE TESES ── */}
+      {tab === 'analise' && (
+        <div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Área:</span>
+            {Object.keys(tesesDB).map(a => (
+              <button key={a} onClick={() => setAreaAnalise(a)} style={{
+                padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)',
+                background: areaAnalise === a ? 'var(--blue)' : 'var(--bg2)',
+                color: areaAnalise === a ? 'white' : 'var(--text3)',
+                fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+              }}>{a}</button>
+            ))}
           </div>
 
-          {/* Quick topics */}
-          {resultados.length === 0 && !loading && (
-            <div style={{ marginBottom: 20 }}>
-              <p style={{ fontSize: 12, color: 'var(--text4)', marginBottom: 8 }}>Temas populares:</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                {TEMAS_RAPIDOS.map(t => (
-                  <button key={t} onClick={() => { setBusca(t); setTimeout(buscar, 50) }} style={{
-                    fontSize: 12, padding: '5px 11px', borderRadius: 7,
-                    background: 'var(--bg2)', border: '1px solid var(--border)',
-                    color: 'var(--text3)', cursor: 'pointer', transition: 'border-color 0.15s',
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--blue)'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
-                    {t}
+          <div style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 10, padding: '12px 16px', marginBottom: 18, display: 'flex', gap: 10 }}>
+            <Brain size={15} color="var(--blue)" style={{ marginTop: 2, flexShrink: 0 }} />
+            <p style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>
+              Pontuação reflete consolidação da tese na jurisprudência atual — <strong>não garante resultado em casos concretos</strong>. Use como ferramenta de pesquisa e planejamento estratégico. Cada caso tem suas especificidades fáticas e probatórias.
+            </p>
+          </div>
+
+          {teses.map((t, i) => {
+            const rc = riscoCfg[t.risco] || riscoCfg['médio']
+            const open = tesesOpen[i]
+            const scoreColor = t.pontuacao >= 9 ? 'var(--green)' : t.pontuacao >= 7.5 ? 'var(--amber)' : 'var(--red)'
+            return (
+              <div key={i} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, marginBottom: 10, overflow: 'hidden' }}>
+                <div style={{ padding: '16px 18px', cursor: 'pointer', display: 'flex', gap: 14, alignItems: 'flex-start' }} onClick={() => setTesesOpen(p => ({ ...p, [i]: !p[i] }))}>
+                  <div style={{ flexShrink: 0, textAlign: 'center', width: 58 }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: scoreColor }}>{t.pontuacao.toFixed(1)}</div>
+                    <div style={{ fontSize: 9, color: 'var(--text4)', fontWeight: 600 }}>/ 10</div>
+                    <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, marginTop: 5, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${t.pontuacao * 10}%`, background: scoreColor, borderRadius: 4 }} />
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700 }}>{t.tese}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', background: rc.bg, color: rc.color, borderRadius: 5 }}>
+                        Risco: {t.risco.toUpperCase()}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--text3)' }}><strong>Fundamento:</strong> {t.fundamento}</p>
+                  </div>
+                  {open ? <ChevronDown size={15} color="var(--text4)" /> : <ChevronRight size={15} color="var(--text4)" />}
+                </div>
+                {open && (
+                  <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+                      <div style={{ background: 'var(--green-dim)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+                        <p style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--green)', marginBottom: 6 }}>✓ Posições Favoráveis</p>
+                        <p style={{ fontSize: 12, lineHeight: 1.4 }}>{t.favoraveis}</p>
+                      </div>
+                      <div style={{ background: t.contrarias.includes('Nenhuma') ? 'var(--bg3)' : 'var(--red-dim)', border: `1px solid ${t.contrarias.includes('Nenhuma') ? 'var(--border)' : 'rgba(239,68,68,0.2)'}`, borderRadius: 10, padding: '12px 14px' }}>
+                        <p style={{ fontSize: 11.5, fontWeight: 700, color: t.contrarias.includes('Nenhuma') ? 'var(--text4)' : 'var(--red)', marginBottom: 6 }}>✗ Atenção / Posições Contrárias</p>
+                        <p style={{ fontSize: 12, lineHeight: 1.4 }}>{t.contrarias}</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                      <button style={{ padding: '7px 14px', background: 'linear-gradient(135deg, var(--blue), var(--purple))', border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                        📄 Usar tese na Petição
+                      </button>
+                      <button style={{ padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text2)', fontSize: 12, cursor: 'pointer' }}>
+                        🔍 Ver jurisprudência
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── IA — PESQUISA AVANÇADA ── */}
+      {tab === 'ia' && (
+        <div style={{ maxWidth: 900 }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.06))', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 14, padding: '20px', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--blue), var(--purple))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Brain size={18} color="white" />
+              </div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Pesquisa Jurídica com IA <span style={{ fontSize: 10, background: 'var(--blue)', color: 'white', padding: '1px 6px', borderRadius: 4, fontWeight: 700, marginLeft: 4 }}>Claude</span></div>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>Análise de teses, jurisprudência e viabilidade para qualquer área do Direito</div>
+              </div>
+            </div>
+
+            <textarea
+              value={iaQuery}
+              onChange={e => setIaQuery(e.target.value)}
+              placeholder="Descreva a situação jurídica que deseja analisar...&#10;&#10;Ex: 'Segurado com 63 anos, 28 anos de contribuição, exposto a ruído de 90dB por 25 anos. Qual a viabilidade de aposentadoria especial? Quais são as teses mais sólidas?'"
+              style={{
+                width: '100%', minHeight: 120, padding: '12px 14px',
+                background: 'var(--bg2)', border: '1px solid var(--border)',
+                borderRadius: 10, fontSize: 13, color: 'var(--text)', outline: 'none',
+                resize: 'vertical', lineHeight: 1.5,
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--blue)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['BPC/LOAS – Critério renda', 'Aposentadoria especial', 'Horas extras', 'Indenização LGPD'].map(ex => (
+                  <button key={ex} onClick={() => setIaQuery(ex)} style={{ padding: '5px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--text3)', cursor: 'pointer' }}>
+                    {ex}
                   </button>
                 ))}
               </div>
-            </div>
-          )}
-
-          {loading && (
-            <div style={{ textAlign: 'center', padding: '60px' }}>
-              <div style={{ width: 36, height: 36, border: '3px solid var(--border2)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 14px' }} />
-              <p style={{ color: 'var(--text3)', fontSize: 13 }}>Buscando jurisprudências...</p>
-            </div>
-          )}
-
-          {/* Results */}
-          {resultados.length > 0 && !loading && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <p style={{ fontSize: 13, color: 'var(--text3)' }}>{resultados.length} resultados para "{busca}"</p>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {resultados.map((r, i) => (
-                  <div key={i} style={{
-                    background: 'var(--bg2)', border: '1px solid var(--border)',
-                    borderRadius: 12, overflow: 'hidden',
-                    borderLeft: `3px solid ${r.favoravel ? 'var(--green)' : 'var(--red)'}`,
-                  }}>
-                    {/* Header */}
-                    <div style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 8px', background: 'var(--blue-dim)', color: 'var(--blue-light)', borderRadius: 5 }}>{r.tribunal}</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>{r.numero}</span>
-                          <span style={{ fontSize: 11.5, color: 'var(--text4)' }}>{r.data}</span>
-                          <span style={{
-                            fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5,
-                            background: r.favoravel ? 'var(--green-dim)' : 'var(--red-dim)',
-                            color: r.favoravel ? 'var(--green)' : 'var(--red)',
-                          }}>
-                            {r.favoravel ? '✓ Favorável' : '✗ Desfavorável'}
-                          </span>
-                        </div>
-                        <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{r.tema}</h4>
-                        <p style={{ fontSize: 12.5, color: 'var(--text3)', lineHeight: 1.5 }}>{r.ementa}</p>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-                        <div style={{ fontSize: 11, color: 'var(--text4)' }}>Relevância</div>
-                        <div style={{ fontSize: 18, fontWeight: 800, color: r.relevancia >= 90 ? 'var(--green)' : 'var(--amber)' }}>{r.relevancia}%</div>
-                      </div>
-                    </div>
-                    {/* Decision */}
-                    <div style={{ padding: '10px 18px', background: 'var(--bg3)', borderTop: '1px solid var(--border)' }}>
-                      <p style={{ fontSize: 12.5, color: 'var(--text2)' }}>
-                        <strong style={{ color: 'var(--text)' }}>Decisão: </strong>{r.decisao}
-                      </p>
-                    </div>
-                    {/* Actions */}
-                    <div style={{ padding: '10px 18px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', flex: 1 }}>
-                        {r.tags.map(t => <span key={t} style={{ fontSize: 11, padding: '2px 7px', background: 'var(--bg4)', color: 'var(--text4)', borderRadius: 5 }}>{t}</span>)}
-                      </div>
-                      <div style={{ display: 'flex', gap: 7 }}>
-                        <button onClick={() => copiarEmenta(r.ementa)} style={{ fontSize: 12, padding: '5px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Copy size={11} /> Copiar
-                        </button>
-                        <button style={{ fontSize: 12, padding: '5px 10px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--blue)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <ExternalLink size={11} /> Ver fonte
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {/* ── ANÁLISE PREDITIVA ── */}
-      {tab === 'preditiva' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20, alignItems: 'start' }}>
-          <div>
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '22px', marginBottom: 14 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 5 }}>🎯 Análise Preditiva de Sentenças</h3>
-              <p style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 18 }}>
-                Descreva o caso ou faça upload da petição. A IA analisa com base em milhares de precedentes e retorna a probabilidade de êxito com <strong style={{ color: 'var(--green)' }}>90-95% de acurácia</strong>.
-              </p>
-              <textarea
-                placeholder="Descreva o caso: tipo de benefício, dados do cliente, argumentos, tribunal..."
-                defaultValue="Cliente: Mulher, 62 anos, 16 anos de contribuição. Pedido de Aposentadoria por Idade negado pelo INSS por suposta falta de carência. Tribunal: TRF-3."
+              <button
+                onClick={handleIaAnalysis}
+                disabled={iaLoading || !iaQuery.trim()}
                 style={{
-                  width: '100%', height: 140, background: 'var(--bg3)', border: '1px solid var(--border)',
-                  borderRadius: 10, padding: '14px', fontSize: 13.5, color: 'var(--text)', lineHeight: 1.6,
-                  resize: 'none', outline: 'none',
+                  padding: '10px 24px', background: iaLoading || !iaQuery.trim() ? 'var(--bg4)' : 'linear-gradient(135deg, var(--blue), var(--purple))',
+                  border: 'none', borderRadius: 9, color: iaLoading || !iaQuery.trim() ? 'var(--text4)' : 'white',
+                  fontSize: 13.5, fontWeight: 700, cursor: iaLoading || !iaQuery.trim() ? 'default' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8,
                 }}
-                onFocus={e => e.target.style.borderColor = 'var(--blue)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border)'}
-              />
-              <button style={{
-                marginTop: 12, padding: '11px 22px',
-                background: 'linear-gradient(135deg, var(--blue), var(--purple))',
-                border: 'none', borderRadius: 9, color: 'white',
-                fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8,
-                boxShadow: '0 4px 14px rgba(59,130,246,0.3)',
-              }}>
-                <Zap size={15} /> Analisar Chances de Êxito
+              >
+                {iaLoading ? (
+                  <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Analisando...</>
+                ) : (
+                  <><Sparkles size={15} /> Analisar com IA</>
+                )}
               </button>
             </div>
-
-            {/* Result card (shown as demo) */}
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.08))', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 700 }}>Resultado da Análise Preditiva</h4>
-                    <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{ANALISE_PREDITIVA.tema}</p>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text4)' }}>Acurácia do modelo</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--blue-light)' }}>{ANALISE_PREDITIVA.acuracia}%</div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ padding: '18px 20px' }}>
-                {/* Win/Lose bar */}
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>✓ Favorável: {ANALISE_PREDITIVA.favoravel}%</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)' }}>✗ Desfavorável: {ANALISE_PREDITIVA.desfavoravel}%</span>
-                  </div>
-                  <div style={{ height: 12, background: 'var(--bg3)', borderRadius: 6, overflow: 'hidden' }}>
-                    <div style={{ width: `${ANALISE_PREDITIVA.favoravel}%`, height: '100%', background: 'linear-gradient(90deg, var(--green), #34D399)', borderRadius: 6 }} />
-                  </div>
-                </div>
-
-                <h5 style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Fatores Analisados</h5>
-                {ANALISE_PREDITIVA.fundamentos.map((f, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 9, alignItems: 'flex-start', marginBottom: 8 }}>
-                    <span style={{ fontSize: 14, marginTop: 1 }}>
-                      {f.peso === 'positivo' ? '✅' : f.peso === 'negativo' ? '❌' : '⚠️'}
-                    </span>
-                    <span style={{ fontSize: 13, color: 'var(--text2)' }}>{f.texto}</span>
-                  </div>
-                ))}
-
-                <div style={{ marginTop: 14, padding: '12px 14px', background: 'var(--bg3)', borderRadius: 9 }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', marginBottom: 5 }}>Precedentes usados na análise</p>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {ANALISE_PREDITIVA.precedentes.map(p => (
-                      <span key={p} style={{ fontSize: 11, padding: '3px 9px', background: 'var(--blue-dim)', color: 'var(--blue-light)', borderRadius: 5, fontWeight: 600 }}>{p}</span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Sidebar info */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '18px' }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Como funciona</h4>
-            {[
-              { n: '1', t: 'Descreva o caso', d: 'Informe os dados essenciais ou envie a petição em PDF' },
-              { n: '2', t: 'IA analisa precedentes', d: 'Modelos treinados em +500k decisões reais do STJ, TRF e TNU' },
-              { n: '3', t: 'Receba o score', d: 'Probabilidade de êxito com 90-95% de acurácia histórica' },
-              { n: '4', t: 'Jurisprudência de apoio', d: 'Lista dos precedentes mais relevantes com link da fonte' },
-            ].map(item => (
-              <div key={item.n} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'var(--blue)', flexShrink: 0 }}>{item.n}</div>
+          {iaError && (
+            <div style={{ background: 'var(--red-dim)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <AlertTriangle size={15} color="var(--red)" style={{ marginTop: 2, flexShrink: 0 }} />
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600 }}>{item.t}</p>
-                  <p style={{ fontSize: 12, color: 'var(--text4)', marginTop: 2 }}>{item.d}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--red)', marginBottom: 4 }}>Não foi possível usar a IA</p>
+                  <p style={{ fontSize: 12, color: 'var(--text2)' }}>{iaError}</p>
+                  <p style={{ fontSize: 11.5, color: 'var(--text4)', marginTop: 6 }}>Configure sua chave Claude API em <strong>Configurações → Integrações</strong></p>
                 </div>
               </div>
-            ))}
-            <div style={{ marginTop: 6, padding: '12px', background: 'var(--green-dim)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 9 }}>
-              <p style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>⚡ Base de dados atualizada semanalmente com decisões recentes de todos os tribunais.</p>
             </div>
-          </div>
+          )}
+
+          {iaResult && (
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+                <Sparkles size={16} color="var(--purple)" />
+                <span style={{ fontSize: 13, fontWeight: 700 }}>Análise Jurídica Gerada pela IA</span>
+                <span style={{ fontSize: 10.5, color: 'var(--text4)', marginLeft: 'auto' }}>Revise antes de utilizar · Sujeito ao julgamento do advogado responsável</span>
+              </div>
+              <div style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                {iaResult}
+              </div>
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
+                <button style={{ padding: '8px 16px', background: 'linear-gradient(135deg, var(--blue), var(--purple))', border: 'none', borderRadius: 8, color: 'white', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+                  📄 Usar na Petição
+                </button>
+                <button style={{ padding: '8px 16px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text2)', fontSize: 12.5, cursor: 'pointer' }}>
+                  💾 Salvar análise
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
