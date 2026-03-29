@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { supabase, signOut, onAuthStateChange } from './lib/supabase'
 
 // Pages
 import Login from './pages/Login'
@@ -20,24 +21,47 @@ import Header from './components/Header'
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(null)
   const [currentPage, setCurrentPage] = useState('dashboard')
+  const [loading, setLoading] = useState(true)
 
-  // Simulated authentication
+  // Verificar sessão do Supabase
   useEffect(() => {
-    const savedAuth = localStorage.getItem('prevos_auth')
-    if (savedAuth) {
-      setIsLoggedIn(true)
-    }
+    setLoading(true)
+
+    // Verificar sessão existente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setIsLoggedIn(true)
+        setUser(session.user)
+      }
+      setLoading(false)
+    })
+
+    // Listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setIsLoggedIn(true)
+        setUser(session.user)
+      } else {
+        setIsLoggedIn(false)
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    return () => subscription?.unsubscribe()
   }, [])
 
-  const handleLogin = () => {
-    localStorage.setItem('prevos_auth', 'true')
+  const handleLogin = (supabaseUser) => {
+    setUser(supabaseUser)
     setIsLoggedIn(true)
     setCurrentPage('dashboard')
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('prevos_auth')
+  const handleLogout = async () => {
+    await signOut()
+    setUser(null)
     setIsLoggedIn(false)
     setCurrentPage('login')
   }
@@ -85,6 +109,28 @@ export default function App() {
     }
   }
 
+  // Loading state
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: 'var(--bg)',
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: 48,
+            marginBottom: 16,
+            animation: 'spin 1s linear infinite',
+          }}>⚖️</div>
+          <p style={{ color: 'var(--text3)', fontSize: 14 }}>Carregando PrevOS...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />
   }
@@ -97,12 +143,13 @@ export default function App() {
         onNavigate={setCurrentPage}
         menuItems={menuItems}
         onLogout={handleLogout}
+        user={user}
       />
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Header */}
-        <Header currentPage={currentPage} menuItems={menuItems} />
+        <Header currentPage={currentPage} menuItems={menuItems} user={user} />
 
         {/* Page Content */}
         <div style={{ flex: 1, overflow: 'auto', background: 'var(--bg)' }}>

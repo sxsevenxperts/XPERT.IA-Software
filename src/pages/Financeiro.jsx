@@ -168,7 +168,7 @@ export default function Financeiro() {
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', gap: 5 }}>
                       {(h.status === 'pendente' || h.status === 'vencido') && (
-                        <button title="Enviar cobrança" style={{ background: 'var(--green-dim)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6, padding: '4px 8px', color: 'var(--green)', fontSize: 11.5' }}>
+                        <button title="Enviar cobrança" style={{ background: 'var(--green-dim)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 6, padding: '4px 8px', color: 'var(--green)', fontSize: 11.5 }}>
                           <Send size={12} />
                         </button>
                       )}

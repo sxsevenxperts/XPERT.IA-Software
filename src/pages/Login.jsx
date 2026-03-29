@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Scale, Eye, EyeOff, ArrowRight, Lock, Mail } from 'lucide-react'
+import { signIn, supabase } from '../lib/supabase'
 
 export default function Login({ onLogin }) {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail]       = useState('demo@prevos.com.br')
+  const [password, setPassword] = useState('demo123456')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
@@ -13,10 +14,21 @@ export default function Login({ onLogin }) {
     setError('')
     if (!email || !password) { setError('Preencha email e senha.'); return }
     setLoading(true)
+
     try {
-      await onLogin(email, password)
+      const { data, error: signInError } = await signIn(email, password)
+
+      if (signInError) {
+        setError(signInError.message || 'Credenciais inválidas.')
+        setLoading(false)
+        return
+      }
+
+      if (data?.user) {
+        onLogin(data.user)
+      }
     } catch (err) {
-      setError(err.message || 'Credenciais inválidas.')
+      setError(err.message || 'Erro ao fazer login.')
       setLoading(false)
     }
   }
