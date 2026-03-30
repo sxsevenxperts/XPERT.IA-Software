@@ -24,6 +24,7 @@ import Relatorios      from './pages/Relatorios'
 // Components
 import Sidebar from './components/Sidebar'
 import Header  from './components/Header'
+import Footer  from './components/Footer'
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -93,6 +94,7 @@ export default function App() {
         <div style={{ flex:1, overflow:'auto', background:'var(--bg)' }}>
           {renderPage()}
         </div>
+        <Footer />
       </div>
     </div>
   )

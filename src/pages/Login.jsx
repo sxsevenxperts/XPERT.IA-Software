@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Scale, Eye, EyeOff, ArrowRight, Lock, Mail } from 'lucide-react'
 import { signIn, supabase } from '../lib/supabase'
+import Footer from '../components/Footer'
 
 export default function Login({ onLogin }) {
   const [email, setEmail]       = useState('demo@prevos.com.br')
@@ -168,6 +169,8 @@ export default function Login({ onLogin }) {
           Demo mode: qualquer e-mail + senha funciona
         </p>
       </div>
+
+      <Footer />
     </div>
   )
 }
