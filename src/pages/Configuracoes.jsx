@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Settings, Key, Eye, EyeOff, Check, X, Plus, Trash2, AlertTriangle, Shield, Zap, CheckCircle, Lock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Settings, Key, Eye, EyeOff, Check, X, Plus, Trash2, AlertTriangle, Shield, Zap, CheckCircle, Lock, Briefcase } from 'lucide-react'
 import { saveClaudeKey, testClaudeKey } from '../lib/claude'
 import { mudarSenhaPainel } from '../lib/auth-auto'
+import { supabase, getProfile, updateProfile } from '../lib/supabase'
 
 const INTEGRACOES = [
   {
@@ -99,6 +100,40 @@ export default function Configuracoes() {
   const [senhaVis, setSenhaVis]     = useState(false)
   const [mudandoSenha, setMudandoSenha] = useState(false)
   const [resultadoSenha, setResultadoSenha] = useState('')
+  const [oab, setOab] = useState('')
+  const [salvancoOab, setSalvandoOab] = useState(false)
+  const [resultadoOab, setResultadoOab] = useState('')
+  const [userProfile, setUserProfile] = useState(null)
+
+  useEffect(() => {
+    loadProfile()
+  }, [])
+
+  const loadProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const profile = await getProfile(user.id)
+      if (profile.data) {
+        setUserProfile(profile.data)
+        setOab(profile.data.oab || '')
+      }
+    }
+  }
+
+  const handleSalvarOab = async (e) => {
+    e.preventDefault()
+    if (!userProfile) return
+    setSalvandoOab(true)
+    try {
+      const result = await updateProfile(userProfile.id, { oab })
+      setResultadoOab({ success: true, message: '✓ OAB atualizada com sucesso!' })
+      setTimeout(() => setResultadoOab(''), 3000)
+    } catch (err) {
+      setResultadoOab({ success: false, message: `Erro ao salvar OAB: ${err.message}` })
+    } finally {
+      setSalvandoOab(false)
+    }
+  }
 
   const toggleVis = id => setChaveVis(p => ({ ...p, [id]: !p[id] }))
 
@@ -296,7 +331,66 @@ export default function Configuracoes() {
 
       {/* ── MINHA CONTA ── */}
       {aba === 'conta' && (
-        <div style={{ maxWidth: 500 }}>
+        <div style={{ maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Dados Profissionais */}
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--purple-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Briefcase size={18} color="var(--purple)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 15, fontWeight: 700 }}>Dados Profissionais</h3>
+                <p style={{ fontSize: 12, color: 'var(--text3)' }}>OAB e informações de atuação</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSalvarOab} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 6 }}>Número da OAB</label>
+                <input
+                  type="text"
+                  placeholder="Ex: 123456/SP"
+                  value={oab}
+                  onChange={e => setOab(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 14, color: 'var(--text)', outline: 'none' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--blue)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                />
+                <p style={{ fontSize: 11, color: 'var(--text4)', marginTop: 6 }}>Essencial para sincronizar seus processos automaticamente</p>
+              </div>
+
+              {resultadoOab && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 8,
+                  background: resultadoOab.success ? 'var(--green-dim)' : 'var(--red-dim)',
+                  border: `1px solid ${resultadoOab.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  fontSize: 12.5, color: resultadoOab.success ? 'var(--green)' : 'var(--red)', fontWeight: 600,
+                }}>
+                  {resultadoOab.message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={salvancoOab || !oab}
+                style={{
+                  padding: '11px 16px', background: oab ? 'linear-gradient(135deg, var(--purple), #a855f7)' : 'var(--bg3)',
+                  border: 'none', borderRadius: 9, color: oab ? 'white' : 'var(--text4)',
+                  fontSize: 14, fontWeight: 700, cursor: oab ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: oab ? 1 : 0.5,
+                }}
+              >
+                {salvancoOab ? (
+                  <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Salvando...</>
+                ) : (
+                  <><Check size={15} /> Salvar OAB</>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Alterar Senha */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
               <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
