@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Settings, Key, Eye, EyeOff, Check, X, Plus, Trash2, AlertTriangle, Shield, Zap, CheckCircle } from 'lucide-react'
+import { Settings, Key, Eye, EyeOff, Check, X, Plus, Trash2, AlertTriangle, Shield, Zap, CheckCircle, Lock } from 'lucide-react'
 import { saveClaudeKey, testClaudeKey } from '../lib/claude'
+import { mudarSenhaPainel } from '../lib/auth-auto'
 
 const INTEGRACOES = [
   {
@@ -94,8 +95,27 @@ export default function Configuracoes() {
   const [testandoId, setTestandoId] = useState(null)
   const [testResult, setTestResult] = useState({})
   const [salvandoId, setSalvandoId] = useState(null)
+  const [novaSenha, setNovaSenha]   = useState('')
+  const [senhaVis, setSenhaVis]     = useState(false)
+  const [mudandoSenha, setMudandoSenha] = useState(false)
+  const [resultadoSenha, setResultadoSenha] = useState('')
 
   const toggleVis = id => setChaveVis(p => ({ ...p, [id]: !p[id] }))
+
+  const handleMudarSenha = async (e) => {
+    e.preventDefault()
+    if (!novaSenha || novaSenha.length < 6) {
+      setResultadoSenha({ erro: 'Senha deve ter pelo menos 6 caracteres' })
+      return
+    }
+    setMudandoSenha(true)
+    const resultado = await mudarSenhaPainel(novaSenha)
+    setResultadoSenha(resultado)
+    if (resultado.success) {
+      setNovaSenha('')
+    }
+    setMudandoSenha(false)
+  }
 
   const handleSalvar = async (id) => {
     const chave = chaves[id]
@@ -144,6 +164,7 @@ export default function Configuracoes() {
       <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid var(--border)' }}>
         {[
           { id: 'apis',      label: 'Integrações & APIs', icon: '🔗' },
+          { id: 'conta',     label: 'Minha Conta',        icon: '👤' },
           { id: 'sistema',   label: 'Preferências',       icon: '⚙️' },
           { id: 'usuarios',  label: 'Usuários',           icon: '👥' },
           { id: 'seguranca', label: 'Segurança',          icon: '🛡️' },
@@ -269,6 +290,82 @@ export default function Configuracoes() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ── MINHA CONTA ── */}
+      {aba === 'conta' && (
+        <div style={{ maxWidth: 500 }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--blue-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock size={18} color="var(--blue)" />
+              </div>
+              <div>
+                <h3 style={{ fontSize: 15, fontWeight: 700 }}>Alterar Senha</h3>
+                <p style={{ fontSize: 12, color: 'var(--text3)' }}>Mude sua senha diretamente no painel</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleMudarSenha} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 6 }}>Nova Senha</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={senhaVis ? 'text' : 'password'}
+                    placeholder="Mínimo 6 caracteres"
+                    value={novaSenha}
+                    onChange={e => setNovaSenha(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px 10px 38px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, fontSize: 14, color: 'var(--text)', outline: 'none' }}
+                    onFocus={e => e.target.style.borderColor = 'var(--blue)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                  />
+                  <Lock size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text4)', pointerEvents: 'none' }} />
+                  <button
+                    type="button"
+                    onClick={() => setSenhaVis(!senhaVis)}
+                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text4)', cursor: 'pointer', padding: 4 }}
+                  >
+                    {senhaVis ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+              </div>
+
+              {resultadoSenha && (
+                <div style={{
+                  padding: '10px 12px', borderRadius: 8,
+                  background: resultadoSenha.success ? 'var(--green-dim)' : 'var(--red-dim)',
+                  border: `1px solid ${resultadoSenha.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  fontSize: 12.5, color: resultadoSenha.success ? 'var(--green)' : 'var(--red)', fontWeight: 600,
+                }}>
+                  {resultadoSenha.message || resultadoSenha.error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={mudandoSenha || !novaSenha}
+                style={{
+                  padding: '11px 16px', background: novaSenha ? 'linear-gradient(135deg, var(--blue), var(--purple))' : 'var(--bg3)',
+                  border: 'none', borderRadius: 9, color: novaSenha ? 'white' : 'var(--text4)',
+                  fontSize: 14, fontWeight: 700, cursor: novaSenha ? 'pointer' : 'default',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: novaSenha ? 1 : 0.5,
+                }}
+              >
+                {mudandoSenha ? (
+                  <><div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} /> Alterando...</>
+                ) : (
+                  <><Check size={15} /> Salvar Nova Senha</>
+                )}
+              </button>
+            </form>
+
+            <div style={{ marginTop: 20, padding: '12px 14px', background: 'var(--bg3)', borderRadius: 8, display: 'flex', gap: 8 }}>
+              <AlertTriangle size={14} style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 11.5, color: 'var(--text4)', lineHeight: 1.5 }}>A senha é alterada imediatamente. Você será desconectado e precisará fazer login novamente.</p>
+            </div>
           </div>
         </div>
       )}
