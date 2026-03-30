@@ -1,163 +1,101 @@
 import { useState, useEffect } from 'react'
-import { supabase, checkSubscription, checkIsAdmin } from './lib/supabase'
-import NavBar from './components/NavBar'
-import AlertToast from './components/AlertToast'
-import Dashboard from './pages/Dashboard'
-import ActiveTrip from './pages/ActiveTrip'
-import History from './pages/History'
-import Settings from './pages/Settings'
-import Stats from './pages/Stats'
-import Chat from './pages/Chat'
-import Billing from './pages/Billing'
-import AdminPanel from './pages/AdminPanel'
-import Login, { SubscriptionExpired } from './pages/Login'
-import { useGPS } from './hooks/useGPS'
+import { supabase, signOut } from './lib/supabase'
 
-function MainApp({ sharedRide, user, subscription, onLogout }) {
-  const [tab, setTab] = useState('dashboard')
+// Pages
+import Login           from './pages/Login'
+import Dashboard       from './pages/Dashboard'
+import Clientes        from './pages/Clientes'
+import Casos           from './pages/Casos'
+import Calculadora     from './pages/Calculadora'
+import LaudosIA        from './pages/LaudosIA'
+import Peticoes        from './pages/Peticoes'
+import Jurisprudencia  from './pages/Jurisprudencia'
+import JuizVirtual     from './pages/JuizVirtual'
+import Planejamento    from './pages/Planejamento'
+import Financeiro      from './pages/Financeiro'
+import Configuracoes   from './pages/Configuracoes'
+import Agenda          from './pages/Agenda'
+import Intimacoes      from './pages/Intimacoes'
+import Comunicacoes    from './pages/Comunicacoes'
+import Reunioes        from './pages/Reunioes'
+import AssinaturaDigital from './pages/AssinaturaDigital'
+import Relatorios      from './pages/Relatorios'
 
-  // ⚡ Inicia GPS em tempo real quando app é aberto
-  useGPS()
+// Components
+import Sidebar from './components/Sidebar'
+import Header  from './components/Header'
+import Footer  from './components/Footer'
 
-  if (tab === 'billing') {
+export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser]             = useState(null)
+  const [tab, setTab]               = useState('dashboard')
+  const [loading, setLoading]       = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) { setIsLoggedIn(true); setUser(session.user) }
+      setLoading(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user) { setIsLoggedIn(true); setUser(session.user) }
+      else               { setIsLoggedIn(false); setUser(null) }
+      setLoading(false)
+    })
+    return () => subscription?.unsubscribe()
+  }, [])
+
+  const handleLogin  = (u) => { setUser(u); setIsLoggedIn(true); setTab('dashboard') }
+  const handleLogout = async () => { await signOut(); setUser(null); setIsLoggedIn(false) }
+
+  const renderPage = () => {
+    switch (tab) {
+      case 'dashboard':         return <Dashboard        onTab={setTab} />
+      case 'clientes':          return <Clientes />
+      case 'casos':             return <Casos />
+      case 'agenda':            return <Agenda />
+      case 'intimacoes':        return <Intimacoes />
+      case 'comunicacoes':      return <Comunicacoes />
+      case 'calculadora':       return <Calculadora />
+      case 'laudos':            return <LaudosIA />
+      case 'peticoes':          return <Peticoes />
+      case 'jurisprudencia':    return <Jurisprudencia />
+      case 'juiz-virtual':      return <JuizVirtual />
+      case 'planejamento':      return <Planejamento />
+      case 'financeiro':        return <Financeiro />
+      case 'reunioes':          return <Reunioes />
+      case 'assinatura':        return <AssinaturaDigital />
+      case 'relatorios':        return <Relatorios />
+      case 'configuracoes':     return <Configuracoes />
+      default:                  return <Dashboard onTab={setTab} />
+    }
+  }
+
+  if (loading) {
     return (
-      <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
-        <Billing user={user} subscription={subscription} onBack={() => setTab('dashboard')} />
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'var(--bg)' }}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ fontSize:48, marginBottom:16, animation:'spin 1s linear infinite' }}>⚖️</div>
+          <p style={{ color:'var(--text3)', fontSize:14 }}>Carregando PrevOS...</p>
+        </div>
       </div>
     )
   }
 
+  if (!isLoggedIn) return <Login onLogin={handleLogin} />
+
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
-      <div style={{
-        maxWidth: 480, margin: '0 auto',
-        paddingTop: 'env(safe-area-inset-top)',
-        minHeight: '100dvh', position: 'relative',
-      }}>
-        {tab === 'dashboard' && <Dashboard onTab={setTab} />}
-        {tab === 'trip'      && <ActiveTrip sharedRide={sharedRide} />}
-        {tab === 'history'   && <History />}
-        {tab === 'stats'     && <Stats />}
-        {tab === 'chat'      && <Chat user={user} />}
-        {tab === 'settings'  && <Settings user={user} subscription={subscription} onTab={setTab} onLogout={onLogout} />}
+    <div style={{ display:'flex', height:'100vh', overflow:'hidden' }}>
+      <Sidebar tab={tab} onTab={setTab} user={user} onLogout={handleLogout} />
 
-        <div style={{
-          textAlign: 'center', padding: '16px 0 90px',
-          borderTop: '1px solid var(--border-dim)', marginTop: 20,
-        }}>
-          <p style={{ fontSize: 11, color: '#475569' }}>
-            Powered by <strong style={{ color: '#64748b' }}>Seven Xperts</strong>
-          </p>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', marginLeft:'var(--sidebar-w)' }}>
+        <Header tab={tab} onNewAction={() => {}} />
+        <div style={{ flex:1, overflow:'auto', background:'var(--bg)' }}>
+          {renderPage()}
         </div>
-
-        <AlertToast />
-        <NavBar active={tab} onTab={setTab} />
+        <Footer />
       </div>
     </div>
   )
-}
-
-export default function App() {
-  const [auth, setAuth] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [sharedRide, setSharedRide] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Always load immediately
-    const init = async () => {
-      if (!supabase) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          try {
-            const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: sub })
-            setIsAdmin(isAdminUser)
-          } catch {
-            // Subscription check failed, still allow login
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
-            setIsAdmin(isAdminUser)
-          }
-        }
-      } catch (err) {
-        console.error('Auth init error:', err)
-      } finally {
-        setLoading(false)
-      }
-
-      // Listen for auth changes
-      const { data: { subscription: listener } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          try {
-            const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: sub })
-            setIsAdmin(isAdminUser)
-          } catch {
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
-            setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
-            setIsAdmin(isAdminUser)
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setAuth(null)
-          setIsAdmin(false)
-        }
-      })
-
-      return () => listener?.unsubscribe()
-    }
-
-    init()
-  }, [])
-
-  const handleAuth = async (result) => {
-    setAuth(result)
-    if (result?.user?.id) {
-      const isAdminUser = result.user.email === 'sevenxpertssxacademy@gmail.com'
-      setIsAdmin(isAdminUser)
-    }
-  }
-
-  const handleLogout = async () => {
-    if (supabase) await supabase.auth.signOut()
-    setAuth(null)
-    setIsAdmin(false)
-  }
-
-  if (loading) {
-    return <div style={{ background: '#000', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#fff', textAlign: 'center' }}>Carregando...</div>
-    </div>
-  }
-
-  if (auth === null) return <Login onAuth={handleAuth} />
-
-  // Admin panel
-  if (isAdmin && auth?.user) {
-    return <AdminPanel user={auth.user} onLogout={handleLogout} />
-  }
-
-  // Check subscription
-  const subBlocked = auth?.user &&
-    auth.subscription &&
-    !auth.subscription.active &&
-    auth.subscription.reason !== 'not_found'
-
-  if (subBlocked) {
-    return <SubscriptionExpired user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
-  }
-
-  // Driver app
-  if (auth?.user) {
-    return <MainApp sharedRide={sharedRide} user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
-  }
-
-  return <Login onAuth={handleAuth} />
 }
