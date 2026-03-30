@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { Search, Plus, Filter, Calendar, Clock, CheckCircle, AlertCircle, FileText, ExternalLink, X, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Plus, Filter, Calendar, Clock, CheckCircle, AlertCircle, FileText, ExternalLink, X, ChevronDown, Zap } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const MOCK_CASOS = [
   { id: 'PRV-0342', cliente: 'João Carlos Silva',     tipo: 'Aposentadoria por Idade',   status: 'em_andamento', advogado: 'Dr. Ana Lima',    tribunal: 'INSS (Adm)',  protocolo: '1234567-89',  abertura: '12/01/2025', prazo: '25/03/2026', valor: 'R$ 4.200',   prioridade: 'alta' },
@@ -25,6 +26,45 @@ const prioridadeDot = {
   alta:   'var(--red)',
   normal: 'var(--amber)',
   baixa:  'var(--text4)',
+}
+
+function SincronizarOabModal({ onClose, onSync, userOab, loading }) {
+  const [confirma, setConfirma] = useState(false)
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 500, padding: 20 }}>
+      <div className="fade-in" style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 18, padding: '28px', width: '100%', maxWidth: 420, boxShadow: 'var(--shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22 }}>
+          <Zap size={20} style={{ color: 'var(--blue)' }} />
+          <h3 style={{ fontSize: 16, fontWeight: 700 }}>Sincronizar Casos pela OAB</h3>
+          <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text3)' }}><X size={18} /></button>
+        </div>
+
+        <div style={{ background: 'var(--blue-dim)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 10, padding: '12px 14px', marginBottom: 18 }}>
+          <p style={{ fontSize: 13, color: 'var(--blue-light)', lineHeight: 1.5, margin: 0 }}>
+            Vamos sincronizar todos os casos registrados com sua OAB <strong>{userOab}</strong>. Isso pode levar alguns segundos.
+          </p>
+        </div>
+
+        {!confirma ? (
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button onClick={onClose} style={{ padding: '10px 18px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 9, color: 'var(--text2)', fontSize: 13 }}>Cancelar</button>
+            <button onClick={() => setConfirma(true)} style={{ padding: '10px 22px', background: 'linear-gradient(135deg, var(--blue), var(--purple))', border: 'none', borderRadius: 9, color: 'white', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 14px rgba(59,130,246,0.3)' }}>
+              Sincronizar Agora
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button onClick={onClose} disabled={loading} style={{ padding: '10px 18px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 9, color: 'var(--text2)', fontSize: 13, opacity: loading ? 0.5 : 1 }}>Cancelar</button>
+            <button onClick={() => onSync()} disabled={loading} style={{ padding: '10px 22px', background: loading ? 'var(--bg4)' : 'linear-gradient(135deg, var(--green), #10b981)', border: 'none', borderRadius: 9, color: 'white', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 14px rgba(16,185,129,0.3)', opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {loading && <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />}
+              {loading ? 'Sincronizando...' : 'Confirmar'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function NovoCasoModal({ onClose, onSave }) {
@@ -77,7 +117,64 @@ export default function Casos() {
   const [search, setSearch]       = useState('')
   const [statusFilter, setStatus] = useState('todos')
   const [showModal, setShowModal] = useState(false)
+  const [showSyncModal, setShowSyncModal] = useState(false)
   const [casos, setCasos]         = useState(MOCK_CASOS)
+  const [userProfile, setUserProfile] = useState(null)
+  const [syncLoading, setSyncLoading] = useState(false)
+
+  useEffect(() => {
+    loadUserProfile()
+  }, [])
+
+  async function loadUserProfile() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+      setUserProfile(profile)
+    }
+  }
+
+  async function handleSyncByOab() {
+    if (!userProfile?.oab) {
+      alert('OAB não configurada no seu perfil')
+      return
+    }
+
+    setSyncLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const response = await fetch(
+        'https://kyefzktzhviahsodyayd.supabase.co/functions/v1/fetch-cases-by-oab',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            oab: userProfile.oab,
+            userId: user?.id,
+            jusbrasil_key: userProfile?.jusbrasil_key || null,
+          }),
+        }
+      )
+
+      const result = await response.json()
+      if (result.success) {
+        alert(`✓ ${result.message}`)
+        setShowSyncModal(false)
+        // Recarregar casos do banco
+        location.reload()
+      } else {
+        alert(`Erro: ${result.message}`)
+      }
+    } catch (err) {
+      alert(`Erro ao sincronizar: ${err.message}`)
+    } finally {
+      setSyncLoading(false)
+    }
+  }
 
   const filtered = casos.filter(c => {
     const m = c.cliente.toLowerCase().includes(search.toLowerCase()) ||
@@ -95,6 +192,7 @@ export default function Casos() {
   return (
     <div className="fade-in" style={{ padding: '24px', maxWidth: 1400 }}>
       {showModal && <NovoCasoModal onClose={() => setShowModal(false)} onSave={addCaso} />}
+      {showSyncModal && <SincronizarOabModal onClose={() => setShowSyncModal(false)} onSync={handleSyncByOab} userOab={userProfile?.oab} loading={syncLoading} />}
 
       {/* Controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
@@ -121,9 +219,16 @@ export default function Casos() {
             ))}
           </div>
         </div>
-        <button onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg, var(--blue), var(--purple))', color: 'white', border: 'none', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 14px rgba(59,130,246,0.3)' }}>
-          <Plus size={15} /> Novo Caso
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {userProfile?.oab && (
+            <button onClick={() => setShowSyncModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}>
+              <Zap size={15} /> Sincronizar OAB
+            </button>
+          )}
+          <button onClick={() => setShowModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'linear-gradient(135deg, var(--blue), var(--purple))', color: 'white', border: 'none', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 14px rgba(59,130,246,0.3)' }}>
+            <Plus size={15} /> Novo Caso
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
