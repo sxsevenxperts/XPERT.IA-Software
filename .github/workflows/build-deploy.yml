@@ -29,28 +29,19 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/xpert-ia-software:latest
+          tags: ghcr.io/${{ github.repository_owner }}/prevos:latest
           build-args: |
-            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
-            VITE_SUPABASE_SERVICE_KEY=${{ secrets.VITE_SUPABASE_SERVICE_KEY }}
+            VITE_SUPABASE_URL=https://kyefzktzhviahsodyayd.supabase.co
+            VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5ZWZ6a3R6aHZpYWhzb2R5YXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MDU4NTAsImV4cCI6MjA5MDM4MTg1MH0.htprONYYNUmOQAtw5dF0C8Huk4pND2y0PhjJKB2-nN0
 
       - name: Make package public
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api --method PATCH /user/packages/container/easydrive -f visibility=public || echo "Package visibility update skipped"
+          gh api --method PATCH /user/packages/container/prevos -f visibility=public || echo "Package visibility update skipped"
 
       - name: Trigger EasyPanel Redeploy
-        env:
-          EASYPANEL_WEBHOOK_URL: ${{ secrets.EASYPANEL_WEBHOOK_URL }}
         run: |
-          if [ -n "$EASYPANEL_WEBHOOK_URL" ]; then
-            curl -s -X POST "$EASYPANEL_WEBHOOK_URL" \
-              -H "Content-Type: application/json" \
-              -d '{"projectName":"xpert-ia","serviceName":"software"}' \
-              && echo "EasyPanel redeploy triggered successfully" \
-              || echo "EasyPanel redeploy webhook call failed"
-          else
-            echo "EASYPANEL_WEBHOOK_URL not configured — skipping auto-redeploy"
-          fi
+          curl -s "http://187.77.32.172:3000/api/deploy/aa0783ea95b9c773f64fcea9df2ed02b20c460dc88bae5c2" \
+            && echo "EasyPanel redeploy triggered" \
+            || echo "EasyPanel redeploy failed"
