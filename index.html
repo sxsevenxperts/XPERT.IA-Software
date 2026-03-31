@@ -90,28 +90,27 @@
 
       /* Login page layout - 20% larger + centered */
       #root > div {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        background-image: radial-gradient(ellipse at 20% 40%, rgba(59,130,246,0.08) 0%, transparent 55%),
-                          radial-gradient(ellipse at 80% 60%, rgba(139,92,246,0.06) 0%, transparent 55%);
+        min-height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
       }
 
-      #root > div > div:not(footer) {
+      #root > div > div {
         flex: 1;
-        display: flex;
-        justify-content: center;
-        padding: 0 20px;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 0 20px !important;
       }
 
-      #root > div > div:not(footer) > div {
-        width: 100%;
-        max-width: 480px;
-        margin: auto 0;
+      #root > div > div > div {
+        width: 100% !important;
+        max-width: 480px !important;
       }
 
-      #root > div > div:last-child {
-        flex: 0;
+      #root > div > footer {
+        flex: 0 !important;
       }
     </style>
   </head>
