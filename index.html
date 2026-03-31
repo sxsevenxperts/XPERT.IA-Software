@@ -87,6 +87,21 @@
         animation: shimmer 1.6s infinite;
         border-radius: var(--radius);
       }
+
+      /* Login page layout - 20% larger + centered */
+      body > div > div:first-child {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+
+      body > div > div:first-child > div {
+        width: 100%;
+        max-width: 480px;
+      }
     </style>
   </head>
   <body>
