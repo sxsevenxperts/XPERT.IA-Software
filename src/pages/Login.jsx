@@ -36,19 +36,20 @@ export default function Login({ onLogin }) {
 
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
       background: 'var(--bg)',
       backgroundImage: [
         'radial-gradient(ellipse at 20% 40%, rgba(59,130,246,0.08) 0%, transparent 55%)',
         'radial-gradient(ellipse at 80% 60%, rgba(139,92,246,0.06) 0%, transparent 55%)',
       ].join(','),
+      padding: '40px 20px',
     }}>
-      {/* Spacer top */}
-      <div style={{ flex: 1 }} />
-
       {/* Login Card - 20% larger */}
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '0 20px' }} className="fade-in">
-        <div style={{ width: '100%', maxWidth: 480 }}>
+      <div className="fade-in" style={{ width: '100%', maxWidth: 480, flex: '0 0 auto' }}>
 
         {/* Logo - 20% larger */}
         <div style={{ textAlign: 'center', marginBottom: 38.4 }}>
@@ -173,11 +174,8 @@ export default function Login({ onLogin }) {
         <p style={{ textAlign: 'center', fontSize: 13.2, color: 'var(--text4)', marginTop: 24 }}>
           Demo mode: qualquer e-mail + senha funciona
         </p>
-        </div>
       </div>
 
-      {/* Spacer bottom + Footer */}
-      <div style={{ flex: 1 }} />
       <Footer />
     </div>
   )
