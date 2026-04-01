@@ -6,7 +6,7 @@ import {
 import {
   Users, Briefcase, DollarSign, TrendingUp, AlertTriangle,
   CheckCircle, ArrowUpRight, ArrowDownRight, Brain,
-  Calendar, ChevronRight, Bell, Clock, Sparkles, Scale
+  Calendar, ChevronRight, Bell, Clock, Sparkles, Scale, CheckSquare
 } from 'lucide-react'
 
 const revenueData = [
@@ -131,8 +131,8 @@ export default function Dashboard({ onTab }) {
       <div style={{ display: 'flex', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
         <KpiCard icon={Users}      label="Clientes Ativos"       value="248"        sub="34 novos este mês"     trend="+16%"  trendUp color="var(--blue)" />
         <KpiCard icon={Briefcase}  label="Casos em Andamento"    value="137"        sub="28 aguardando prazo"   trend="+8%"   trendUp color="var(--purple)" />
+        <KpiCard icon={CheckSquare} label="Próximas Tarefas"     value="12"         sub="3 hoje, 5 esta semana" trend="+40%" trendUp color="var(--red)" />
         <KpiCard icon={DollarSign} label="Honorários a Receber"  value="R$ 142k"    sub="51 faturas abertas"    trend="+24%"  trendUp color="var(--green)" />
-        <KpiCard icon={TrendingUp} label="Taxa de Êxito"         value="91,2%"      sub="últimos 12 meses"      trend="+3.4%" trendUp color="var(--amber)" />
       </div>
 
       {/* ── Row 2: Charts ── */}

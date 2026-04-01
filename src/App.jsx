@@ -6,6 +6,8 @@ import Login           from './pages/Login'
 import Dashboard       from './pages/Dashboard'
 import Clientes        from './pages/Clientes'
 import Casos           from './pages/Casos'
+import Tarefas         from './pages/Tarefas'
+import Alertas         from './pages/Alertas'
 import Calculadora     from './pages/Calculadora'
 import LaudosIA        from './pages/LaudosIA'
 import Peticoes        from './pages/Peticoes'
@@ -54,6 +56,8 @@ export default function App() {
       case 'dashboard':         return <Dashboard        onTab={setTab} />
       case 'clientes':          return <Clientes />
       case 'casos':             return <Casos />
+      case 'tarefas':           return <Tarefas />
+      case 'alertas':           return <Alertas />
       case 'agenda':            return <Agenda />
       case 'intimacoes':        return <Intimacoes />
       case 'comunicacoes':      return <Comunicacoes />

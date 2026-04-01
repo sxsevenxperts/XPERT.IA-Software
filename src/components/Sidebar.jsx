@@ -4,7 +4,7 @@ import {
   Settings, LogOut, Scale, Scroll, BarChart2,
   Calendar, Bell, MessageSquare, Video, PenTool,
   BookOpen, Gavel, Search, Shield, ClipboardList,
-  Sparkles
+  Sparkles, CheckSquare
 } from 'lucide-react'
 
 const NAV_GROUPS = [
@@ -15,6 +15,7 @@ const NAV_GROUPS = [
       { id: 'agenda',        label: 'Agenda & Prazos',  icon: Calendar,        badge: 'NOVO' },
       { id: 'clientes',      label: 'Clientes & CRM',   icon: Users,           badge: null },
       { id: 'casos',         label: 'Casos & Processos',icon: Briefcase,       badge: null },
+      { id: 'tarefas',       label: 'Tarefas & Alertas',icon: CheckSquare,     badge: null },
       { id: 'intimacoes',    label: 'Intimações',       icon: Bell,            badge: 'NOVO' },
       { id: 'comunicacoes',  label: 'Comunicações',     icon: MessageSquare,   badge: 'NOVO' },
     ],

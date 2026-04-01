@@ -6,6 +6,8 @@ const PAGE_TITLES = {
   agenda:       { title: 'Agenda & Prazos',       subtitle: 'Compromissos, audiências e prazos processuais' },
   clientes:     { title: 'Clientes & CRM',        subtitle: 'Gestão completa de clientes e relacionamentos' },
   casos:        { title: 'Casos & Processos',     subtitle: 'Acompanhamento processual multi-área' },
+  tarefas:      { title: 'Tarefas & Checklist',   subtitle: 'Gerencie suas tarefas e prazos críticos' },
+  alertas:      { title: 'Alertas & Notificações',subtitle: 'Acompanhe seus prazos críticos e vencimentos' },
   intimacoes:   { title: 'Intimações',            subtitle: 'Controle automático de intimações judiciais' },
   comunicacoes: { title: 'Comunicações',          subtitle: 'Mensagens e atualizações com clientes' },
   calculadora:  { title: 'Calculadora Jurídica',  subtitle: 'Cálculos para todas as áreas do Direito' },

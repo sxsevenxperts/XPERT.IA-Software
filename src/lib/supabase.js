@@ -138,3 +138,149 @@ export async function getProfile(userId) {
     .single()
   return { data, error }
 }
+
+// ============================================
+// TAREFAS - Task Management
+// ============================================
+
+/**
+ * Buscar tarefas do usuário
+ */
+export async function fetchTarefas(userId, casoId = null) {
+  let query = supabase
+    .from('tarefas')
+    .select('*')
+    .eq('user_id', userId)
+    .order('data_vencimento', { ascending: true })
+  
+  if (casoId) {
+    query = query.eq('caso_id', casoId)
+  }
+  
+  const { data, error } = await query
+  return { data, error }
+}
+
+/**
+ * Criar nova tarefa
+ */
+export async function createTarefa(tarefaData, userId) {
+  const { data, error } = await supabase
+    .from('tarefas')
+    .insert([{ ...tarefaData, user_id: userId }])
+  return { data, error }
+}
+
+/**
+ * Atualizar tarefa
+ */
+export async function updateTarefa(tarefaId, tarefaData) {
+  const { data, error } = await supabase
+    .from('tarefas')
+    .update(tarefaData)
+    .eq('id', tarefaId)
+  return { data, error }
+}
+
+/**
+ * Deletar tarefa
+ */
+export async function deleteTarefa(tarefaId) {
+  const { data, error } = await supabase
+    .from('tarefas')
+    .delete()
+    .eq('id', tarefaId)
+  return { data, error }
+}
+
+// ============================================
+// ALERTAS - Deadline Alerts
+// ============================================
+
+/**
+ * Buscar alertas não lidos do usuário
+ */
+export async function fetchAlertas(userId) {
+  const { data, error } = await supabase
+    .from('alertas')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('notificacao_lida', false)
+    .order('data_alerta', { ascending: true })
+  return { data, error }
+}
+
+/**
+ * Criar novo alerta
+ */
+export async function createAlerta(alertaData, userId) {
+  const { data, error } = await supabase
+    .from('alertas')
+    .insert([{ ...alertaData, user_id: userId }])
+  return { data, error }
+}
+
+/**
+ * Marcar alerta como lido
+ */
+export async function marcarAlertaComoLido(alertaId) {
+  const { data, error } = await supabase
+    .from('alertas')
+    .update({ notificacao_lida: true })
+    .eq('id', alertaId)
+  return { data, error }
+}
+
+// ============================================
+// TEMPLATES - Document Templates
+// ============================================
+
+/**
+ * Buscar templates do usuário
+ */
+export async function fetchTemplates(userId, tipo = null) {
+  let query = supabase
+    .from('templates')
+    .select('*')
+    .eq('user_id', userId)
+    .order('nome', { ascending: true })
+  
+  if (tipo) {
+    query = query.eq('tipo', tipo)
+  }
+  
+  const { data, error } = await query
+  return { data, error }
+}
+
+/**
+ * Criar novo template
+ */
+export async function createTemplate(templateData, userId) {
+  const { data, error } = await supabase
+    .from('templates')
+    .insert([{ ...templateData, user_id: userId }])
+  return { data, error }
+}
+
+/**
+ * Atualizar template
+ */
+export async function updateTemplate(templateId, templateData) {
+  const { data, error } = await supabase
+    .from('templates')
+    .update(templateData)
+    .eq('id', templateId)
+  return { data, error }
+}
+
+/**
+ * Deletar template
+ */
+export async function deleteTemplate(templateId) {
+  const { data, error } = await supabase
+    .from('templates')
+    .delete()
+    .eq('id', templateId)
+  return { data, error }
+}
