@@ -373,3 +373,106 @@ export async function sendNotification(userId, notificationData) {
     }])
   return { data, error }
 }
+
+// ============================================
+// CALENDAR INTEGRATIONS - Google Calendar & Outlook Sync
+// ============================================
+
+/**
+ * Buscar integrações de calendário do usuário
+ */
+export async function fetchCalendarIntegrations(userId) {
+  const { data, error } = await supabase
+    .from('calendar_integrations')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  return { data, error }
+}
+
+/**
+ * Criar nova integração de calendário
+ */
+export async function createCalendarIntegration(integrationData, userId) {
+  const { data, error } = await supabase
+    .from('calendar_integrations')
+    .insert([{ ...integrationData, user_id: userId }])
+  return { data, error }
+}
+
+/**
+ * Atualizar integração de calendário
+ */
+export async function updateCalendarIntegration(integrationId, integrationData) {
+  const { data, error } = await supabase
+    .from('calendar_integrations')
+    .update(integrationData)
+    .eq('id', integrationId)
+  return { data, error }
+}
+
+/**
+ * Deletar integração de calendário
+ */
+export async function deleteCalendarIntegration(integrationId) {
+  const { data, error } = await supabase
+    .from('calendar_integrations')
+    .delete()
+    .eq('id', integrationId)
+  return { data, error }
+}
+
+/**
+ * Buscar eventos de calendário sincronizados
+ */
+export async function fetchCalendarEvents(userId, dataInicio = null, dataFim = null) {
+  let query = supabase
+    .from('calendar_events')
+    .select('*')
+    .eq('user_id', userId)
+    .order('data_inicio', { ascending: true })
+  
+  if (dataInicio) {
+    query = query.gte('data_inicio', dataInicio)
+  }
+  if (dataFim) {
+    query = query.lte('data_inicio', dataFim)
+  }
+  
+  const { data, error } = await query
+  return { data, error }
+}
+
+/**
+ * Criar evento de calendário
+ */
+export async function createCalendarEvent(eventData, userId) {
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .insert([{ ...eventData, user_id: userId }])
+  return { data, error }
+}
+
+/**
+ * Atualizar evento de calendário
+ */
+export async function updateCalendarEvent(eventId, eventData) {
+  const { data, error } = await supabase
+    .from('calendar_events')
+    .update(eventData)
+    .eq('id', eventId)
+  return { data, error }
+}
+
+/**
+ * Buscar histórico de sincronizações
+ */
+export async function fetchCalendarSyncLog(integrationId, limit = 20) {
+  const { data, error } = await supabase
+    .from('calendar_sync_log')
+    .select('*')
+    .eq('integration_id', integrationId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return { data, error }
+}
