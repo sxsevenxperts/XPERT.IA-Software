@@ -5,7 +5,7 @@ import Footer from '../components/Footer'
 
 export default function Login({ onLogin }) {
   const [email, setEmail]       = useState('demo@prevos.com.br')
-  const [password, setPassword] = useState('demo123456')
+  const [password, setPassword] = useState('123456')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
