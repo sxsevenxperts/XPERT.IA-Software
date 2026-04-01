@@ -1,5 +1,7 @@
 import { Bell, Search, Plus, Calendar } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import NotificationCenter from './NotificationCenter'
+import { getCurrentUser, fetchNotificationLog } from '../lib/supabase'
 
 const PAGE_TITLES = {
   dashboard:    { title: 'Dashboard',             subtitle: 'Visão geral do escritório' },
@@ -27,8 +29,24 @@ const today = new Date()
 
 export default function Header({ tab, onNewAction }) {
   const [notifOpen, setNotifOpen] = useState(false)
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false)
   const [searchVal, setSearchVal] = useState('')
+  const [user, setUser] = useState(null)
+  const [unreadCount, setUnreadCount] = useState(0)
   const page = PAGE_TITLES[tab] || PAGE_TITLES.dashboard
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const currentUser = await getCurrentUser()
+      setUser(currentUser)
+      if (currentUser) {
+        // TODO: Carregar contagem de notificações não lidas quando migration for aplicada
+        // const { data } = await fetchNotificationLog(currentUser.id)
+        // setUnreadCount(data?.filter(n => !n.lido_em).length || 0)
+      }
+    }
+    loadUser()
+  }, [])
 
   const NOTIFS = [
     { id: 1, type: 'warning', text: 'Prazo em 2 dias: Caso #2341 – João Silva', time: 'há 1h' },

@@ -284,3 +284,92 @@ export async function deleteTemplate(templateId) {
     .eq('id', templateId)
   return { data, error }
 }
+
+// ============================================
+// NOTIFICAÇÕES - Notification System
+// ============================================
+
+/**
+ * Buscar configurações de notificação do usuário
+ */
+export async function fetchNotificationSettings(userId) {
+  const { data, error } = await supabase
+    .from('notification_settings')
+    .select('*')
+    .eq('user_id', userId)
+  return { data, error }
+}
+
+/**
+ * Atualizar configuração de notificação
+ */
+export async function updateNotificationSettings(userId, canal, tipoAlerta, settings) {
+  const { data, error } = await supabase
+    .from('notification_settings')
+    .upsert([{
+      user_id: userId,
+      canal,
+      tipo_alerta: tipoAlerta,
+      ...settings
+    }])
+  return { data, error }
+}
+
+/**
+ * Buscar histórico de notificações
+ */
+export async function fetchNotificationLog(userId, limit = 50) {
+  const { data, error } = await supabase
+    .from('notification_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  return { data, error }
+}
+
+/**
+ * Marcar notificação como lida
+ */
+export async function markNotificationAsRead(notificationId) {
+  const { data, error } = await supabase
+    .from('notification_log')
+    .update({ lido_em: new Date().toISOString() })
+    .eq('id', notificationId)
+  return { data, error }
+}
+
+/**
+ * Buscar informações de contato (email/telefone)
+ */
+export async function fetchContactInfo(userId) {
+  const { data, error } = await supabase
+    .from('contact_info')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+  return { data, error }
+}
+
+/**
+ * Atualizar informações de contato
+ */
+export async function updateContactInfo(userId, contactData) {
+  const { data, error } = await supabase
+    .from('contact_info')
+    .upsert([{ user_id: userId, ...contactData }])
+  return { data, error }
+}
+
+/**
+ * Enviar notificação (adiciona à fila)
+ */
+export async function sendNotification(userId, notificationData) {
+  const { data, error } = await supabase
+    .from('notification_queue')
+    .insert([{
+      user_id: userId,
+      ...notificationData
+    }])
+  return { data, error }
+}
