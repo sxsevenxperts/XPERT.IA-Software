@@ -476,3 +476,69 @@ export async function fetchCalendarSyncLog(integrationId, limit = 20) {
     .limit(limit)
   return { data, error }
 }
+
+// ============================================
+// CASE PREDICTIONS - IA & Analytics
+// ============================================
+
+/**
+ * Buscar previsões de um caso
+ */
+export async function fetchCasePrediction(casoId) {
+  const { data, error } = await supabase
+    .from('case_predictions')
+    .select('*')
+    .eq('caso_id', casoId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+  return { data, error }
+}
+
+/**
+ * Criar/atualizar previsão de caso
+ */
+export async function saveCasePrediction(casoId, userId, predictionData) {
+  const existing = await fetchCasePrediction(casoId)
+  
+  if (existing.data) {
+    // Atualizar
+    const { data, error } = await supabase
+      .from('case_predictions')
+      .update(predictionData)
+      .eq('caso_id', casoId)
+    return { data, error }
+  } else {
+    // Criar
+    const { data, error } = await supabase
+      .from('case_predictions')
+      .insert([{
+        caso_id: casoId,
+        user_id: userId,
+        ...predictionData
+      }])
+    return { data, error }
+  }
+}
+
+/**
+ * Analisar caso com IA (chama Edge Function)
+ */
+export async function analyzeCaseWithAI(casoData) {
+  try {
+    const response = await fetch('/functions/v1/analyze-case-ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(casoData),
+    })
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return { data, error: null }
+  } catch (error) {
+    return { data: null, error }
+  }
+}
