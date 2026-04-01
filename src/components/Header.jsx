@@ -42,9 +42,8 @@ export default function Header({ tab, onNewAction }) {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
       if (currentUser) {
-        // TODO: Carregar contagem de notificações não lidas quando migration for aplicada
-        // const { data } = await fetchNotificationLog(currentUser.id)
-        // setUnreadCount(data?.filter(n => !n.lido_em).length || 0)
+        const { data } = await fetchNotificationLog(currentUser.id)
+        setUnreadCount(data?.filter(n => !n.lido_em).length || 0)
       }
     }
     loadUser()

@@ -95,9 +95,8 @@ export default function Tarefas() {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
       if (currentUser) {
-        // TODO: Carregar tarefas reais do Supabase quando migration for aplicada
-        // const { data } = await fetchTarefas(currentUser.id)
-        // setTarefas(data || MOCK_TAREFAS)
+        const { data } = await fetchTarefas(currentUser.id)
+        setTarefas(data || MOCK_TAREFAS)
       }
       setLoading(false)
     }
@@ -106,23 +105,41 @@ export default function Tarefas() {
 
   const handleCreateTarefa = async (form) => {
     if (user) {
-      // TODO: Salvar no Supabase quando migration for aplicada
-      // await createTarefa(form, user.id)
+      const { data, error } = await createTarefa(form, user.id)
+      if (error) {
+        alert('Erro ao criar tarefa: ' + error.message)
+        return
+      }
+      if (data && data.length > 0) {
+        setTarefas([...tarefas, data[0]])
+      }
     }
-    setTarefas([...tarefas, { ...form, id: Date.now().toString() }])
     setShowModal(false)
   }
 
   const handleUpdateStatus = async (tarefaId, newStatus) => {
+    if (user) {
+      const { error } = await updateTarefa(tarefaId, {
+        status: newStatus,
+        data_conclusao: newStatus === 'concluido' ? new Date().toISOString().split('T')[0] : null
+      })
+      if (error) {
+        alert('Erro ao atualizar tarefa: ' + error.message)
+        return
+      }
+    }
     setTarefas(tarefas.map(t => t.id === tarefaId ? { ...t, status: newStatus, data_conclusao: newStatus === 'concluido' ? new Date().toISOString().split('T')[0] : null } : t))
-    // TODO: Atualizar no Supabase
-    // if (user) await updateTarefa(tarefaId, { status: newStatus })
   }
 
   const handleDeleteTarefa = async (tarefaId) => {
+    if (user) {
+      const { error } = await deleteTarefa(tarefaId)
+      if (error) {
+        alert('Erro ao deletar tarefa: ' + error.message)
+        return
+      }
+    }
     setTarefas(tarefas.filter(t => t.id !== tarefaId))
-    // TODO: Deletar no Supabase
-    // if (user) await deleteTarefa(tarefaId)
   }
 
   const filtered = tarefas.filter(t => {

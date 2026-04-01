@@ -83,9 +83,8 @@ export default function Alertas() {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
       if (currentUser) {
-        // TODO: Carregar alertas reais do Supabase quando migration for aplicada
-        // const { data } = await fetchAlertas(currentUser.id)
-        // setAlertas(data || MOCK_ALERTAS)
+        const { data } = await fetchAlertas(currentUser.id)
+        setAlertas(data || MOCK_ALERTAS)
       }
       setLoading(false)
     }
@@ -93,9 +92,14 @@ export default function Alertas() {
   }, [])
 
   const handleMarkAsRead = async (alertaId) => {
+    if (user) {
+      const { error } = await marcarAlertaComoLido(alertaId)
+      if (error) {
+        alert('Erro ao marcar alerta como lido: ' + error.message)
+        return
+      }
+    }
     setAlertas(alertas.map(a => a.id === alertaId ? { ...a, notificacao_lida: true } : a))
-    // TODO: Atualizar no Supabase
-    // if (user) await marcarAlertaComoLido(alertaId)
   }
 
   const handleArchive = (alertaId) => {
