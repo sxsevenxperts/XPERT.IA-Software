@@ -8,6 +8,7 @@ import Clientes        from './pages/Clientes'
 import Casos           from './pages/Casos'
 import Tarefas         from './pages/Tarefas'
 import Alertas         from './pages/Alertas'
+import Portais         from './pages/Portais'
 import Calculadora     from './pages/Calculadora'
 import LaudosIA        from './pages/LaudosIA'
 import Peticoes        from './pages/Peticoes'
@@ -22,6 +23,7 @@ import Comunicacoes    from './pages/Comunicacoes'
 import Reunioes        from './pages/Reunioes'
 import AssinaturaDigital from './pages/AssinaturaDigital'
 import Relatorios      from './pages/Relatorios'
+import AnalyticsDashboard from './pages/AnalyticsDashboard'
 
 // Components
 import Sidebar from './components/Sidebar'
@@ -58,6 +60,7 @@ export default function App() {
       case 'casos':             return <Casos />
       case 'tarefas':           return <Tarefas />
       case 'alertas':           return <Alertas />
+      case 'portais':           return <Portais />
       case 'agenda':            return <Agenda />
       case 'intimacoes':        return <Intimacoes />
       case 'comunicacoes':      return <Comunicacoes />
@@ -71,6 +74,7 @@ export default function App() {
       case 'reunioes':          return <Reunioes />
       case 'assinatura':        return <AssinaturaDigital />
       case 'relatorios':        return <Relatorios />
+      case 'analytics':         return <AnalyticsDashboard />
       case 'configuracoes':     return <Configuracoes />
       default:                  return <Dashboard onTab={setTab} />
     }

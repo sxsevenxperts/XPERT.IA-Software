@@ -4,7 +4,7 @@ import {
   Settings, LogOut, Scale, Scroll, BarChart2,
   Calendar, Bell, MessageSquare, Video, PenTool,
   BookOpen, Gavel, Search, Shield, ClipboardList,
-  Sparkles, CheckSquare
+  Sparkles, CheckSquare, Scale3d
 } from 'lucide-react'
 
 const NAV_GROUPS = [
@@ -16,6 +16,7 @@ const NAV_GROUPS = [
       { id: 'clientes',      label: 'Clientes & CRM',   icon: Users,           badge: null },
       { id: 'casos',         label: 'Casos & Processos',icon: Briefcase,       badge: null },
       { id: 'tarefas',       label: 'Tarefas & Alertas',icon: CheckSquare,     badge: null },
+      { id: 'portais',       label: 'Portais Judiciais',icon: Scale3d,         badge: 'NOVO' },
       { id: 'intimacoes',    label: 'Intimações',       icon: Bell,            badge: 'NOVO' },
       { id: 'comunicacoes',  label: 'Comunicações',     icon: MessageSquare,   badge: 'NOVO' },
     ],
@@ -36,6 +37,7 @@ const NAV_GROUPS = [
       { id: 'planejamento',  label: 'Planejamento',     icon: TrendingUp,      badge: null },
       { id: 'financeiro',    label: 'Financeiro',       icon: DollarSign,      badge: null },
       { id: 'relatorios',    label: 'Relatórios',       icon: BarChart2,       badge: null },
+      { id: 'analytics',     label: 'Analytics & ML',   icon: TrendingUp,      badge: 'NOVO' },
       { id: 'reunioes',      label: 'Reuniões Online',  icon: Video,           badge: 'NOVO' },
       { id: 'assinatura',    label: 'Assinatura Digital',icon: PenTool,        badge: 'NOVO' },
     ],

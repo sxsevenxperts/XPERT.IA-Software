@@ -542,3 +542,144 @@ export async function analyzeCaseWithAI(casoData) {
     return { data: null, error }
   }
 }
+
+
+// ===== PORTAIS JUDICIAIS INTEGRATION =====
+
+/**
+ * Buscar integrações de portais do usuário
+ */
+export async function fetchPortalIntegrations(userId, casoId = null) {
+  let query = supabase
+    .from('portal_integrations')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('ativo', true)
+  
+  if (casoId) {
+    query = query.eq('caso_id', casoId)
+  }
+  
+  const { data, error } = await query.order('created_at', { ascending: false })
+  return { data, error }
+}
+
+/**
+ * Criar nova integração de portal
+ */
+export async function createPortalIntegration(integrationData, userId) {
+  const { data, error } = await supabase
+    .from('portal_integrations')
+    .insert([{
+      ...integrationData,
+      user_id: userId
+    }])
+  return { data, error }
+}
+
+/**
+ * Atualizar configurações de integração de portal
+ */
+export async function updatePortalIntegration(integrationId, integrationData) {
+  const { data, error } = await supabase
+    .from('portal_integrations')
+    .update(integrationData)
+    .eq('id', integrationId)
+  return { data, error }
+}
+
+/**
+ * Deletar integração de portal
+ */
+export async function deletePortalIntegration(integrationId) {
+  const { error } = await supabase
+    .from('portal_integrations')
+    .update({ ativo: false })
+    .eq('id', integrationId)
+  return { error }
+}
+
+/**
+ * Buscar status atual de um processo
+ */
+export async function fetchProcessoStatus(integrationId) {
+  const { data, error } = await supabase
+    .from('processo_status')
+    .select('*')
+    .eq('integration_id', integrationId)
+    .order('sincronizado_em', { ascending: false })
+    .limit(1)
+    .single()
+  return { data, error }
+}
+
+/**
+ * Atualizar status de processo
+ */
+export async function updateProcessoStatus(integrationId, statusData) {
+  const { data, error } = await supabase
+    .from('processo_status')
+    .upsert([{
+      integration_id: integrationId,
+      ...statusData,
+      sincronizado_em: new Date().toISOString()
+    }])
+  return { data, error }
+}
+
+/**
+ * Buscar histórico de sincronizações
+ */
+export async function fetchPortalSyncLog(userId, integrationId = null) {
+  let query = supabase
+    .from('portal_sync_log')
+    .select('*')
+    .eq('user_id', userId)
+  
+  if (integrationId) {
+    query = query.eq('integration_id', integrationId)
+  }
+  
+  const { data, error } = await query.order('data_inicio', { ascending: false }).limit(20)
+  return { data, error }
+}
+
+/**
+ * Registrar tentativa de sincronização
+ */
+export async function logPortalSync(syncData, userId) {
+  const { data, error } = await supabase
+    .from('portal_sync_log')
+    .insert([{
+      ...syncData,
+      user_id: userId,
+      data_inicio: new Date().toISOString()
+    }])
+  return { data, error }
+}
+
+/**
+ * Iniciar sincronização de portal (chama Edge Function)
+ */
+export async function syncPortalProcess(integrationId, portalTipo, numeroProcesso) {
+  try {
+    const response = await fetch('/functions/v1/sync-portal-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        integrationId,
+        portalTipo,
+        numeroProcesso
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return { data, error: null }
+  } catch (error) {
+    return { data: null, error }
+  }
+}
