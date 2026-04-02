@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Plus, Filter, ChevronDown, Phone, Mail, MoreHorizontal, User, Calendar, FileText, ArrowUpRight, X } from 'lucide-react'
+import { fetchClientes, createCliente, getCurrentUser } from '../lib/supabase'
 
 const MOCK_CLIENTS = [
   { id: 'CLI-001', name: 'João Carlos Silva',     cpf: '123.456.789-00', phone: '(11) 98765-4321', email: 'joao@email.com',  benefit: 'Aposentadoria por Idade',   status: 'ativo',    advogado: 'Dr. Ana Lima',    entrada: '12/01/2025', casos: 2 },
@@ -106,6 +107,25 @@ export default function Clientes() {
   const [showModal, setShowModal] = useState(false)
   const [clients, setClients]     = useState(MOCK_CLIENTS)
   const [selected, setSelected]   = useState(null)
+  const [loading, setLoading]     = useState(true)
+  const [user, setUser]           = useState(null)
+
+  useEffect(() => {
+    loadClientes()
+  }, [])
+
+  async function loadClientes() {
+    setLoading(true)
+    const currentUser = await getCurrentUser()
+    setUser(currentUser)
+    if (currentUser) {
+      const { data } = await fetchClientes(currentUser.id)
+      if (data && data.length > 0) {
+        setClients(data)
+      }
+    }
+    setLoading(false)
+  }
 
   const filtered = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -115,15 +135,20 @@ export default function Clientes() {
     return matchSearch && matchStatus
   })
 
-  function addClient(form) {
-    const newClient = {
-      id: `CLI-${String(clients.length + 1).padStart(3, '0')}`,
-      ...form,
-      status: 'ativo',
-      entrada: new Date().toLocaleDateString('pt-BR'),
-      casos: 0,
+  async function addClient(form) {
+    if (!user) {
+      alert('Usuário não autenticado')
+      return
     }
-    setClients(p => [newClient, ...p])
+    const { data, error } = await createCliente(form, user.id)
+    if (error) {
+      alert('Erro ao criar cliente: ' + error.message)
+      return
+    }
+    if (data && data.length > 0) {
+      setClients(p => [data[0], ...p])
+      setShowModal(false)
+    }
   }
 
   return (

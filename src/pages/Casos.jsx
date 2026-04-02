@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, Filter, Calendar, Clock, CheckCircle, AlertCircle, FileText, ExternalLink, X, ChevronDown, Zap } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { supabase, fetchCasos, createCaso, getCurrentUser } from '../lib/supabase'
 
 const MOCK_CASOS = [
   { id: 'PRV-0342', cliente: 'João Carlos Silva',     tipo: 'Aposentadoria por Idade',   status: 'em_andamento', advogado: 'Dr. Ana Lima',    tribunal: 'INSS (Adm)',  protocolo: '1234567-89',  abertura: '12/01/2025', prazo: '25/03/2026', valor: 'R$ 4.200',   prioridade: 'alta' },
@@ -121,10 +121,26 @@ export default function Casos() {
   const [casos, setCasos]         = useState(MOCK_CASOS)
   const [userProfile, setUserProfile] = useState(null)
   const [syncLoading, setSyncLoading] = useState(false)
+  const [loading, setLoading]     = useState(true)
+  const [user, setUser]           = useState(null)
 
   useEffect(() => {
-    loadUserProfile()
+    loadData()
   }, [])
+
+  async function loadData() {
+    setLoading(true)
+    const currentUser = await getCurrentUser()
+    setUser(currentUser)
+    if (currentUser) {
+      const { data } = await fetchCasos(currentUser.id)
+      if (data && data.length > 0) {
+        setCasos(data)
+      }
+    }
+    await loadUserProfile()
+    setLoading(false)
+  }
 
   async function loadUserProfile() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -184,9 +200,20 @@ export default function Casos() {
     return m && s
   })
 
-  function addCaso(form) {
-    const id = `PRV-${String(casos.length + 416).padStart(4, '0')}`
-    setCasos(p => [{ id, ...form, status: 'em_andamento', abertura: new Date().toLocaleDateString('pt-BR'), valor: 'A calcular', prioridade: 'normal', protocolo: '' }, ...p])
+  async function addCaso(form) {
+    if (!user) {
+      alert('Usuário não autenticado')
+      return
+    }
+    const { data, error } = await createCaso(form, user.id)
+    if (error) {
+      alert('Erro ao criar caso: ' + error.message)
+      return
+    }
+    if (data && data.length > 0) {
+      setCasos(p => [data[0], ...p])
+      setShowModal(false)
+    }
   }
 
   return (
