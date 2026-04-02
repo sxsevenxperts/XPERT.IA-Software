@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Bell, Clock, AlertTriangle, CheckCircle, X, Search, Archive } from 'lucide-react'
-import { supabase, fetchAlertas, marcarAlertaComoLido } from '../lib/supabase'
+import { supabase, fetchAlertas, marcarAlertaComoLido, notifyNewAlerta } from '../lib/supabase'
 import { getCurrentUser } from '../lib/supabase'
 
 const MOCK_ALERTAS = [

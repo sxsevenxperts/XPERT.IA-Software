@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Search, Plus, Filter, Calendar, Clock, AlertCircle, CheckCircle, X, ChevronDown, Flag } from 'lucide-react'
-import { supabase, fetchTarefas, createTarefa, updateTarefa, deleteTarefa } from '../lib/supabase'
+import { supabase, fetchTarefas, createTarefa, updateTarefa, deleteTarefa, notifyNewTarefa } from '../lib/supabase'
 import { getCurrentUser } from '../lib/supabase'
 
 const MOCK_TAREFAS = [
@@ -112,6 +112,8 @@ export default function Tarefas() {
       }
       if (data && data.length > 0) {
         setTarefas([...tarefas, data[0]])
+        // Enviar notificação
+        await notifyNewTarefa(user, data[0])
       }
     }
     setShowModal(false)

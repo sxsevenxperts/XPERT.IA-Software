@@ -683,3 +683,43 @@ export async function syncPortalProcess(integrationId, portalTipo, numeroProcess
     return { data: null, error }
   }
 }
+
+// ============================================
+// NOTIFICAÇÕES - In-App Notifications
+// ============================================
+
+/**
+ * Registrar notificação in-app quando tarefa é criada
+ */
+export async function notifyNewTarefa(user, tarefa) {
+  const { error } = await supabase
+    .from('notification_log')
+    .insert([{
+      user_id: user.id,
+      titulo: `Nova Tarefa: ${tarefa.titulo}`,
+      descricao: tarefa.descricao || '',
+      tipo: 'tarefa',
+      referencia_id: tarefa.id,
+      lido_em: null,
+      created_at: new Date().toISOString()
+    }])
+  return { error }
+}
+
+/**
+ * Registrar notificação in-app quando alerta é criado
+ */
+export async function notifyNewAlerta(user, alerta) {
+  const { error } = await supabase
+    .from('notification_log')
+    .insert([{
+      user_id: user.id,
+      titulo: `Novo Alerta: ${alerta.titulo}`,
+      descricao: alerta.tipo,
+      tipo: 'alerta',
+      referencia_id: alerta.id,
+      lido_em: null,
+      created_at: new Date().toISOString()
+    }])
+  return { error }
+}
