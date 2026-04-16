@@ -3,41 +3,71 @@ import { Eye, EyeOff, ArrowRight, Lock, Mail, Shield, Car, Star } from 'lucide-r
 import { supabase } from '../lib/supabase'
 
 export function SubscriptionExpired({ user, subscription, onLogout }) {
+  const isSuspended    = subscription?.suspended || subscription?.reason === 'suspended'
+  const daysUntilDel   = subscription?.days_until_delete ?? null
+  const daysSinceExp   = subscription?.days_since_expiry ?? 0
+
   return (
     <div style={{
       minHeight: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       background: '#07101F', padding: 24,
     }}>
-      <div style={{
-        maxWidth: 400, width: '100%', textAlign: 'center',
-        background: '#0B1829', border: '1px solid #1C3050',
-        borderRadius: 20, padding: 32,
-      }}>
-        <div style={{ fontSize: 56, marginBottom: 16 }}>⏰</div>
-        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: '#E8F0FE' }}>Assinatura Expirada</h2>
-        <p style={{ color: '#4D7098', marginBottom: 8, fontSize: 14 }}>
-          Sua assinatura expirou. Renove para continuar usando o EasyDrive.
-        </p>
-        <p style={{ fontSize: 12, color: '#2D4F6E', marginBottom: 24 }}>{user?.email}</p>
-        <a
-          href="https://pay.hotmart.com/Q104879353L?off=j97m36gi"
-          target="_blank" rel="noopener noreferrer"
-          style={{
-            display: 'block', background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-            color: 'white', borderRadius: 12, padding: '14px',
-            fontSize: 15, fontWeight: 700, textDecoration: 'none',
-            boxShadow: '0 4px 16px rgba(16,185,129,0.35)', marginBottom: 12,
-          }}
-        >
-          Renovar Assinatura
-        </a>
-        <button onClick={onLogout} style={{
-          background: 'none', border: '1px solid #1C3050', borderRadius: 12,
-          padding: '12px', width: '100%', fontSize: 14, color: '#4D7098', cursor: 'pointer',
+      <div style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
+
+        {/* Logo */}
+        <img src="/logo.png" alt="EasyDrive" style={{ width: 140, mixBlendMode: 'screen', marginBottom: 24 }} />
+
+        <div style={{
+          background: '#0B1829', border: `1px solid ${isSuspended ? 'rgba(239,68,68,0.3)' : '#1C3050'}`,
+          borderRadius: 20, padding: 28,
         }}>
-          Sair
-        </button>
+          <div style={{ fontSize: 52, marginBottom: 12 }}>
+            {isSuspended ? '🔒' : '⏰'}
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8, color: '#E8F0FE' }}>
+            {isSuspended ? 'Acesso Suspenso' : 'Assinatura Expirada'}
+          </h2>
+          <p style={{ color: '#4D7098', marginBottom: 8, fontSize: 14, lineHeight: 1.5 }}>
+            {isSuspended
+              ? `Seu acesso foi suspenso após ${daysSinceExp} dias sem renovação.`
+              : 'Sua assinatura expirou. Renove para continuar.'}
+          </p>
+
+          {/* Aviso de exclusão de dados */}
+          {daysUntilDel !== null && daysUntilDel <= 14 && (
+            <div style={{
+              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+              fontSize: 12, color: '#FCA5A5', lineHeight: 1.4,
+            }}>
+              ⚠️ <strong>Seus dados serão excluídos em {daysUntilDel} dias</strong> caso não renove.
+            </div>
+          )}
+
+          <p style={{ fontSize: 11, color: '#2D4F6E', marginBottom: 20 }}>{user?.email}</p>
+
+          <a
+            href="https://pay.hotmart.com/Q104879353L?off=j97m36gi"
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              display: 'block',
+              background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+              color: 'white', borderRadius: 12, padding: '14px',
+              fontSize: 15, fontWeight: 700, textDecoration: 'none',
+              boxShadow: '0 4px 16px rgba(16,185,129,0.35)', marginBottom: 12,
+            }}
+          >
+            Renovar Assinatura — R$29/mês
+          </a>
+
+          <button onClick={onLogout} style={{
+            background: 'none', border: '1px solid #1C3050', borderRadius: 12,
+            padding: '12px', width: '100%', fontSize: 14, color: '#4D7098', cursor: 'pointer',
+          }}>
+            Sair
+          </button>
+        </div>
       </div>
     </div>
   )

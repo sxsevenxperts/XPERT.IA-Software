@@ -705,12 +705,24 @@ export async function checkSubscription(userId) {
     const now = new Date()
     const expiresAt = new Date(data.expires_at)
 
+    const isExpired   = expiresAt <= now
+    const isSuspended = data.status === 'suspended'
+    const isActive    = !isExpired && data.status === 'active'
+
+    // Calcula dias desde expiração (para mostrar aviso ao usuário)
+    const daysSinceExpiry = isExpired
+      ? Math.floor((now - expiresAt) / (1000 * 60 * 60 * 24))
+      : 0
+
     return {
-      active: expiresAt > now && data.status === 'active',
+      active: isActive,
       plan: data.plan || 'monthly',
       expires_at: data.expires_at,
       status: data.status,
-      reason: expiresAt <= now ? 'expired' : data.status !== 'active' ? 'inactive' : null
+      suspended: isSuspended,
+      days_since_expiry: daysSinceExpiry,
+      days_until_delete: isSuspended || isExpired ? Math.max(0, 30 - daysSinceExpiry) : null,
+      reason: isExpired ? 'expired' : isSuspended ? 'suspended' : data.status !== 'active' ? 'inactive' : null
     }
   } catch (error) {
     console.error('Error checking subscription:', error)
