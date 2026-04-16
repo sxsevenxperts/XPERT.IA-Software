@@ -1,695 +1,122 @@
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
+const SUPABASE_URL     = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudG14bWJxZ2RhZ2ZxaG1xeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDQ1NjgsImV4cCI6MjA4ODU4MDU2OH0.i1ijydj0lRtDTa-dIMEJzMZVW9rDc5TnHwQ3Az2L70g'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-/**
- * Autenticar com email/senha
- */
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
 export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  return { data, error }
+  return supabase.auth.signInWithPassword({ email, password })
 }
 
-/**
- * Criar nova conta
- */
-export async function signUp(email, password) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  })
-  return { data, error }
-}
-
-/**
- * Fazer logout
- */
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
-  return { error }
+  return supabase.auth.signOut()
 }
 
-/**
- * Obter sessão atual
- */
 export async function getSession() {
   const { data: { session } } = await supabase.auth.getSession()
   return session
 }
 
-/**
- * Obter usuário atual
- */
 export async function getCurrentUser() {
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
 
-/**
- * Listeners de autenticação
- */
 export function onAuthStateChange(callback) {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    callback(event, session)
-  })
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(callback)
   return subscription
 }
 
-/**
- * Buscar clientes
- */
-export async function fetchClientes(userId) {
-  const { data, error } = await supabase
-    .from('clientes')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  return { data, error }
-}
+// ── Profile ───────────────────────────────────────────────────────────────────
 
-/**
- * Criar cliente
- */
-export async function createCliente(clienteData, userId) {
-  const { data, error } = await supabase
-    .from('clientes')
-    .insert([{ ...clienteData, user_id: userId }])
-  return { data, error }
-}
-
-/**
- * Buscar casos
- */
-export async function fetchCasos(userId) {
-  const { data, error } = await supabase
-    .from('casos')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  return { data, error }
-}
-
-/**
- * Criar caso
- */
-export async function createCaso(casoData, userId) {
-  const { data, error } = await supabase
-    .from('casos')
-    .insert([{ ...casoData, user_id: userId }])
-  return { data, error }
-}
-
-/**
- * Buscar honorários
- */
-export async function fetchHonorarios(userId) {
-  const { data, error } = await supabase
-    .from('honorarios')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  return { data, error }
-}
-
-/**
- * Atualizar perfil do usuário
- */
-export async function updateProfile(userId, profileData) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .upsert([{ id: userId, ...profileData }])
-  return { data, error }
-}
-
-/**
- * Buscar perfil do usuário
- */
 export async function getProfile(userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  return { data, error }
+  return supabase.from('profiles').select('*').eq('id', userId).single()
 }
 
-// ============================================
-// TAREFAS - Task Management
-// ============================================
+export async function updateProfile(userId, profileData) {
+  return supabase.from('profiles').upsert([{ id: userId, ...profileData }])
+}
 
-/**
- * Buscar tarefas do usuário
- */
-export async function fetchTarefas(userId, casoId = null) {
+// ── Corridas (trips) ─────────────────────────────────────────────────────────
+
+export async function fetchCorridas(driverId, filters = {}) {
   let query = supabase
-    .from('tarefas')
+    .from('corridas')
     .select('*')
-    .eq('user_id', userId)
-    .order('data_vencimento', { ascending: true })
-  
-  if (casoId) {
-    query = query.eq('caso_id', casoId)
-  }
-  
-  const { data, error } = await query
-  return { data, error }
+    .eq('driver_id', driverId)
+    .order('created_at', { ascending: false })
+
+  if (filters.status) query = query.eq('status', filters.status)
+  if (filters.from)   query = query.gte('created_at', filters.from)
+  if (filters.to)     query = query.lte('created_at', filters.to)
+  if (filters.limit)  query = query.limit(filters.limit)
+
+  return query
 }
 
-/**
- * Criar nova tarefa
- */
-export async function createTarefa(tarefaData, userId) {
-  const { data, error } = await supabase
-    .from('tarefas')
-    .insert([{ ...tarefaData, user_id: userId }])
-  return { data, error }
+export async function createCorrida(driverId, corridaData) {
+  return supabase.from('corridas').insert([{ driver_id: driverId, ...corridaData }]).select().single()
 }
 
-/**
- * Atualizar tarefa
- */
-export async function updateTarefa(tarefaId, tarefaData) {
-  const { data, error } = await supabase
-    .from('tarefas')
-    .update(tarefaData)
-    .eq('id', tarefaId)
-  return { data, error }
+export async function updateCorrida(corridaId, corridaData) {
+  return supabase.from('corridas').update(corridaData).eq('id', corridaId).select().single()
 }
 
-/**
- * Deletar tarefa
- */
-export async function deleteTarefa(tarefaId) {
-  const { data, error } = await supabase
-    .from('tarefas')
-    .delete()
-    .eq('id', tarefaId)
-  return { data, error }
+export async function deleteCorrida(corridaId) {
+  return supabase.from('corridas').delete().eq('id', corridaId)
 }
 
-// ============================================
-// ALERTAS - Deadline Alerts
-// ============================================
+// ── Expenses ──────────────────────────────────────────────────────────────────
 
-/**
- * Buscar alertas não lidos do usuário
- */
-export async function fetchAlertas(userId) {
-  const { data, error } = await supabase
-    .from('alertas')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('notificacao_lida', false)
-    .order('data_alerta', { ascending: true })
-  return { data, error }
-}
-
-/**
- * Criar novo alerta
- */
-export async function createAlerta(alertaData, userId) {
-  const { data, error } = await supabase
-    .from('alertas')
-    .insert([{ ...alertaData, user_id: userId }])
-  return { data, error }
-}
-
-/**
- * Marcar alerta como lido
- */
-export async function marcarAlertaComoLido(alertaId) {
-  const { data, error } = await supabase
-    .from('alertas')
-    .update({ notificacao_lida: true })
-    .eq('id', alertaId)
-  return { data, error }
-}
-
-// ============================================
-// TEMPLATES - Document Templates
-// ============================================
-
-/**
- * Buscar templates do usuário
- */
-export async function fetchTemplates(userId, tipo = null) {
+export async function fetchExpenses(driverId, filters = {}) {
   let query = supabase
-    .from('templates')
+    .from('expenses')
     .select('*')
-    .eq('user_id', userId)
-    .order('nome', { ascending: true })
-  
-  if (tipo) {
-    query = query.eq('tipo', tipo)
-  }
-  
-  const { data, error } = await query
-  return { data, error }
+    .eq('driver_id', driverId)
+    .order('date', { ascending: false })
+
+  if (filters.from) query = query.gte('date', filters.from)
+  if (filters.to)   query = query.lte('date', filters.to)
+
+  return query
 }
 
-/**
- * Criar novo template
- */
-export async function createTemplate(templateData, userId) {
-  const { data, error } = await supabase
-    .from('templates')
-    .insert([{ ...templateData, user_id: userId }])
-  return { data, error }
+export async function createExpense(driverId, expenseData) {
+  return supabase.from('expenses').insert([{ driver_id: driverId, ...expenseData }]).select().single()
 }
 
-/**
- * Atualizar template
- */
-export async function updateTemplate(templateId, templateData) {
-  const { data, error } = await supabase
-    .from('templates')
-    .update(templateData)
-    .eq('id', templateId)
-  return { data, error }
-}
+// ── Chat ──────────────────────────────────────────────────────────────────────
 
-/**
- * Deletar template
- */
-export async function deleteTemplate(templateId) {
-  const { data, error } = await supabase
-    .from('templates')
-    .delete()
-    .eq('id', templateId)
-  return { data, error }
-}
-
-// ============================================
-// NOTIFICAÇÕES - Notification System
-// ============================================
-
-/**
- * Buscar configurações de notificação do usuário
- */
-export async function fetchNotificationSettings(userId) {
-  const { data, error } = await supabase
-    .from('notification_settings')
-    .select('*')
-    .eq('user_id', userId)
-  return { data, error }
-}
-
-/**
- * Atualizar configuração de notificação
- */
-export async function updateNotificationSettings(userId, canal, tipoAlerta, settings) {
-  const { data, error } = await supabase
-    .from('notification_settings')
-    .upsert([{
-      user_id: userId,
-      canal,
-      tipo_alerta: tipoAlerta,
-      ...settings
-    }])
-  return { data, error }
-}
-
-/**
- * Buscar histórico de notificações
- */
-export async function fetchNotificationLog(userId, limit = 50) {
-  const { data, error } = await supabase
-    .from('notification_log')
-    .select('*')
-    .eq('user_id', userId)
+export async function fetchMessages(limit = 50) {
+  return supabase
+    .from('chat_messages')
+    .select('*, profiles(name)')
     .order('created_at', { ascending: false })
     .limit(limit)
-  return { data, error }
 }
 
-/**
- * Marcar notificação como lida
- */
-export async function markNotificationAsRead(notificationId) {
-  const { data, error } = await supabase
-    .from('notification_log')
-    .update({ lido_em: new Date().toISOString() })
-    .eq('id', notificationId)
-  return { data, error }
+export async function sendMessage(userId, content) {
+  return supabase.from('chat_messages').insert([{ user_id: userId, content }])
 }
 
-/**
- * Buscar informações de contato (email/telefone)
- */
-export async function fetchContactInfo(userId) {
-  const { data, error } = await supabase
-    .from('contact_info')
-    .select('*')
-    .eq('user_id', userId)
-    .single()
-  return { data, error }
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export async function fetchNotificationPreferences(userId) {
+  return supabase.from('notification_preferences').select('*').eq('user_id', userId).maybeSingle()
 }
 
-/**
- * Atualizar informações de contato
- */
-export async function updateContactInfo(userId, contactData) {
-  const { data, error } = await supabase
-    .from('contact_info')
-    .upsert([{ user_id: userId, ...contactData }])
-  return { data, error }
+export async function updateNotificationPreferences(userId, prefs) {
+  return supabase.from('notification_preferences').upsert([{ user_id: userId, ...prefs }], { onConflict: 'user_id' })
 }
 
-/**
- * Enviar notificação (adiciona à fila)
- */
-export async function sendNotification(userId, notificationData) {
-  const { data, error } = await supabase
-    .from('notification_queue')
-    .insert([{
-      user_id: userId,
-      ...notificationData
-    }])
-  return { data, error }
-}
-
-// ============================================
-// CALENDAR INTEGRATIONS - Google Calendar & Outlook Sync
-// ============================================
+// ── Subscriptions ─────────────────────────────────────────────────────────────
 
 /**
- * Buscar integrações de calendário do usuário
- */
-export async function fetchCalendarIntegrations(userId) {
-  const { data, error } = await supabase
-    .from('calendar_integrations')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-  return { data, error }
-}
-
-/**
- * Criar nova integração de calendário
- */
-export async function createCalendarIntegration(integrationData, userId) {
-  const { data, error } = await supabase
-    .from('calendar_integrations')
-    .insert([{ ...integrationData, user_id: userId }])
-  return { data, error }
-}
-
-/**
- * Atualizar integração de calendário
- */
-export async function updateCalendarIntegration(integrationId, integrationData) {
-  const { data, error } = await supabase
-    .from('calendar_integrations')
-    .update(integrationData)
-    .eq('id', integrationId)
-  return { data, error }
-}
-
-/**
- * Deletar integração de calendário
- */
-export async function deleteCalendarIntegration(integrationId) {
-  const { data, error } = await supabase
-    .from('calendar_integrations')
-    .delete()
-    .eq('id', integrationId)
-  return { data, error }
-}
-
-/**
- * Buscar eventos de calendário sincronizados
- */
-export async function fetchCalendarEvents(userId, dataInicio = null, dataFim = null) {
-  let query = supabase
-    .from('calendar_events')
-    .select('*')
-    .eq('user_id', userId)
-    .order('data_inicio', { ascending: true })
-  
-  if (dataInicio) {
-    query = query.gte('data_inicio', dataInicio)
-  }
-  if (dataFim) {
-    query = query.lte('data_inicio', dataFim)
-  }
-  
-  const { data, error } = await query
-  return { data, error }
-}
-
-/**
- * Criar evento de calendário
- */
-export async function createCalendarEvent(eventData, userId) {
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .insert([{ ...eventData, user_id: userId }])
-  return { data, error }
-}
-
-/**
- * Atualizar evento de calendário
- */
-export async function updateCalendarEvent(eventId, eventData) {
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .update(eventData)
-    .eq('id', eventId)
-  return { data, error }
-}
-
-/**
- * Buscar histórico de sincronizações
- */
-export async function fetchCalendarSyncLog(integrationId, limit = 20) {
-  const { data, error } = await supabase
-    .from('calendar_sync_log')
-    .select('*')
-    .eq('integration_id', integrationId)
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  return { data, error }
-}
-
-// ============================================
-// CASE PREDICTIONS - IA & Analytics
-// ============================================
-
-/**
- * Buscar previsões de um caso
- */
-export async function fetchCasePrediction(casoId) {
-  const { data, error } = await supabase
-    .from('case_predictions')
-    .select('*')
-    .eq('caso_id', casoId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-  return { data, error }
-}
-
-/**
- * Criar/atualizar previsão de caso
- */
-export async function saveCasePrediction(casoId, userId, predictionData) {
-  const existing = await fetchCasePrediction(casoId)
-  
-  if (existing.data) {
-    // Atualizar
-    const { data, error } = await supabase
-      .from('case_predictions')
-      .update(predictionData)
-      .eq('caso_id', casoId)
-    return { data, error }
-  } else {
-    // Criar
-    const { data, error } = await supabase
-      .from('case_predictions')
-      .insert([{
-        caso_id: casoId,
-        user_id: userId,
-        ...predictionData
-      }])
-    return { data, error }
-  }
-}
-
-/**
- * Analisar caso com IA (chama Edge Function)
- */
-export async function analyzeCaseWithAI(casoData) {
-  try {
-    const response = await fetch('/functions/v1/analyze-case-ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(casoData),
-    })
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
-}
-
-
-// ===== PORTAIS JUDICIAIS INTEGRATION =====
-
-/**
- * Buscar integrações de portais do usuário
- */
-export async function fetchPortalIntegrations(userId, casoId = null) {
-  let query = supabase
-    .from('portal_integrations')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('ativo', true)
-  
-  if (casoId) {
-    query = query.eq('caso_id', casoId)
-  }
-  
-  const { data, error } = await query.order('created_at', { ascending: false })
-  return { data, error }
-}
-
-/**
- * Criar nova integração de portal
- */
-export async function createPortalIntegration(integrationData, userId) {
-  const { data, error } = await supabase
-    .from('portal_integrations')
-    .insert([{
-      ...integrationData,
-      user_id: userId
-    }])
-  return { data, error }
-}
-
-/**
- * Atualizar configurações de integração de portal
- */
-export async function updatePortalIntegration(integrationId, integrationData) {
-  const { data, error } = await supabase
-    .from('portal_integrations')
-    .update(integrationData)
-    .eq('id', integrationId)
-  return { data, error }
-}
-
-/**
- * Deletar integração de portal
- */
-export async function deletePortalIntegration(integrationId) {
-  const { error } = await supabase
-    .from('portal_integrations')
-    .update({ ativo: false })
-    .eq('id', integrationId)
-  return { error }
-}
-
-/**
- * Buscar status atual de um processo
- */
-export async function fetchProcessoStatus(integrationId) {
-  const { data, error } = await supabase
-    .from('processo_status')
-    .select('*')
-    .eq('integration_id', integrationId)
-    .order('sincronizado_em', { ascending: false })
-    .limit(1)
-    .single()
-  return { data, error }
-}
-
-/**
- * Atualizar status de processo
- */
-export async function updateProcessoStatus(integrationId, statusData) {
-  const { data, error } = await supabase
-    .from('processo_status')
-    .upsert([{
-      integration_id: integrationId,
-      ...statusData,
-      sincronizado_em: new Date().toISOString()
-    }])
-  return { data, error }
-}
-
-/**
- * Buscar histórico de sincronizações
- */
-export async function fetchPortalSyncLog(userId, integrationId = null) {
-  let query = supabase
-    .from('portal_sync_log')
-    .select('*')
-    .eq('user_id', userId)
-  
-  if (integrationId) {
-    query = query.eq('integration_id', integrationId)
-  }
-  
-  const { data, error } = await query.order('data_inicio', { ascending: false }).limit(20)
-  return { data, error }
-}
-
-/**
- * Registrar tentativa de sincronização
- */
-export async function logPortalSync(syncData, userId) {
-  const { data, error } = await supabase
-    .from('portal_sync_log')
-    .insert([{
-      ...syncData,
-      user_id: userId,
-      data_inicio: new Date().toISOString()
-    }])
-  return { data, error }
-}
-
-/**
- * Iniciar sincronização de portal (chama Edge Function)
- */
-export async function syncPortalProcess(integrationId, portalTipo, numeroProcesso) {
-  try {
-    const response = await fetch('/functions/v1/sync-portal-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        integrationId,
-        portalTipo,
-        numeroProcesso
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
-}
-
-// ============================================
-// SUBSCRIPTIONS & ADMIN
-// ============================================
-
-/**
- * Verificar status de subscrição do usuário
+ * Verifica o status da assinatura do motorista.
+ * Retorna { active, status, plan, expires_at, suspended, days_since_expiry, days_until_delete, reason }
  */
 export async function checkSubscription(userId) {
   try {
@@ -700,39 +127,41 @@ export async function checkSubscription(userId) {
       .maybeSingle()
 
     if (error) return { active: false, reason: 'error' }
-    if (!data) return { active: false, reason: 'not_found' }
+    if (!data)  return { active: false, reason: 'not_found' }
 
-    const now = new Date()
+    const now       = new Date()
     const expiresAt = new Date(data.expires_at)
 
     const isExpired   = expiresAt <= now
     const isSuspended = data.status === 'suspended'
     const isActive    = !isExpired && data.status === 'active'
 
-    // Calcula dias desde expiração (para mostrar aviso ao usuário)
     const daysSinceExpiry = isExpired
       ? Math.floor((now - expiresAt) / (1000 * 60 * 60 * 24))
       : 0
 
     return {
-      active: isActive,
-      plan: data.plan || 'monthly',
-      expires_at: data.expires_at,
-      status: data.status,
-      suspended: isSuspended,
+      active:            isActive,
+      plan:              data.plan || 'monthly',
+      expires_at:        data.expires_at,
+      status:            data.status,
+      suspended:         isSuspended,
       days_since_expiry: daysSinceExpiry,
       days_until_delete: isSuspended || isExpired ? Math.max(0, 30 - daysSinceExpiry) : null,
-      reason: isExpired ? 'expired' : isSuspended ? 'suspended' : data.status !== 'active' ? 'inactive' : null
+      reason:            isExpired    ? 'expired'
+                       : isSuspended ? 'suspended'
+                       : data.status !== 'active' ? 'inactive'
+                       : null,
     }
-  } catch (error) {
-    console.error('Error checking subscription:', error)
+  } catch {
     return { active: false, reason: 'error' }
   }
 }
 
-/**
- * Verificar se usuário é admin
- */
-export async function checkIsAdmin(email) {
-  return email === 'sevenxpertssxacademy@gmail.com'
+// ── Admin helpers ─────────────────────────────────────────────────────────────
+
+export const ADMIN_EMAIL = 'sevenxpertssxacademy@gmail.com'
+
+export function checkIsAdmin(email) {
+  return email === ADMIN_EMAIL
 }

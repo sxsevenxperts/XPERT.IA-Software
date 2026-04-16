@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, checkSubscription, checkIsAdmin } from './lib/supabase'
+import { supabase, checkSubscription, ADMIN_EMAIL } from './lib/supabase'
 import NavBar from './components/NavBar'
 import AlertToast from './components/AlertToast'
 import Dashboard from './pages/Dashboard'
@@ -66,12 +66,17 @@ function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
   )
 }
 
-export default function App() {
-  // Check if on Hotmart success page
-  if (window.location.pathname === '/auth/hotmart-success' || window.location.pathname.includes('auth/hotmart-success')) {
+function AppRouter() {
+  const path = window.location.pathname
+  if (path === '/auth/hotmart-success' || path.includes('hotmart-success')) {
     return <HotmartSuccess />
   }
+  return <AppMain />
+}
 
+export default AppRouter
+
+function AppMain() {
   const [auth, setAuth] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [sharedRide, setSharedRide] = useState(null)
@@ -90,12 +95,12 @@ export default function App() {
         if (session?.user) {
           try {
             const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
+            const isAdminUser = session.user.email === ADMIN_EMAIL
             setAuth({ user: session.user, subscription: sub })
             setIsAdmin(isAdminUser)
           } catch {
             // Subscription check failed, still allow login
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
+            const isAdminUser = session.user.email === ADMIN_EMAIL
             setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
             setIsAdmin(isAdminUser)
           }
@@ -111,11 +116,11 @@ export default function App() {
         if (event === 'SIGNED_IN' && session?.user) {
           try {
             const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
+            const isAdminUser = session.user.email === ADMIN_EMAIL
             setAuth({ user: session.user, subscription: sub })
             setIsAdmin(isAdminUser)
           } catch {
-            const isAdminUser = session.user.email === 'sevenxpertssxacademy@gmail.com'
+            const isAdminUser = session.user.email === ADMIN_EMAIL
             setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
             setIsAdmin(isAdminUser)
           }
@@ -132,10 +137,15 @@ export default function App() {
   }, [])
 
   const handleAuth = async (result) => {
-    setAuth(result)
-    if (result?.user?.id) {
-      const isAdminUser = result.user.email === 'sevenxpertssxacademy@gmail.com'
-      setIsAdmin(isAdminUser)
+    if (!result?.user) return
+    const isAdminUser = result.user.email === ADMIN_EMAIL
+    setIsAdmin(isAdminUser)
+    // Se a subscription não veio junto (ex: login manual), busca agora
+    if (!result.subscription) {
+      const sub = await checkSubscription(result.user.id).catch(() => ({ active: true }))
+      setAuth({ user: result.user, subscription: sub })
+    } else {
+      setAuth(result)
     }
   }
 
@@ -153,25 +163,21 @@ export default function App() {
 
   if (auth === null) return <Login onAuth={handleAuth} />
 
-  // Admin panel
-  if (isAdmin && auth?.user) {
+  // Admin bypassa verificação de assinatura
+  if (isAdmin) {
     return <AdminPanel user={auth.user} onLogout={handleLogout} />
   }
 
-  // Check subscription
-  const subBlocked = auth?.user &&
+  // Bloqueia apenas se expirada/suspensa — not_found não bloqueia (evita false positive)
+  const subBlocked =
     auth.subscription &&
     !auth.subscription.active &&
-    auth.subscription.reason !== 'not_found'
+    auth.subscription.reason !== 'not_found' &&
+    auth.subscription.reason !== 'error'
 
   if (subBlocked) {
     return <SubscriptionExpired user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
   }
 
-  // Driver app
-  if (auth?.user) {
-    return <MainApp sharedRide={sharedRide} user={auth.user} subscription={auth.subscription} onLogout={handleLogout} isAdmin={isAdmin} />
-  }
-
-  return <Login onAuth={handleAuth} />
+  return <MainApp sharedRide={sharedRide} user={auth.user} subscription={auth.subscription} onLogout={handleLogout} isAdmin={isAdmin} />
 }
