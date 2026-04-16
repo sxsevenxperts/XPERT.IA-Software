@@ -11,6 +11,7 @@ import Chat from './pages/Chat'
 import Billing from './pages/Billing'
 import AdminPanel from './pages/AdminPanel'
 import Login, { SubscriptionExpired } from './pages/Login'
+import HotmartSuccess from './pages/HotmartSuccess'
 import { useGPS } from './hooks/useGPS'
 
 function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
@@ -66,6 +67,11 @@ function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
 }
 
 export default function App() {
+  // Check if on Hotmart success page
+  if (window.location.pathname === '/auth/hotmart-success' || window.location.pathname.includes('auth/hotmart-success')) {
+    return <HotmartSuccess />
+  }
+
   const [auth, setAuth] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [sharedRide, setSharedRide] = useState(null)

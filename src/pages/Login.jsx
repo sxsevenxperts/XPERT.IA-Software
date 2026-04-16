@@ -170,6 +170,36 @@ export default function Login({ onLogin }) {
               )}
             </button>
           </form>
+
+          <div style={{ borderTop: '1px solid var(--border)', marginTop: 21.6, paddingTop: 21.6 }}>
+            <p style={{ fontSize: 13.2, color: 'var(--text3)', marginBottom: 12, textAlign: 'center' }}>
+              Novo cliente?
+            </p>
+            <a
+              href="https://pay.hotmart.com/Q104879353L?off=j97m36gi"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block',
+                background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 12,
+                padding: '15.6px',
+                fontSize: 16.8,
+                fontWeight: 700,
+                textAlign: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(16,185,129,0.35)',
+                transition: 'opacity 0.15s',
+                textDecoration: 'none',
+              }}
+              onMouseOver={(e) => e.target.style.opacity = '0.9'}
+              onMouseOut={(e) => e.target.style.opacity = '1'}
+            >
+              💳 Comprar Acesso
+            </a>
+          </div>
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 13.2, color: 'var(--text4)', marginTop: 24 }}>

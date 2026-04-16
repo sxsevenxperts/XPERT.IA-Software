@@ -683,3 +683,44 @@ export async function syncPortalProcess(integrationId, portalTipo, numeroProcess
     return { data: null, error }
   }
 }
+
+// ============================================
+// SUBSCRIPTIONS & ADMIN
+// ============================================
+
+/**
+ * Verificar status de subscrição do usuário
+ */
+export async function checkSubscription(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    if (error) return { active: false, reason: 'error' }
+    if (!data) return { active: false, reason: 'not_found' }
+
+    const now = new Date()
+    const expiresAt = new Date(data.expires_at)
+
+    return {
+      active: expiresAt > now && data.status === 'active',
+      plan: data.plan || 'monthly',
+      expires_at: data.expires_at,
+      status: data.status,
+      reason: expiresAt <= now ? 'expired' : data.status !== 'active' ? 'inactive' : null
+    }
+  } catch (error) {
+    console.error('Error checking subscription:', error)
+    return { active: false, reason: 'error' }
+  }
+}
+
+/**
+ * Verificar se usuário é admin
+ */
+export async function checkIsAdmin(email) {
+  return email === 'sevenxpertssxacademy@gmail.com'
+}
