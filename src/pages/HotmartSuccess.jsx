@@ -22,8 +22,7 @@ export default function HotmartSuccess() {
         }
 
         // Call edge function to create user
-        const supabaseUrl = 'https://kyefzktzhviahsodyayd.supabase.co'
-        const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5ZWZ6a3R6aHZpYWhzb2R5YXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MDU4NTAsImV4cCI6MjA5MDM4MTg1MH0.htprONYYNUmOQAtw5dF0C8Huk4pND2y0PhjJKB2-nN0'
+        const supabaseUrl = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
 
         const response = await fetch(
           `${supabaseUrl}/functions/v1/create-hotmart-user`,
