@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { LogOut, Users, Zap } from 'lucide-react'
+import { LogOut, Users, Zap, Activity, TrendingUp, MapPin } from 'lucide-react'
+import { useNPSStats } from '../hooks/useNPSStats'
 
 export default function AdminPanel({ user, onLogout }) {
   const [stats, setStats] = useState(null)
+  const npsStats = useNPSStats()
 
   useEffect(() => {
     loadStats()
@@ -11,24 +13,79 @@ export default function AdminPanel({ user, onLogout }) {
 
   const loadStats = async () => {
     try {
+      // Total drivers
       const { count: drivers } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('role', 'driver')
 
+      // Active subscriptions
       const { count: subs } = await supabase
         .from('subscriptions')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
 
+      // Drivers active now (activeTrip or recent session)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60000).toISOString()
+      const { data: activeData } = await supabase
+        .from('profiles')
+        .select('id, activeTrip, session_started')
+        .eq('role', 'driver')
+        .or(`activeTrip.neq.null,session_started.gt.${fiveMinutesAgo}`)
+
+      const driversActive = activeData?.length || 0
+
+      // Drivers hitting daily goal
+      const { data: goalsData } = await supabase
+        .from('profiles')
+        .select('id, meta_daily')
+        .eq('role', 'driver')
+        .gt('meta_daily', 0)
+
+      let drivingGoal = 0
+      if (goalsData) {
+        for (const driver of goalsData) {
+          const { data: tripsToday } = await supabase
+            .from('trips')
+            .select('earnings')
+            .eq('driver_id', driver.id)
+            .gte('date', new Date().toISOString().split('T')[0])
+
+          const totalEarnings = tripsToday?.reduce((sum, t) => sum + (t.earnings || 0), 0) || 0
+          if (totalEarnings >= driver.meta_daily) {
+            drivingGoal++
+          }
+        }
+      }
+
+      // Rides today
+      const todayStr = new Date().toISOString().split('T')[0]
+      const { data: tripsData } = await supabase
+        .from('trips')
+        .select('id')
+        .gte('date', `${todayStr}T00:00:00`)
+        .lt('date', `${todayStr}T23:59:59`)
+
+      const ridesToday = tripsData?.length || 0
+
       setStats({
         drivers: drivers || 0,
         subs: subs || 0,
+        driversActive: driversActive,
+        drivingGoal: drivingGoal,
+        ridesToday: ridesToday,
         time: new Date().toLocaleTimeString('pt-BR'),
       })
     } catch (err) {
       console.error('Stats error:', err)
-      setStats({ drivers: 0, subs: 0, time: new Date().toLocaleTimeString('pt-BR') })
+      setStats({
+        drivers: 0,
+        subs: 0,
+        driversActive: 0,
+        drivingGoal: 0,
+        ridesToday: 0,
+        time: new Date().toLocaleTimeString('pt-BR'),
+      })
     }
   }
 
@@ -88,11 +145,86 @@ export default function AdminPanel({ user, onLogout }) {
               border: '1px solid #334155',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Zap size={18} color='#22c55e' />
-                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Assinaturas</span>
+                <Activity size={18} color='#ec4899' />
+                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Ativos agora</span>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 900, color: '#ec4899', margin: 0 }}>
+                {stats.driversActive}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#1e293b',
+              borderRadius: 14,
+              padding: 16,
+              border: '1px solid #334155',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <TrendingUp size={18} color='#22c55e' />
+                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Batendo meta</span>
               </div>
               <p style={{ fontSize: 28, fontWeight: 900, color: '#22c55e', margin: 0 }}>
+                {stats.drivingGoal}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#1e293b',
+              borderRadius: 14,
+              padding: 16,
+              border: '1px solid #334155',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <MapPin size={18} color='#f59e0b' />
+                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Corridas hoje</span>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 900, color: '#f59e0b', margin: 0 }}>
+                {stats.ridesToday}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#1e293b',
+              borderRadius: 14,
+              padding: 16,
+              border: '1px solid #334155',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Zap size={18} color='#06b6d4' />
+                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Assinaturas</span>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 900, color: '#06b6d4', margin: 0 }}>
                 {stats.subs}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#1e293b',
+              borderRadius: 14,
+              padding: 16,
+              border: '1px solid #334155',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 18 }}>⭐</span>
+                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Pesquisas</span>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 900, color: '#a78bfa', margin: 0 }}>
+                {npsStats.npsCount}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#1e293b',
+              borderRadius: 14,
+              padding: 16,
+              border: '1px solid #334155',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 18 }}>⭐</span>
+                <span style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase' }}>Pesquisas hoje</span>
+              </div>
+              <p style={{ fontSize: 28, fontWeight: 900, color: '#a78bfa', margin: 0 }}>
+                {npsStats.npsToday}
               </p>
             </div>
           </div>

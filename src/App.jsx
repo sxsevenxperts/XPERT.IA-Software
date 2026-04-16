@@ -13,7 +13,7 @@ import AdminPanel from './pages/AdminPanel'
 import Login, { SubscriptionExpired } from './pages/Login'
 import { useGPS } from './hooks/useGPS'
 
-function MainApp({ sharedRide, user, subscription, onLogout }) {
+function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
   const [tab, setTab] = useState('dashboard')
 
   // ⚡ Inicia GPS em tempo real quando app é aberto
@@ -23,6 +23,14 @@ function MainApp({ sharedRide, user, subscription, onLogout }) {
     return (
       <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
         <Billing user={user} subscription={subscription} onBack={() => setTab('dashboard')} />
+      </div>
+    )
+  }
+
+  if (tab === 'admin' && isAdmin) {
+    return (
+      <div style={{ background: 'var(--bg)', minHeight: '100dvh', color: 'var(--text)' }}>
+        <AdminPanel user={user} onLogout={onLogout} />
       </div>
     )
   }
@@ -156,7 +164,7 @@ export default function App() {
 
   // Driver app
   if (auth?.user) {
-    return <MainApp sharedRide={sharedRide} user={auth.user} subscription={auth.subscription} onLogout={handleLogout} />
+    return <MainApp sharedRide={sharedRide} user={auth.user} subscription={auth.subscription} onLogout={handleLogout} isAdmin={isAdmin} />
   }
 
   return <Login onAuth={handleAuth} />

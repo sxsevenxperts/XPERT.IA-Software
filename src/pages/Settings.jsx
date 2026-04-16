@@ -518,6 +518,26 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         </button>
       </div>
 
+      {/* ═══════ PAINEL ADMIN ═══════ */}
+      {(user?.user_metadata?.role === 'admin' || user?.email === 'admin@easydrive.app' || user?.email === 'sevenxpertssxacademy@gmail.com') && (
+        <Section icon={<Wrench size={16} color='#a855f7' />} title='Painel Admin'>
+          <p style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 14, lineHeight: 1.5 }}>
+            Acesse o painel de administrador para gerenciar motoristas, assinaturas e métricas.
+          </p>
+          <button onClick={() => onTab ? onTab('admin') : window.location.reload()} style={{
+            width: '100%', padding: '14px', background: '#a855f715', border: '1px solid #a855f640',
+            borderRadius: 14, color: '#a855f7', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <Wrench size={16} />
+            Acessar Painel Admin
+          </button>
+        </Section>
+      )}
+
+      {/* ═══════ HISTÓRICO DE AVALIAÇÕES NPS ═══════ */}
+      <NPSHistorySection user={user} />
+
       {/* Logout */}
       {onLogout && (
         <button onClick={onLogout} style={{
@@ -575,6 +595,127 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Componente de Histórico NPS ──────────────────────────────────────────
+function NPSHistorySection({ user }) {
+  const [npsHistory, setNpsHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadNPSHistory()
+  }, [user?.id])
+
+  const loadNPSHistory = async () => {
+    if (!user?.id || !supabase) {
+      setLoading(false)
+      return
+    }
+    try {
+      const { data, error } = await supabase
+        .from('nps_responses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+      setNpsHistory(data || [])
+    } catch (err) {
+      console.error('NPS history error:', err)
+      setNpsHistory([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getActionLabel = (action) => {
+    const labels = {
+      'opened': 'Abriu',
+      'already_rated': 'Já respondeu',
+      'submitted': 'Respondeu',
+      'skipped': 'Pulou',
+    }
+    return labels[action] || action
+  }
+
+  const getActionBadgeStyle = (action) => {
+    const styles = {
+      'opened': { bg: '#3b82f615', text: '#3b82f6', label: 'Abriu' },
+      'already_rated': { bg: '#f59e0b15', text: '#f59e0b', label: 'Pulou' },
+      'submitted': { bg: '#22c55e15', text: '#22c55e', label: 'Respondeu' },
+      'skipped': { bg: '#64748b15', text: '#64748b', label: 'Pulou' },
+    }
+    return styles[action] || styles['opened']
+  }
+
+  return (
+    <Section icon={<Bell size={16} color='#f59e0b' />} title='Histórico de Avaliações NPS'>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text3)', fontSize: 13 }}>
+          Carregando...
+        </div>
+      ) : npsHistory.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '20px 0', background: 'var(--bg3)', borderRadius: 12, color: 'var(--text3)', fontSize: 13 }}>
+          Nenhuma avaliação ainda
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {npsHistory.map((item) => {
+            const badgeStyle = getActionBadgeStyle(item.action || 'opened')
+            const date = new Date(item.created_at).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: 'short',
+              year: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+
+            return (
+              <div
+                key={item.id}
+                style={{
+                  background: 'var(--bg3)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600, margin: '0 0 4px 0' }}>
+                    {date}
+                  </p>
+                  {item.score !== null && item.score !== undefined && (
+                    <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700, margin: 0 }}>
+                      ⭐ {item.score}/10
+                    </p>
+                  )}
+                </div>
+                <span
+                  style={{
+                    background: badgeStyle.bg,
+                    color: badgeStyle.text,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: 20,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  {badgeStyle.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Section>
   )
 }
 
