@@ -46,7 +46,11 @@ async function handleRequest(req: Request): Promise<Response> {
     if (existingProfile?.id) {
       // Já existe: apenas atualiza a senha escolhida e renova subscrição
       userId = existingProfile.id;
-      await supabase.auth.admin.updateUserById(userId, { password });
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password });
+      if (updateError) {
+        console.error(`⚠️  Erro ao atualizar senha para ${email}: ${updateError.message}`);
+        return json({ error: "Erro ao atualizar senha. Tente fazer login com sua senha anterior ou entre em contato com suporte." }, 400);
+      }
     } else {
       // ── 2. Criar usuário com a senha escolhida pelo motorista ─────────────────
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
