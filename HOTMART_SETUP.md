@@ -44,8 +44,26 @@ jobs:
 
 ---
 
-### 3. Configurar Webhook do Hotmart
+### 3. Configurar Webhooks do Hotmart
 
+**Dois webhooks são necessários:**
+
+#### 3.1 Webhook de Nova Subscrição (CRÍTICO)
+**hotmart-webhook-subscription** registra novas compras/assinaturas.
+
+**No Painel do Hotmart:**
+1. Integrações → Webhooks
+2. Novo webhook:
+   - **URL:** `https://untmxmbqgdagfqhmqyvm.supabase.co/functions/v1/hotmart-webhook-subscription`
+   - **Evento:** `subscription.created` (ou `payment.completed`, dependendo da versão do Hotmart)
+   - **Método:** POST
+
+**Por que é crítico:**
+- Se o redirect (hotmart-success) falhar, este webhook garante que a subscrição é criada no Supabase
+- É a fonte de verdade para novas assinaturas
+- Sem este webhook, compras podem não ser registradas se houver problema na conexão
+
+#### 3.2 Webhook de Cancelamento
 **hotmart-webhook-cancellation** recebe cancelamentos.
 
 **No Painel do Hotmart:**
@@ -72,9 +90,11 @@ Dia 60: Todos os dados deletados
 
 - [ ] RESEND_API_KEY no Supabase
 - [ ] GitHub Actions workflow criado
-- [ ] Hotmart webhook configurado
+- [ ] Hotmart webhook de nova subscrição configurado (hotmart-webhook-subscription)
+- [ ] Hotmart webhook de cancelamento configurado (hotmart-webhook-cancellation)
 - [ ] Testou emails (Supabase → Functions → send-expiration-warnings → Logs)
-- [ ] Testou webhook (Supabase → Functions → hotmart-webhook-cancellation → Logs)
+- [ ] Testou webhook de subscrição (Supabase → Functions → hotmart-webhook-subscription → Logs)
+- [ ] Testou webhook de cancelamento (Supabase → Functions → hotmart-webhook-cancellation → Logs)
 
 ---
 

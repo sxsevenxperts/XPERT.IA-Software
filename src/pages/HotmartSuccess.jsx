@@ -49,6 +49,10 @@ export default function HotmartSuccess() {
 
     const attemptCreate = async () => {
       try {
+        // Edge function cria usuário, perfil e subscrição
+        // NOTA: Subscrição também é criada pelo webhook do Hotmart (hotmart-webhook-subscription)
+        // como fonte de verdade. Se o webhook chegou primeiro, a subscrição já existe.
+        // A edge function é idempotente e não cria duplicata.
         const res = await fetch(`${SUPABASE_URL}/functions/v1/create-hotmart-user`, {
           method: 'POST',
           headers: {
