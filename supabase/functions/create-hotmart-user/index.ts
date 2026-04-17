@@ -33,39 +33,48 @@ async function handleRequest(req: Request): Promise<Response> {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase       = createClient(supabaseUrl, serviceRoleKey);
 
-    // ── 1. Verificar se usuário já existe (O(1) via profiles) ─────────────────
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
-
+    // ── 1. Tentar criar usuário (detecta "already exists" via try/catch) ──────
     let userId: string;
     let isNewUser = false;
 
-    if (existingProfile?.id) {
-      // Já existe: apenas atualiza a senha escolhida e renova subscrição
-      userId = existingProfile.id;
-      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password });
-      if (updateError) {
-        console.error(`⚠️  Erro ao atualizar senha para ${email}: ${updateError.message}`);
-        return json({ error: "Erro ao atualizar senha. Tente fazer login com sua senha anterior ou entre em contato com suporte." }, 400);
-      }
-    } else {
-      // ── 2. Criar usuário com a senha escolhida pelo motorista ─────────────────
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true, // sem envio de email — confirmado automaticamente
-        user_metadata: { name, phone, created_via: "hotmart" },
-      });
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // sem envio de email — confirmado automaticamente
+      user_metadata: { name, phone, created_via: "hotmart" },
+    });
 
-      if (authError || !authData.user) {
-        return json({ error: "Erro ao criar usuário: " + (authError?.message || "Desconhecido") }, 500);
-      }
+    if (authError) {
+      // Email já existe em auth
+      if (authError.message?.includes("already registered") || authError.message?.includes("User already exists")) {
+        console.log(`ℹ️  Email já registrado: ${email}. Atualizando senha...`);
 
+        // Buscar o usuário para pegar seu ID
+        const { data: { users } } = await supabase.auth.admin.listUsers();
+        const existingUser = users?.find(u => u.email === email);
+
+        if (!existingUser) {
+          return json({ error: "Usuário não encontrado. Entre em contato com suporte." }, 500);
+        }
+
+        userId = existingUser.id;
+
+        // Atualizar a senha
+        const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password });
+        if (updateError) {
+          console.error(`⚠️  Erro ao atualizar senha para ${email}: ${updateError.message}`);
+          return json({ error: "Erro ao atualizar senha. Tente fazer login com sua senha anterior ou entre em contato com suporte." }, 400);
+        }
+      } else {
+        // Outro erro ao criar usuário
+        return json({ error: "Erro ao criar usuário: " + (authError.message || "Desconhecido") }, 500);
+      }
+    } else if (authData.user) {
+      // Usuário novo criado com sucesso
       userId = authData.user.id;
       isNewUser = true;
+    } else {
+      return json({ error: "Erro desconhecido ao criar usuário" }, 500);
     }
 
     // ── 3. Criar/renovar subscrição 30 dias ──────────────────────────────────
