@@ -1,0 +1,17 @@
+name: Daily Expiration Notifications
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # 9 AM UTC todo dia
+  workflow_dispatch:
+
+jobs:
+  notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger send-expiration-notifications
+        run: |
+          curl -X POST https://untmxmbqgdagfqhmqyvm.supabase.co/functions/v1/send-expiration-notifications \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
