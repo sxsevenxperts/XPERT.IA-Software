@@ -85,6 +85,12 @@ function AppMain() {
   useEffect(() => {
     if (!supabase) { setLoading(false); return }
 
+    // Timeout de segurança para evitar infinite loading (ex: Supabase hang)
+    const loadingTimeout = setTimeout(() => {
+      console.warn('[Auth] Loading timeout - forcing completion')
+      setLoading(false)
+    }, 5000)
+
     // Registrar listener SINCRONAMENTE para garantir cleanup correto
     const { data: { subscription: listener } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
@@ -123,13 +129,17 @@ function AppMain() {
       } catch (err) {
         console.error('Auth init error:', err)
       } finally {
+        clearTimeout(loadingTimeout)
         setLoading(false)
       }
     }
 
     loadSession()
 
-    return () => listener?.unsubscribe()
+    return () => {
+      clearTimeout(loadingTimeout)
+      listener?.unsubscribe()
+    }
   }, [])
 
   const handleAuth = async (result) => {
@@ -146,9 +156,19 @@ function AppMain() {
   }
 
   const handleLogout = async () => {
-    if (supabase) await supabase.auth.signOut()
-    setAuth(null)
-    setIsAdmin(false)
+    try {
+      if (supabase) {
+        await supabase.auth.signOut()
+        // Limpar localStorage/sessionStorage do Supabase
+        const keys = Object.keys(localStorage).filter(k => k.includes('supabase') || k.includes('auth'))
+        keys.forEach(k => localStorage.removeItem(k))
+      }
+    } catch (err) {
+      console.error('Logout error:', err)
+    } finally {
+      setAuth(null)
+      setIsAdmin(false)
+    }
   }
 
   if (loading) {

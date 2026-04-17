@@ -86,11 +86,21 @@ export default function Login({ onAuth }) {
     setError('')
     if (!email || !password) { setError('Preencha email e senha.'); return }
     setLoading(true)
+
+    // Timeout de segurança para evitar infinite loading (ex: Supabase hang)
+    const loginTimeout = setTimeout(() => {
+      console.warn('[Login] Timeout - forcing completion')
+      setError('Erro de conexão. Tente novamente.')
+      setLoading(false)
+    }, 8000)
+
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      clearTimeout(loginTimeout)
       if (signInError) { setError('Email ou senha incorretos.'); setLoading(false); return }
       if (data?.user) onAuth({ user: data.user, subscription: null })
     } catch {
+      clearTimeout(loginTimeout)
       setError('Erro ao fazer login. Tente novamente.')
       setLoading(false)
     }
