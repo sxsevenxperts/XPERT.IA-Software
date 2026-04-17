@@ -36,12 +36,12 @@ async function handleRequest(req: Request): Promise<Response> {
   const errors: string[] = [];
 
   try {
-    // ── 1. Buscar todas as subscrições expiradas ────────────────────────────────
+    // ── 1. Buscar todas as subscrições expiradas ou canceladas ──────────────────
     const { data: subs, error: subsError } = await supabase
       .from("subscriptions")
       .select("user_id, status, expires_at")
-      .lte("expires_at", now.toISOString())
-      .in("status", ["active", "suspended"]);
+      .or(`expires_at.lte.${now.toISOString()},status.eq.cancelled`)
+      .in("status", ["active", "suspended", "cancelled"]);
 
     if (subsError) throw subsError;
     if (!subs?.length) return json({ ok: true, suspended: 0, deleted: 0, message: "Nenhuma subscrição expirada." });
