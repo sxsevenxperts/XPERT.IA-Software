@@ -18,7 +18,7 @@ export default function ActiveTrip() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       const { data } = await supabase.from('corridas')
-        .select('*').eq('driver_id', user.id).eq('status', 'em_andamento').maybeSingle()
+        .select('*').eq('user_id', user.id).eq('status', 'em_andamento').maybeSingle()
       setTrip(data)
     } catch {}
     setLoading(false)
@@ -30,7 +30,7 @@ export default function ActiveTrip() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       const { data } = await supabase.from('corridas').insert({
-        driver_id: user.id,
+        user_id: user.id,
         origem: form.origem,
         destino: form.destino,
         plataforma: form.plataforma,

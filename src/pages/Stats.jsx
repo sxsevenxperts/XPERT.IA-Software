@@ -21,19 +21,19 @@ export default function Stats() {
 
       const { data: trips } = await supabase.from('corridas')
         .select('*')
-        .eq('driver_id', user.id)
+        .eq('user_id', user.id)
         .eq('status', 'concluida')
         .gte('created_at', from.toISOString())
 
       const { data: expenses } = await supabase.from('expenses')
-        .select('amount, category')
-        .eq('driver_id', user.id)
+        .select('value, category')
+        .eq('user_id', user.id)
         .gte('date', from.toISOString().split('T')[0])
 
       const list = trips || []
       const totalGanhos = list.reduce((s, t) => s + (t.valor_total || 0), 0)
       const totalKm = list.reduce((s, t) => s + (t.distancia_km || 0), 0)
-      const totalDespesas = (expenses || []).reduce((s, e) => s + (e.amount || 0), 0)
+      const totalDespesas = (expenses || []).reduce((s, e) => s + (e.value || 0), 0)
       const avgPerTrip = list.length ? totalGanhos / list.length : 0
       const avgKmPerTrip = list.length ? totalKm / list.length : 0
       const ratings = list.filter(t => t.avaliacao_cliente).map(t => t.avaliacao_cliente)

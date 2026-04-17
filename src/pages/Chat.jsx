@@ -43,8 +43,8 @@ export default function Chat({ user }) {
     try {
       await supabase.from('chat_messages').insert({
         user_id: user.id,
-        user_email: user.email,
-        message: text.trim(),
+        user_name: user.email?.split('@')[0] || 'Motorista',
+        content: text.trim(),
       })
       setText('')
     } catch {}

@@ -17,7 +17,7 @@ export default function History() {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      let q = supabase.from('corridas').select('*').eq('driver_id', user.id).order('created_at', { ascending: false }).limit(50)
+      let q = supabase.from('corridas').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
       if (filter !== 'todas') q = q.eq('status', filter)
       const { data } = await q
       setTrips(data || [])

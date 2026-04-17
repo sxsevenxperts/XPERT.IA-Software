@@ -17,7 +17,6 @@ export default function AdminPanel({ user, onLogout }) {
       const { count: drivers } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('role', 'driver')
 
       // Active subscriptions
       const { count: subs } = await supabase
@@ -25,48 +24,57 @@ export default function AdminPanel({ user, onLogout }) {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
 
-      // Drivers active now (activeTrip or recent session)
+      // Drivers active now (had recent trips)
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60000).toISOString()
       const { data: activeData } = await supabase
-        .from('profiles')
-        .select('id, activeTrip, session_started')
-        .eq('role', 'driver')
-        .or(`activeTrip.neq.null,session_started.gt.${fiveMinutesAgo}`)
+        .from('corridas')
+        .select('user_id')
+        .gt('started_at', fiveMinutesAgo)
 
-      const driversActive = activeData?.length || 0
+      const activeSet = new Set(activeData?.map(t => t.user_id) || [])
+      const driversActive = activeSet.size
 
-      // Drivers hitting daily goal
-      const { data: goalsData } = await supabase
+      // Drivers hitting daily goal - aggregate by driver in single query
+      const todayStr = new Date().toISOString().split('T')[0]
+      const { data: earningsData } = await supabase
+        .from('corridas')
+        .select('user_id, valor_total')
+        .gte('created_at', `${todayStr}T00:00:00`)
+        .lt('created_at', `${todayStr}T23:59:59`)
+
+      const driverEarnings = {}
+      if (earningsData) {
+        for (const trip of earningsData) {
+          if (!driverEarnings[trip.user_id]) {
+            driverEarnings[trip.user_id] = 0
+          }
+          driverEarnings[trip.user_id] += trip.valor_total || 0
+        }
+      }
+
+      // Get drivers with daily goals and count those hitting them
+      const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, meta_daily')
-        .eq('role', 'driver')
         .gt('meta_daily', 0)
 
       let drivingGoal = 0
-      if (goalsData) {
-        for (const driver of goalsData) {
-          const { data: tripsToday } = await supabase
-            .from('trips')
-            .select('earnings')
-            .eq('driver_id', driver.id)
-            .gte('date', new Date().toISOString().split('T')[0])
-
-          const totalEarnings = tripsToday?.reduce((sum, t) => sum + (t.earnings || 0), 0) || 0
-          if (totalEarnings >= driver.meta_daily) {
+      if (profilesData) {
+        for (const profile of profilesData) {
+          if ((driverEarnings[profile.id] || 0) >= profile.meta_daily) {
             drivingGoal++
           }
         }
       }
 
       // Rides today
-      const todayStr = new Date().toISOString().split('T')[0]
-      const { data: tripsData } = await supabase
-        .from('trips')
+      const { data: corridas } = await supabase
+        .from('corridas')
         .select('id')
-        .gte('date', `${todayStr}T00:00:00`)
-        .lt('date', `${todayStr}T23:59:59`)
+        .gte('created_at', `${todayStr}T00:00:00`)
+        .lt('created_at', `${todayStr}T23:59:59`)
 
-      const ridesToday = tripsData?.length || 0
+      const ridesToday = corridas?.length || 0
 
       setStats({
         drivers: drivers || 0,

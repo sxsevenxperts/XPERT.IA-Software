@@ -25,12 +25,12 @@ export default function Dashboard({ onTab }) {
       const [tripsRes, todayRes] = await Promise.all([
         supabase.from('corridas')
           .select('*')
-          .eq('driver_id', user.id)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5),
         supabase.from('corridas')
           .select('valor_total, distancia_km, avaliacao_cliente')
-          .eq('driver_id', user.id)
+          .eq('user_id', user.id)
           .gte('created_at', today.toISOString()),
       ])
 
