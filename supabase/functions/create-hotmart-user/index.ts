@@ -33,16 +33,19 @@ async function handleRequest(req: Request): Promise<Response> {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase       = createClient(supabaseUrl, serviceRoleKey);
 
-    // ── 1. Verificar se usuário já existe ──────────────────────────────────────
-    const { data: { users } } = await supabase.auth.admin.listUsers();
-    const existingUser = users?.find((u) => u.email === email);
+    // ── 1. Verificar se usuário já existe (O(1) via profiles) ─────────────────
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
     let userId: string;
     let isNewUser = false;
 
-    if (existingUser) {
+    if (existingProfile?.id) {
       // Já existe: apenas atualiza a senha escolhida e renova subscrição
-      userId = existingUser.id;
+      userId = existingProfile.id;
       await supabase.auth.admin.updateUserById(userId, { password });
     } else {
       // ── 2. Criar usuário com a senha escolhida pelo motorista ─────────────────

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase'
 import { CheckCircle, Eye, EyeOff, Lock, Car, ArrowRight, Shield } from 'lucide-react'
 
 export default function HotmartSuccess() {
@@ -26,11 +26,13 @@ export default function HotmartSuccess() {
 
     setLoading(true)
     try {
-      const supabaseUrl = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
-
-      const res = await fetch(`${supabaseUrl}/functions/v1/create-hotmart-user`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-hotmart-user`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
         body: JSON.stringify({
           email:          emailFromUrl,
           password,

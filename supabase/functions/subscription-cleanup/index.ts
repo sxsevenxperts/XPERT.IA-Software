@@ -57,19 +57,13 @@ async function handleRequest(req: Request): Promise<Response> {
 
           // Apaga dados nas tabelas do app
           await Promise.allSettled([
-            supabase.from("corridas").delete().eq("driver_id", uid),
-            supabase.from("trips").delete().eq("driver_id", uid),
-            supabase.from("expenses").delete().eq("driver_id", uid),
-            supabase.from("fuel_logs").delete().eq("driver_id", uid),
-            supabase.from("vehicle_maintenance").delete().eq("driver_id", uid),
-            supabase.from("driver_documents").delete().eq("driver_id", uid),
+            supabase.from("corridas").delete().eq("user_id", uid),
+            supabase.from("expenses").delete().eq("user_id", uid),
             supabase.from("chat_messages").delete().eq("user_id", uid),
-            supabase.from("driver_tasks").delete().eq("driver_id", uid),
             supabase.from("hotmart_transactions").delete().eq("user_id", uid),
             supabase.from("payment_history").delete().eq("user_id", uid),
             supabase.from("push_tokens").delete().eq("user_id", uid),
             supabase.from("notification_preferences").delete().eq("user_id", uid),
-            supabase.from("referrals").delete().or(`referrer_id.eq.${uid},referred_id.eq.${uid}`),
             supabase.from("subscriptions").delete().eq("user_id", uid),
             supabase.from("profiles").delete().eq("id", uid),
           ]);
@@ -90,8 +84,7 @@ async function handleRequest(req: Request): Promise<Response> {
             .update({ status: "suspended", updated_at: now.toISOString() })
             .eq("user_id", sub.user_id);
 
-          // Revoga sessões ativas
-          await supabase.auth.admin.signOut(sub.user_id, "others").catch(() => null);
+          // Sessões expirarão naturalmente pelo JWT exp
 
           suspended++;
           console.log(`🔒 Acesso suspenso: ${sub.user_id} (${daysSince.toFixed(0)} dias sem pagamento)`);

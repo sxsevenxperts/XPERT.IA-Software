@@ -83,13 +83,29 @@ function AppMain() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Always load immediately
-    const init = async () => {
-      if (!supabase) {
-        setLoading(false)
-        return
-      }
+    if (!supabase) { setLoading(false); return }
 
+    // Registrar listener SINCRONAMENTE para garantir cleanup correto
+    const { data: { subscription: listener } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          const sub = await checkSubscription(session.user.id)
+          const isAdminUser = session.user.email === ADMIN_EMAIL
+          setAuth({ user: session.user, subscription: sub })
+          setIsAdmin(isAdminUser)
+        } catch {
+          const isAdminUser = session.user.email === ADMIN_EMAIL
+          setAuth({ user: session.user, subscription: { active: false, reason: 'error' } })
+          setIsAdmin(isAdminUser)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setAuth(null)
+        setIsAdmin(false)
+      }
+    })
+
+    // Carregar sessão existente
+    async function loadSession() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
@@ -99,9 +115,8 @@ function AppMain() {
             setAuth({ user: session.user, subscription: sub })
             setIsAdmin(isAdminUser)
           } catch {
-            // Subscription check failed, still allow login
             const isAdminUser = session.user.email === ADMIN_EMAIL
-            setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
+            setAuth({ user: session.user, subscription: { active: false, reason: 'error' } })
             setIsAdmin(isAdminUser)
           }
         }
@@ -110,30 +125,11 @@ function AppMain() {
       } finally {
         setLoading(false)
       }
-
-      // Listen for auth changes
-      const { data: { subscription: listener } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          try {
-            const sub = await checkSubscription(session.user.id)
-            const isAdminUser = session.user.email === ADMIN_EMAIL
-            setAuth({ user: session.user, subscription: sub })
-            setIsAdmin(isAdminUser)
-          } catch {
-            const isAdminUser = session.user.email === ADMIN_EMAIL
-            setAuth({ user: session.user, subscription: { active: true, plan: 'premium' } })
-            setIsAdmin(isAdminUser)
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setAuth(null)
-          setIsAdmin(false)
-        }
-      })
-
-      return () => listener?.unsubscribe()
     }
 
-    init()
+    loadSession()
+
+    return () => listener?.unsubscribe()
   }, [])
 
   const handleAuth = async (result) => {
@@ -142,7 +138,7 @@ function AppMain() {
     setIsAdmin(isAdminUser)
     // Se a subscription não veio junto (ex: login manual), busca agora
     if (!result.subscription) {
-      const sub = await checkSubscription(result.user.id).catch(() => ({ active: true }))
+      const sub = await checkSubscription(result.user.id).catch(() => ({ active: false, reason: 'error' }))
       setAuth({ user: result.user, subscription: sub })
     } else {
       setAuth(result)

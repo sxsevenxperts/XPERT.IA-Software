@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL     = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudG14bWJxZ2RhZ2ZxaG1xeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDQ1NjgsImV4cCI6MjA4ODU4MDU2OH0.i1ijydj0lRtDTa-dIMEJzMZVW9rDc5TnHwQ3Az2L70g'
+export const SUPABASE_URL      = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudG14bWJxZ2RhZ2ZxaG1xeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDQ1NjgsImV4cCI6MjA4ODU4MDU2OH0.i1ijydj0lRtDTa-dIMEJzMZVW9rDc5TnHwQ3Az2L70g'
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -42,11 +42,11 @@ export async function updateProfile(userId, profileData) {
 
 // ── Corridas (trips) ─────────────────────────────────────────────────────────
 
-export async function fetchCorridas(driverId, filters = {}) {
+export async function fetchCorridas(userId, filters = {}) {
   let query = supabase
     .from('corridas')
     .select('*')
-    .eq('driver_id', driverId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
   if (filters.status) query = query.eq('status', filters.status)
@@ -57,8 +57,8 @@ export async function fetchCorridas(driverId, filters = {}) {
   return query
 }
 
-export async function createCorrida(driverId, corridaData) {
-  return supabase.from('corridas').insert([{ driver_id: driverId, ...corridaData }]).select().single()
+export async function createCorrida(userId, corridaData) {
+  return supabase.from('corridas').insert([{ user_id: userId, ...corridaData }]).select().single()
 }
 
 export async function updateCorrida(corridaId, corridaData) {
@@ -71,11 +71,11 @@ export async function deleteCorrida(corridaId) {
 
 // ── Expenses ──────────────────────────────────────────────────────────────────
 
-export async function fetchExpenses(driverId, filters = {}) {
+export async function fetchExpenses(userId, filters = {}) {
   let query = supabase
     .from('expenses')
     .select('*')
-    .eq('driver_id', driverId)
+    .eq('user_id', userId)
     .order('date', { ascending: false })
 
   if (filters.from) query = query.gte('date', filters.from)
@@ -84,8 +84,8 @@ export async function fetchExpenses(driverId, filters = {}) {
   return query
 }
 
-export async function createExpense(driverId, expenseData) {
-  return supabase.from('expenses').insert([{ driver_id: driverId, ...expenseData }]).select().single()
+export async function createExpense(userId, expenseData) {
+  return supabase.from('expenses').insert([{ user_id: userId, ...expenseData }]).select().single()
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
@@ -93,8 +93,8 @@ export async function createExpense(driverId, expenseData) {
 export async function fetchMessages(limit = 50) {
   return supabase
     .from('chat_messages')
-    .select('*, profiles(name)')
-    .order('created_at', { ascending: false })
+    .select('*')
+    .order('created_at', { ascending: true })
     .limit(limit)
 }
 
