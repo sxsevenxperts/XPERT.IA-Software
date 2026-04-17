@@ -22,11 +22,16 @@ export default function HotmartSuccess() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       if (data.session) {
-        await supabase.auth.setSession(data.session)
+        const { error: setError } = await supabase.auth.setSession(data.session)
+        if (setError) {
+          console.error('❌ Erro ao ativar sessão:', setError.message)
+          throw setError
+        }
+        console.log('✅ Sessão ativada com sucesso para:', email)
         return true
       }
     } catch (err) {
-      console.log('Login automático falhou:', err.message)
+      console.error('⚠️  Login automático falhou:', err.message)
     }
     return false
   }

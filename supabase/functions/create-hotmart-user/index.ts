@@ -49,9 +49,22 @@ async function handleRequest(req: Request): Promise<Response> {
       if (authError.message?.includes("already registered") || authError.message?.includes("User already exists")) {
         console.log(`ℹ️  Email já registrado: ${email}. Atualizando senha...`);
 
-        // Buscar o usuário para pegar seu ID
-        const { data: { users } } = await supabase.auth.admin.listUsers();
-        const existingUser = users?.find(u => u.email === email);
+        // Buscar o usuário para pegar seu ID (com timeout protection)
+        let existingUser = null;
+        try {
+          const { data: { users } } = await supabase.auth.admin.listUsers();
+          existingUser = users?.find(u => u.email === email);
+        } catch (listErr) {
+          console.error(`⚠️  Erro ao listar usuários: ${listErr}. Tentando fallback...`);
+          // Fallback: tenta fazer login com a senha nova - se funcionar, userId está correto
+          const fallbackLogin = await supabase.auth.signInWithPassword({ email, password });
+          if (fallbackLogin.data?.user?.id) {
+            userId = fallbackLogin.data.user.id;
+            existingUser = fallbackLogin.data.user;
+          } else {
+            return json({ error: "Não conseguimos encontrar sua conta. Entre em contato com suporte." }, 500);
+          }
+        }
 
         if (!existingUser) {
           return json({ error: "Usuário não encontrado. Entre em contato com suporte." }, 500);
@@ -59,20 +72,25 @@ async function handleRequest(req: Request): Promise<Response> {
 
         userId = existingUser.id;
 
-        // Atualizar a senha
-        const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password });
-        if (updateError) {
-          console.error(`⚠️  Erro ao atualizar senha para ${email}: ${updateError.message}`);
-          return json({ error: "Erro ao atualizar senha. Tente fazer login com sua senha anterior ou entre em contato com suporte." }, 400);
+        // Atualizar a senha (se ainda não foi feito via fallback login)
+        if (userId && !isNewUser) {
+          const { error: updateError } = await supabase.auth.admin.updateUserById(userId, { password });
+          if (updateError) {
+            console.error(`⚠️  Erro ao atualizar senha para ${email}: ${updateError.message}`);
+            return json({ error: "Erro ao atualizar senha. Tente fazer login com sua senha anterior ou entre em contato com suporte." }, 400);
+          }
+          console.log(`✅ Senha atualizada para usuário existente: ${email}`);
         }
       } else {
         // Outro erro ao criar usuário
+        console.error(`❌ Erro ao criar usuário ${email}: ${authError.message}`);
         return json({ error: "Erro ao criar usuário: " + (authError.message || "Desconhecido") }, 500);
       }
     } else if (authData.user) {
       // Usuário novo criado com sucesso
       userId = authData.user.id;
       isNewUser = true;
+      console.log(`✅ Novo usuário criado: ${email} (ID: ${userId})`);
     } else {
       return json({ error: "Erro desconhecido ao criar usuário" }, 500);
     }
@@ -81,7 +99,7 @@ async function handleRequest(req: Request): Promise<Response> {
     const now       = new Date();
     const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    await supabase.from("subscriptions").upsert({
+    const { error: subError } = await supabase.from("subscriptions").upsert({
       user_id: userId,
       plan: "monthly",
       status: "active",
@@ -90,13 +108,26 @@ async function handleRequest(req: Request): Promise<Response> {
       updated_at: now.toISOString(),
     }, { onConflict: "user_id" });
 
+    if (subError) {
+      console.error(`⚠️  Erro ao criar subscrição para ${email}: ${subError.message}`);
+      return json({ error: "Erro ao ativar subscrição. Entre em contato com suporte." }, 500);
+    }
+    console.log(`✅ Subscrição criada/renovada para ${email}`);
+
     // ── 4. Criar/atualizar perfil ─────────────────────────────────────────────
-    await supabase.from("profiles").upsert({
+    const { error: profileError } = await supabase.from("profiles").upsert({
       id: userId,
       email, phone, name,
       hotmart_customer: true,
       updated_at: now.toISOString(),
-    }, { onConflict: "id" }).catch(() => null);
+    }, { onConflict: "id" });
+
+    if (profileError) {
+      console.error(`⚠️  Erro ao criar perfil para ${email}: ${profileError.message}`);
+      // Não falha aqui - perfil é secundário
+    } else {
+      console.log(`✅ Perfil criado/atualizado para ${email}`);
+    }
 
     // ── 5. Registrar transação ────────────────────────────────────────────────
     if (transactionId) {
@@ -109,30 +140,37 @@ async function handleRequest(req: Request): Promise<Response> {
     }
 
     // ── 6. Login real com a senha escolhida ───────────────────────────────────
-    let loginAttempts = 0;
     let loginData = null;
     let loginError = null;
 
     // Retry logic para login — às vezes o banco leva um tempo para sincronizar
     for (let attempt = 0; attempt < 3; attempt++) {
+      console.log(`🔐 Tentativa de login ${attempt + 1}/3 para ${email}...`);
       const result = await supabase.auth.signInWithPassword({ email, password });
       loginError = result.error;
       loginData = result.data;
 
       if (!loginError && loginData.session) {
+        console.log(`✅ Login automático sucesso na tentativa ${attempt + 1}`);
         break; // Sucesso!
+      }
+
+      if (loginError) {
+        console.warn(`⚠️  Tentativa ${attempt + 1} falhou: ${loginError.message}`);
       }
 
       if (attempt < 2) {
         // Espera um pouco antes de tentar novamente (eventual consistency)
-        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+        const delay = 500 * (attempt + 1);
+        console.log(`⏳ Aguardando ${delay}ms antes de próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
     if (loginError || !loginData?.session) {
       // Mesmo com erro no login, se a conta foi criada, retorna sucesso
       // O cliente pode tentar fazer login manualmente
-      console.log(`⚠️  Hotmart: ${email} criada, mas erro no login: ${loginError?.message}`);
+      console.warn(`⚠️  Hotmart: ${email} criada, mas erro no login automático: ${loginError?.message}`);
       return json({
         ok: true,
         is_new_user: isNewUser,
