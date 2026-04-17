@@ -17,6 +17,20 @@ export default function HotmartSuccess() {
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState(false)
 
+  async function tryLogin(email, password) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      if (data.session) {
+        await supabase.auth.setSession(data.session)
+        return true
+      }
+    } catch (err) {
+      console.log('Login automático falhou:', err.message)
+    }
+    return false
+  }
+
   async function handleCreateAccount(e) {
     e.preventDefault()
     setError('')
@@ -25,38 +39,91 @@ export default function HotmartSuccess() {
     if (password !== confirm) { setError('As senhas não coincidem.'); return }
 
     setLoading(true)
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-hotmart-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          email:          emailFromUrl,
-          password,
-          name:           nameFromUrl,
-          phone:          phoneFromUrl,
-          transaction_id: txId,
-        }),
-      })
+    let retries = 0
+    const maxRetries = 3
 
-      const data = await res.json()
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Erro ao criar conta')
+    const attemptCreate = async () => {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/create-hotmart-user`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email:          emailFromUrl,
+            password,
+            name:           nameFromUrl,
+            phone:          phoneFromUrl,
+            transaction_id: txId,
+          }),
+        })
 
-      // Login automático com a sessão retornada
-      if (data.session) {
-        await supabase.auth.setSession(data.session)
+        const data = await res.json()
+
+        // Se o usuário já existe e o servidor diz para tentar login
+        if (res.status === 409 || data.error?.includes('já cadastrado')) {
+          const loginSuccess = await tryLogin(emailFromUrl, password)
+          if (loginSuccess) {
+            setSuccess(true)
+            setTimeout(() => { window.location.href = '/' }, 2000)
+            return true
+          }
+          // Se a senha está errada, mostra erro específico
+          setError('Este email já foi cadastrado. Tente fazer login com a senha que você criou anteriormente.')
+          return false
+        }
+
+        if (!res.ok || !data.ok) {
+          // Retry em erros temporários (network, timeout)
+          if (res.status >= 500 && retries < maxRetries) {
+            retries++
+            console.log(`Tentativa ${retries}/${maxRetries}...`)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000))
+            return attemptCreate()
+          }
+          throw new Error(data.error || 'Erro ao criar conta')
+        }
+
+        // Sucesso na criação da conta!
+        if (data.session) {
+          // Login automático funcionou
+          await supabase.auth.setSession(data.session)
+          setSuccess(true)
+          setTimeout(() => { window.location.href = '/' }, 2000)
+          return true
+        } else if (data.ok && !data.session) {
+          // Conta foi criada, mas login automático falhou
+          // Tenta login manual com as credenciais fornecidas
+          const loginSuccess = await tryLogin(emailFromUrl, password)
+          if (loginSuccess) {
+            setSuccess(true)
+            setTimeout(() => { window.location.href = '/' }, 2000)
+            return true
+          }
+          // Se tudo falhar, mostra instrução para fazer login manualmente
+          setError('Sua conta foi criada! Por favor, faça login manualmente com seu email e senha.')
+          return false
+        }
+
+        return true
+
+      } catch (err) {
+        if (retries < maxRetries && (err.message.includes('Failed to fetch') || err.message.includes('timeout'))) {
+          retries++
+          console.log(`Tentativa ${retries}/${maxRetries}...`)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000))
+          return attemptCreate()
+        }
+        throw err
       }
+    }
 
-      setSuccess(true)
-
-      // Redireciona após 2 segundos
-      setTimeout(() => { window.location.href = '/' }, 2000)
-
+    try {
+      await attemptCreate()
     } catch (err) {
-      setError(err.message || 'Erro ao criar conta. Tente novamente.')
+      setError(err.message || 'Erro ao criar conta. Verifique sua conexão e tente novamente.')
     }
     setLoading(false)
   }

@@ -96,10 +96,42 @@ async function handleRequest(req: Request): Promise<Response> {
     }
 
     // ── 6. Login real com a senha escolhida ───────────────────────────────────
-    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    let loginAttempts = 0;
+    let loginData = null;
+    let loginError = null;
 
-    if (loginError || !loginData.session) {
-      return json({ error: "Conta criada, mas erro no login: " + (loginError?.message || "tente entrar manualmente") }, 500);
+    // Retry logic para login — às vezes o banco leva um tempo para sincronizar
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.signInWithPassword({ email, password });
+      loginError = result.error;
+      loginData = result.data;
+
+      if (!loginError && loginData.session) {
+        break; // Sucesso!
+      }
+
+      if (attempt < 2) {
+        // Espera um pouco antes de tentar novamente (eventual consistency)
+        await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+      }
+    }
+
+    if (loginError || !loginData?.session) {
+      // Mesmo com erro no login, se a conta foi criada, retorna sucesso
+      // O cliente pode tentar fazer login manualmente
+      console.log(`⚠️  Hotmart: ${email} criada, mas erro no login: ${loginError?.message}`);
+      return json({
+        ok: true,
+        is_new_user: isNewUser,
+        user: { id: userId, email, name },
+        session: null, // Cliente precisará fazer login manualmente
+        subscription: {
+          plan: "monthly",
+          expires_at: expiresAt.toISOString(),
+        },
+        message: "Conta criada, mas tivemos um erro no login automático. Por favor, faça login manualmente com seu email e senha.",
+        error_login: loginError?.message,
+      }, 200); // 200 OK porque a conta foi criada com sucesso
     }
 
     console.log(`✅ Hotmart: ${email} (${isNewUser ? "NOVO" : "EXISTENTE"})`);
