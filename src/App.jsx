@@ -12,6 +12,7 @@ import Billing from './pages/Billing'
 import AdminPanel from './pages/AdminPanel'
 import Login, { SubscriptionExpired } from './pages/Login'
 import HotmartSuccess from './pages/HotmartSuccess'
+import WebhookPending from './pages/WebhookPending'
 import { useGPS } from './hooks/useGPS'
 
 function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
@@ -81,6 +82,7 @@ function AppMain() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [sharedRide, setSharedRide] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [waitingWebhook, setWaitingWebhook] = useState(false)
 
   useEffect(() => {
     if (!supabase) { setLoading(false); return }
@@ -184,11 +186,25 @@ function AppMain() {
     return <AdminPanel user={auth.user} onLogout={handleLogout} />
   }
 
-  // Bloqueia apenas se expirada/suspensa — not_found não bloqueia (evita false positive)
+  // Se subscrição não foi encontrada (webhook pode estar em processamento)
+  // Mostrar tela de aguardar webhook
+  if (waitingWebhook || (auth.subscription?.reason === 'not_found')) {
+    return (
+      <WebhookPending
+        user={auth.user}
+        onSubscriptionReady={(sub) => {
+          console.log('✅ Webhook confirmado! Subscr­ição:', sub)
+          setWaitingWebhook(false)
+          setAuth({ ...auth, subscription: sub })
+        }}
+      />
+    )
+  }
+
+  // Bloqueia se expirada/suspensa/inativa
   const subBlocked =
     auth.subscription &&
     !auth.subscription.active &&
-    auth.subscription.reason !== 'not_found' &&
     auth.subscription.reason !== 'error'
 
   if (subBlocked) {

@@ -163,6 +163,38 @@ export async function checkSubscription(userId) {
   }
 }
 
+/**
+ * Aguarda a subscrição ficar ativa (webhook processado) com polling
+ * Útil para verificar se o webhook do Hotmart já foi processado
+ * @param {string} userId - ID do usuário
+ * @param {number} maxWaitTime - Tempo máximo de espera em ms (padrão: 5 minutos)
+ * @param {number} pollInterval - Intervalo entre verificações em ms (padrão: 2 segundos)
+ * @returns {Promise<boolean>} true se subscrição ficou ativa, false se timeout
+ */
+export async function waitForSubscription(userId, maxWaitTime = 5 * 60 * 1000, pollInterval = 2000) {
+  const startTime = Date.now()
+  let checkCount = 0
+
+  while (Date.now() - startTime < maxWaitTime) {
+    checkCount++
+    const sub = await checkSubscription(userId)
+
+    if (sub.active) {
+      console.log(`✅ Subscrição ativa após ${checkCount} verificações`)
+      return true
+    }
+
+    if (checkCount % 3 === 0) {
+      console.log(`⏳ Aguardando webhook... verificação ${checkCount}`)
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval))
+  }
+
+  console.error(`⏱️ Timeout após ${checkCount} verificações`)
+  return false
+}
+
 // ── Admin helpers ─────────────────────────────────────────────────────────────
 
 export const ADMIN_EMAIL = 'sevenxpertssxacademy@gmail.com'

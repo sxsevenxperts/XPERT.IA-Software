@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase'
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY, checkSubscription, waitForSubscription } from '../lib/supabase'
 import { CheckCircle, Eye, EyeOff, Lock, Car, ArrowRight, Shield } from 'lucide-react'
 
 export default function HotmartSuccess() {
@@ -16,9 +16,49 @@ export default function HotmartSuccess() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
   const [success, setSuccess]   = useState(false)
+  const [waitingWebhook, setWaitingWebhook] = useState(false)
+
+  async function clearSupabaseCache() {
+    // Limpar todas as chaves do localStorage relacionadas ao Supabase antes de login
+    // Isso evita o issue do Navigator Lock que trava signInWithPassword
+    const keys = Object.keys(localStorage).filter(k =>
+      k.includes('supabase') || k.includes('auth') || k.includes('sb-')
+    )
+    keys.forEach(k => {
+      console.log(`🗑️  Limpando cache: ${k}`)
+      localStorage.removeItem(k)
+    })
+  }
+
+  async function monitorWebhookAndLogin(userId, email, password) {
+    // Aguardar webhook ser processado com polling
+    console.log('⏳ Aguardando webhook do Hotmart...')
+    setWaitingWebhook(true)
+
+    const webhookReceived = await waitForSubscription(userId, 5 * 60 * 1000, 2000)
+
+    if (webhookReceived) {
+      console.log('✅ Webhook recebido! Tentando login...')
+      const loginSuccess = await tryLogin(email, password)
+      if (loginSuccess) {
+        setSuccess(true)
+        setTimeout(() => { window.location.href = '/' }, 2000)
+        return true
+      }
+    } else {
+      console.error('❌ Webhook não chegou em tempo. Conta criada mas subscrição pendente.')
+      setError('Sua conta foi criada, mas não conseguimos confirmar sua subscrição. Tente fazer login e aguarde alguns minutos.')
+    }
+
+    setWaitingWebhook(false)
+    return false
+  }
 
   async function tryLogin(email, password) {
     try {
+      // Limpar cache ANTES de tentar login para evitar Navigator Lock
+      clearSupabaseCache()
+
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
       if (data.session) {
@@ -73,6 +113,7 @@ export default function HotmartSuccess() {
 
         // Se o usuário já existe e o servidor diz para tentar login
         if (res.status === 409 || data.error?.includes('já cadastrado')) {
+          console.log('👤 Usuário já existe, tentando login...')
           const loginSuccess = await tryLogin(emailFromUrl, password)
           if (loginSuccess) {
             setSuccess(true)
@@ -85,11 +126,12 @@ export default function HotmartSuccess() {
         }
 
         if (!res.ok || !data.ok) {
-          // Retry em erros temporários (network, timeout)
-          if (res.status >= 500 && retries < maxRetries) {
+          // Retry em erros temporários (network, timeout, 5xx)
+          if ((res.status >= 500 || err.message?.includes('Failed to fetch')) && retries < maxRetries) {
             retries++
-            console.log(`Tentativa ${retries}/${maxRetries}...`)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000))
+            const waitTime = Math.pow(2, retries) * 1000
+            console.log(`⏳ Tentativa ${retries}/${maxRetries} em ${waitTime}ms...`)
+            await new Promise(resolve => setTimeout(resolve, waitTime))
             return attemptCreate()
           }
           throw new Error(data.error || 'Erro ao criar conta')
@@ -98,20 +140,39 @@ export default function HotmartSuccess() {
         // Sucesso na criação da conta!
         if (data.session) {
           // Login automático funcionou
+          console.log('✅ Login automático bem-sucedido')
           await supabase.auth.setSession(data.session)
           setSuccess(true)
           setTimeout(() => { window.location.href = '/' }, 2000)
           return true
         } else if (data.ok && !data.session) {
-          // Conta foi criada, mas login automático falhou
-          // Tenta login manual com as credenciais fornecidas
+          // Conta foi criada, mas login automático falhou na edge function
+          // Checkar se a subscrição foi criada (webhook pode ter chegado primeiro)
+          console.log('🔐 Conta criada, verificando subscrição...')
+          const sub = await checkSubscription(data.user_id)
+
+          if (sub.active) {
+            // Subscrição já existe, fazer login
+            const loginSuccess = await tryLogin(emailFromUrl, password)
+            if (loginSuccess) {
+              setSuccess(true)
+              setTimeout(() => { window.location.href = '/' }, 2000)
+              return true
+            }
+          } else if (sub.reason === 'not_found') {
+            // Subscrição não foi criada ainda, aguardar webhook
+            return monitorWebhookAndLogin(data.user_id, emailFromUrl, password)
+          }
+
+          // Se tudo falhar, tenta login manual
+          console.log('🔑 Tentando login manual...')
           const loginSuccess = await tryLogin(emailFromUrl, password)
           if (loginSuccess) {
             setSuccess(true)
             setTimeout(() => { window.location.href = '/' }, 2000)
             return true
           }
-          // Se tudo falhar, mostra instrução para fazer login manualmente
+
           setError('Sua conta foi criada! Por favor, faça login manualmente com seu email e senha.')
           return false
         }
@@ -119,10 +180,12 @@ export default function HotmartSuccess() {
         return true
 
       } catch (err) {
+        // Retry em erros de rede
         if (retries < maxRetries && (err.message.includes('Failed to fetch') || err.message.includes('timeout'))) {
           retries++
-          console.log(`Tentativa ${retries}/${maxRetries}...`)
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000))
+          const waitTime = Math.pow(2, retries) * 1000
+          console.log(`⏳ Erro de rede, tentativa ${retries}/${maxRetries} em ${waitTime}ms...`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
           return attemptCreate()
         }
         throw err
@@ -159,6 +222,26 @@ export default function HotmartSuccess() {
             Ir para o Login
           </button>
         </div>
+      </div>
+    )
+  }
+
+  // ── Aguardando Webhook ───────────────────────────────────────────────────────────
+  if (waitingWebhook) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ textAlign: 'center', maxWidth: 380, padding: 24 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%', margin: '0 auto 16px',
+            background: 'rgba(59,130,246,0.15)', border: '2px solid rgba(59,130,246,0.5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <div style={{ width: 36, height: 36, border: '3px solid rgba(59,130,246,0.2)', borderTopColor: '#3B82F6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          </div>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#E8F0FE', marginBottom: 8 }}>Processando compra...</h2>
+          <p style={{ fontSize: 14, color: '#4D7098' }}>Aguardando confirmação do Hotmart</p>
+        </div>
+        <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
       </div>
     )
   }
