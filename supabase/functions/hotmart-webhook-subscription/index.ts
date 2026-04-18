@@ -101,16 +101,19 @@ async function handleRequest(req: Request): Promise<Response> {
       // O usuário vai tentar fazer login e isso vai completar o registro
       console.warn(`⚠️  Email não encontrado em profiles: ${email}`);
 
-      await supabase
-        .from("hotmart_transactions")
-        .insert({
-          user_id: null,
-          transaction_id: transactionId || "webhook-new-subscription",
-          email: email,
-          name: "",
-          created_at: now.toISOString(),
-        })
-        .catch(() => null);
+      try {
+        await supabase
+          .from("hotmart_transactions")
+          .insert({
+            user_id: null,
+            transaction_id: transactionId || "webhook-new-subscription",
+            email: email,
+            name: "",
+            created_at: now.toISOString(),
+          });
+      } catch (e) {
+        // Ignore if transaction already exists
+      }
 
       return json({
         ok: true,
@@ -170,16 +173,19 @@ async function handleRequest(req: Request): Promise<Response> {
     }
 
     // ── 3. Registrar/atualizar transação ────────────────────────────────────────
-    await supabase
-      .from("hotmart_transactions")
-      .insert({
-        user_id: profile.id,
-        transaction_id: transactionId || "webhook-new-subscription",
-        email: profile.email,
-        name: profile.name,
-        created_at: now.toISOString(),
-      })
-      .catch(() => null); // Não falha se transação já existe
+    try {
+      await supabase
+        .from("hotmart_transactions")
+        .insert({
+          user_id: profile.id,
+          transaction_id: transactionId || "webhook-new-subscription",
+          email: profile.email,
+          name: profile.name,
+          created_at: now.toISOString(),
+        });
+    } catch (e) {
+      // Não falha se transação já existe
+    }
 
     return json({
       ok: true,

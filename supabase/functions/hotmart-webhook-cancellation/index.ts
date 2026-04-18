@@ -114,16 +114,19 @@ async function handleRequest(req: Request): Promise<Response> {
     console.log(`✅ Subscrição cancelada para ${email} (${profile.id})`);
 
     // Opcional: log para auditoria
-    await supabase
-      .from("hotmart_transactions")
-      .insert({
-        user_id: profile.id,
-        transaction_id: transactionId || "webhook-cancellation",
-        email: profile.email,
-        name: profile.name,
-        created_at: now.toISOString(),
-      })
-      .catch(() => null);
+    try {
+      await supabase
+        .from("hotmart_transactions")
+        .insert({
+          user_id: profile.id,
+          transaction_id: transactionId || "webhook-cancellation",
+          email: profile.email,
+          name: profile.name,
+          created_at: now.toISOString(),
+        });
+    } catch (e) {
+      // Ignore if transaction already exists
+    }
 
     return json({
       ok: true,
