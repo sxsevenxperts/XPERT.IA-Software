@@ -13,6 +13,11 @@ export default function Stats() {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setData(emptyStats())
+        setLoading(false)
+        return
+      }
       const now = new Date()
       const from = new Date()
       if (period === 'week') from.setDate(now.getDate() - 7)
@@ -39,9 +44,29 @@ export default function Stats() {
       const ratings = list.filter(t => t.avaliacao_cliente).map(t => t.avaliacao_cliente)
       const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0
 
-      setData({ totalGanhos, totalKm, totalDespesas, avgPerTrip, avgKmPerTrip, avgRating, count: list.length, lucroLiquido: totalGanhos - totalDespesas })
-    } catch {}
+      setData({
+        totalGanhos,
+        totalKm,
+        totalDespesas,
+        avgPerTrip,
+        avgKmPerTrip,
+        avgRating,
+        count: list.length,
+        lucroLiquido: totalGanhos - totalDespesas,
+      })
+    } catch (err) {
+      console.error('Erro ao carregar estatísticas:', err)
+      setData(emptyStats())
+    }
     setLoading(false)
+  }
+
+  function emptyStats() {
+    return {
+      totalGanhos: 0, totalKm: 0, totalDespesas: 0,
+      avgPerTrip: 0, avgKmPerTrip: 0, avgRating: 0,
+      count: 0, lucroLiquido: 0,
+    }
   }
 
   const periodTabs = [
@@ -78,6 +103,10 @@ export default function Stats() {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40, color: 'var(--text4)' }}>Carregando...</div>
+      ) : !data ? (
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text4)' }}>
+          Nenhum dado disponível.
+        </div>
       ) : (
         <>
           {/* Avg Rating highlight */}

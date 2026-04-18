@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import {
-  DollarSign, Navigation, Star, TrendingUp,
-  Clock, Zap, ChevronRight, MapPin,
+  DollarSign, Navigation, Star,
+  Zap, ChevronRight, MapPin,
 } from 'lucide-react'
 
 export default function Dashboard({ onTab }) {
@@ -97,10 +97,24 @@ export default function Dashboard({ onTab }) {
           padding: '18px', fontSize: 16, fontWeight: 700,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           boxShadow: '0 4px 20px rgba(59,130,246,0.4)',
-          cursor: 'pointer', marginBottom: 24,
+          cursor: 'pointer', marginBottom: 12,
         }}
       >
         <Zap size={20} fill="white" /> Iniciar Corrida
+      </button>
+
+      {/* Notification Test Button */}
+      <button
+        onClick={() => onTab('notif')}
+        style={{
+          width: '100%',
+          background: 'rgba(16,185,129,0.1)', border: '1px solid #10B981',
+          color: '#10B981', borderRadius: 14,
+          padding: '14px', fontSize: 14, fontWeight: 600,
+          cursor: 'pointer', marginBottom: 24,
+        }}
+      >
+        📬 Teste: Corrida Automática (GPS + Notificação)
       </button>
 
       {/* Recent Trips */}

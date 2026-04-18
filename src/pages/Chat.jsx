@@ -26,28 +26,35 @@ export default function Chat({ user }) {
 
   async function loadMessages() {
     try {
-      const { data } = await supabase.from('chat_messages')
+      const { data, error } = await supabase.from('chat_messages')
         .select('*')
         .order('created_at', { ascending: true })
         .limit(50)
+      if (error) throw error
       setMessages(data || [])
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-    } catch {}
+    } catch (err) {
+      console.error('Erro ao carregar mensagens:', err)
+    }
     setLoading(false)
   }
 
   async function sendMessage(e) {
     e.preventDefault()
-    if (!text.trim() || sending) return
+    if (!text.trim() || sending || !user?.id) return
     setSending(true)
     try {
-      await supabase.from('chat_messages').insert({
+      const { error } = await supabase.from('chat_messages').insert({
         user_id: user.id,
         user_name: user.email?.split('@')[0] || 'Motorista',
         content: text.trim(),
       })
+      if (error) throw error
       setText('')
-    } catch {}
+    } catch (err) {
+      console.error('Erro ao enviar mensagem:', err)
+      alert('Não foi possível enviar a mensagem. Tente novamente.')
+    }
     setSending(false)
   }
 
@@ -77,11 +84,13 @@ export default function Chat({ user }) {
                   padding: '10px 14px',
                 }}>
                   {!isMe && (
-                    <div style={{ fontSize: 11, color: isMe ? 'rgba(255,255,255,0.7)' : 'var(--text4)', marginBottom: 4 }}>
-                      {msg.user_email?.split('@')[0]}
+                    <div style={{ fontSize: 11, color: 'var(--text4)', marginBottom: 4, fontWeight: 600 }}>
+                      {msg.user_name || 'Motorista'}
                     </div>
                   )}
-                  <div style={{ fontSize: 14, color: isMe ? 'white' : 'var(--text)', lineHeight: 1.4 }}>{msg.message}</div>
+                  <div style={{ fontSize: 14, color: isMe ? 'white' : 'var(--text)', lineHeight: 1.4, wordBreak: 'break-word' }}>
+                    {msg.content}
+                  </div>
                   <div style={{ fontSize: 10, color: isMe ? 'rgba(255,255,255,0.6)' : 'var(--text4)', marginTop: 4, textAlign: 'right' }}>
                     {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </div>

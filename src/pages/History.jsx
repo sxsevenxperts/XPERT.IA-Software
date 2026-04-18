@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Navigation, Star, Filter } from 'lucide-react'
+import { geocodeAddress } from '../lib/geocoding'
+import MapaRotaInteligente from '../components/MapaRotaInteligente'
+import { Navigation, Star, Filter, ChevronDown } from 'lucide-react'
 
 const STATUS_COLORS = { concluida: '#10B981', cancelada: '#EF4444', em_andamento: '#3B82F6' }
 const STATUS_LABELS = { concluida: 'Concluída', cancelada: 'Cancelada', em_andamento: 'Em andamento' }
@@ -10,6 +12,8 @@ export default function History() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('todas')
   const [total, setTotal] = useState(0)
+  const [expandedMaps, setExpandedMaps] = useState({})
+  const [tripCoords, setTripCoords] = useState({})
 
   useEffect(() => { loadTrips() }, [filter])
 
@@ -17,14 +21,60 @@ export default function History() {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setTrips([]); setTotal(0); setLoading(false); return }
       let q = supabase.from('corridas').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(50)
       if (filter !== 'todas') q = q.eq('status', filter)
-      const { data } = await q
+      const { data, error } = await q
+      if (error) throw error
       setTrips(data || [])
       const sum = (data || []).filter(t => t.status === 'concluida').reduce((s, t) => s + (t.valor_total || 0), 0)
       setTotal(sum)
-    } catch {}
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err)
+    }
     setLoading(false)
+  }
+
+  async function toggleMapAndGeocode(tripId, destino) {
+    const isExpanded = expandedMaps[tripId]
+
+    if (!isExpanded && !tripCoords[tripId] && destino) {
+      // Geocodificar o destino quando expandir pela primeira vez.
+      // Usa a origem da própria corrida como contexto geográfico (se disponível).
+      try {
+        const trip = trips.find(t => t.id === tripId)
+        const opts = (trip?.latitude_origem && trip?.longitude_origem)
+          ? { lat: trip.latitude_origem, lng: trip.longitude_origem }
+          : await getFallbackGpsOptions()
+
+        const coords = await geocodeAddress(destino, opts)
+        if (coords) {
+          setTripCoords(prev => ({
+            ...prev,
+            [tripId]: { lat: coords.lat, lng: coords.lng }
+          }))
+        }
+      } catch (err) {
+        console.error('Erro ao geocodificar:', err)
+      }
+    }
+
+    setExpandedMaps(prev => ({
+      ...prev,
+      [tripId]: !isExpanded
+    }))
+  }
+
+  // Fallback: tenta obter posição atual como contexto geográfico
+  function getFallbackGpsOptions() {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve({})
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve({}),
+        { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
+      )
+    })
   }
 
   const filters = [
@@ -97,14 +147,48 @@ export default function History() {
                   )}
                 </div>
               </div>
-              <div style={{
-                display: 'inline-block', padding: '3px 10px', borderRadius: 6,
-                background: `${STATUS_COLORS[trip.status] || '#6B7280'}20`,
-                color: STATUS_COLORS[trip.status] || '#6B7280',
-                fontSize: 11, fontWeight: 600,
-              }}>
-                {STATUS_LABELS[trip.status] || trip.status}
+
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{
+                  display: 'inline-block', padding: '3px 10px', borderRadius: 6,
+                  background: `${STATUS_COLORS[trip.status] || '#6B7280'}20`,
+                  color: STATUS_COLORS[trip.status] || '#6B7280',
+                  fontSize: 11, fontWeight: 600,
+                }}>
+                  {STATUS_LABELS[trip.status] || trip.status}
+                </div>
+
+                <button onClick={() => toggleMapAndGeocode(trip.id, trip.destino)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '4px 8px', color: 'var(--text3)', fontSize: 11, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto',
+                }}>
+                  🗺️ {expandedMaps[trip.id] ? 'Ocultar' : 'Ver'} rota
+                  <ChevronDown size={14} style={{
+                    transform: expandedMaps[trip.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s'
+                  }} />
+                </button>
               </div>
+
+              {/* Mapa da rota histórica */}
+              {expandedMaps[trip.id] && tripCoords[trip.id] && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                  <MapaRotaInteligente
+                    destino={trip.destino}
+                    latDest={tripCoords[trip.id].lat}
+                    lngDest={tripCoords[trip.id].lng}
+                    tipoMotorista={trip.plataforma || 'uber'}
+                    rotas={{
+                      lat1: trip.latitude_origem || null,
+                      lng1: trip.longitude_origem || null,
+                      coordinates: trip.rota_coordinates || null,
+                      distancia: trip.distancia_km,
+                      tempo: trip.tempo_minutos
+                    }}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>

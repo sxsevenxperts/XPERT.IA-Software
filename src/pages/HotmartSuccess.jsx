@@ -59,19 +59,19 @@ export default function HotmartSuccess() {
       // Limpar cache ANTES de tentar login para evitar Navigator Lock
       clearSupabaseCache()
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) throw error
-      if (data.session) {
-        const { error: setError } = await supabase.auth.setSession(data.session)
-        if (setError) {
-          console.error('❌ Erro ao ativar sessão:', setError.message)
-          throw setError
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (signInError) throw signInError
+      if (data?.session) {
+        const { error: sessionError } = await supabase.auth.setSession(data.session)
+        if (sessionError) {
+          console.error('❌ Erro ao ativar sessão:', sessionError.message)
+          throw sessionError
         }
         console.log('✅ Sessão ativada com sucesso para:', email)
         return true
       }
     } catch (err) {
-      console.error('⚠️  Login automático falhou:', err.message)
+      console.error('⚠️  Login automático falhou:', err?.message || err)
     }
     return false
   }
@@ -126,8 +126,8 @@ export default function HotmartSuccess() {
         }
 
         if (!res.ok || !data.ok) {
-          // Retry em erros temporários (network, timeout, 5xx)
-          if ((res.status >= 500 || err.message?.includes('Failed to fetch')) && retries < maxRetries) {
+          // Retry em erros temporários (5xx). Erros de rede caem no catch abaixo.
+          if (res.status >= 500 && retries < maxRetries) {
             retries++
             const waitTime = Math.pow(2, retries) * 1000
             console.log(`⏳ Tentativa ${retries}/${maxRetries} em ${waitTime}ms...`)

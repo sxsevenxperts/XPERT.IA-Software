@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, checkSubscription } from '../lib/supabase'
+import { checkSubscription } from '../lib/supabase'
 import { Clock, AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function WebhookPending({ user, onSubscriptionReady }) {

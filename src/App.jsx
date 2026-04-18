@@ -13,6 +13,7 @@ import AdminPanel from './pages/AdminPanel'
 import Login, { SubscriptionExpired } from './pages/Login'
 import HotmartSuccess from './pages/HotmartSuccess'
 import WebhookPending from './pages/WebhookPending'
+import NotificacaoAutomatica from './pages/NotificacaoAutomatica'
 import { useGPS } from './hooks/useGPS'
 
 function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
@@ -46,6 +47,7 @@ function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
       }}>
         {tab === 'dashboard' && <Dashboard onTab={setTab} />}
         {tab === 'trip'      && <ActiveTrip sharedRide={sharedRide} />}
+        {tab === 'notif'     && <NotificacaoAutomatica />}
         {tab === 'history'   && <History />}
         {tab === 'stats'     && <Stats />}
         {tab === 'chat'      && <Chat user={user} />}

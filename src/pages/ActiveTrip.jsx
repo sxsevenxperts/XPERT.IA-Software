@@ -1,26 +1,72 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { geocodeAddress } from '../lib/geocoding'
+import MapaRotaInteligente from '../components/MapaRotaInteligente'
 import { Navigation, MapPin, DollarSign, Clock, CheckCircle, XCircle } from 'lucide-react'
 
 export default function ActiveTrip() {
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [destinoCoords, setDestinoCoords] = useState(null)
+  const [gpsPos, setGpsPos] = useState(null)
   const [form, setForm] = useState({
     origem: '', destino: '', distancia_km: '', valor_total: '', plataforma: 'Uber',
   })
+  const mountedRef = useRef(true)
 
   useEffect(() => {
+    mountedRef.current = true
     loadActiveTrip()
+    return () => { mountedRef.current = false }
   }, [])
+
+  // Capturar GPS para contextualizar geocoding
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        if (!mountedRef.current) return
+        setGpsPos({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+      },
+      (err) => { console.warn('GPS indisponível:', err.message) },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+    )
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [])
+
+  // Geocodificar destino quando trip ativa (reexecuta quando GPS fica disponível)
+  useEffect(() => {
+    if (!trip?.destino) return
+    geocodeDestinationForTrip()
+  }, [trip?.id, gpsPos?.lat, gpsPos?.lng])
+
+  async function geocodeDestinationForTrip() {
+    if (!trip?.destino) return
+    try {
+      const opts = gpsPos
+        ? { lat: gpsPos.lat, lng: gpsPos.lng }
+        : {}
+      const coords = await geocodeAddress(trip.destino, opts)
+      if (coords && mountedRef.current) {
+        setDestinoCoords({ lat: coords.lat, lng: coords.lng })
+      }
+    } catch (err) {
+      console.error('Erro ao geocodificar destino:', err)
+    }
+  }
 
   async function loadActiveTrip() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const { data } = await supabase.from('corridas')
+      if (!user) { setLoading(false); return }
+      const { data, error } = await supabase.from('corridas')
         .select('*').eq('user_id', user.id).eq('status', 'em_andamento').maybeSingle()
+      if (error) throw error
       setTrip(data)
-    } catch {}
+    } catch (err) {
+      console.error('Erro ao carregar corrida ativa:', err)
+    }
     setLoading(false)
   }
 
@@ -29,16 +75,23 @@ export default function ActiveTrip() {
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const { data } = await supabase.from('corridas').insert({
+      const payload = {
         user_id: user.id,
         origem: form.origem,
         destino: form.destino,
         plataforma: form.plataforma,
         status: 'em_andamento',
         started_at: new Date().toISOString(),
-      }).select().single()
+      }
+      if (gpsPos) {
+        payload.latitude_origem = gpsPos.lat
+        payload.longitude_origem = gpsPos.lng
+      }
+      const { data, error } = await supabase.from('corridas').insert(payload).select().single()
+      if (error) throw error
       setTrip(data)
     } catch (err) {
+      console.error('Erro ao iniciar corrida:', err)
       alert('Erro ao iniciar corrida')
     }
     setSaving(false)
@@ -48,15 +101,18 @@ export default function ActiveTrip() {
     if (!trip) return
     setSaving(true)
     try {
-      await supabase.from('corridas').update({
+      const { error } = await supabase.from('corridas').update({
         status: 'concluida',
         distancia_km: parseFloat(form.distancia_km) || null,
         valor_total: parseFloat(form.valor_total) || null,
         finished_at: new Date().toISOString(),
       }).eq('id', trip.id)
+      if (error) throw error
       setTrip(null)
+      setDestinoCoords(null)
       setForm({ origem: '', destino: '', distancia_km: '', valor_total: '', plataforma: 'Uber' })
-    } catch {
+    } catch (err) {
+      console.error('Erro ao finalizar corrida:', err)
       alert('Erro ao finalizar corrida')
     }
     setSaving(false)
@@ -66,9 +122,15 @@ export default function ActiveTrip() {
     if (!trip) return
     setSaving(true)
     try {
-      await supabase.from('corridas').update({ status: 'cancelada', finished_at: new Date().toISOString() }).eq('id', trip.id)
+      const { error } = await supabase.from('corridas')
+        .update({ status: 'cancelada', finished_at: new Date().toISOString() })
+        .eq('id', trip.id)
+      if (error) throw error
       setTrip(null)
-    } catch {}
+      setDestinoCoords(null)
+    } catch (err) {
+      console.error('Erro ao cancelar corrida:', err)
+    }
     setSaving(false)
   }
 
@@ -110,6 +172,19 @@ export default function ActiveTrip() {
               <span style={{ fontSize: 15 }}>{trip.destino}</span>
             </div>
           </div>
+
+          {/* Mapa da rota */}
+          {destinoCoords && (
+            <div style={{ marginBottom: 20 }}>
+              <MapaRotaInteligente
+                destino={trip.destino}
+                latDest={destinoCoords.lat}
+                lngDest={destinoCoords.lng}
+                tipoMotorista={trip.plataforma || 'uber'}
+                rotas={null}
+              />
+            </div>
+          )}
 
           {/* Finalize fields */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, padding: 20, marginBottom: 16 }}>
