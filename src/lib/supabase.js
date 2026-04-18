@@ -3,7 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 export const SUPABASE_URL      = 'https://untmxmbqgdagfqhmqyvm.supabase.co'
 export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVudG14bWJxZ2RhZ2ZxaG1xeXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwMDQ1NjgsImV4cCI6MjA4ODU4MDU2OH0.i1ijydj0lRtDTa-dIMEJzMZVW9rDc5TnHwQ3Az2L70g'
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    // Desabilita Navigator Lock para evitar hang indefinido em iOS/Safari/multi-tab
+    lock: async (_name, _acquireTimeout, fn) => fn(),
+  },
+})
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
