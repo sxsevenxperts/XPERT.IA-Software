@@ -29,7 +29,40 @@ async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== "POST") return json({ error: "Método não permitido" }, 405);
 
   try {
-    const body = (await req.json()) as Record<string, unknown>;
+    // ── Validar assinatura HMAC SHA256 do Hotmart ─────────────────────────────
+    const signature = req.headers.get("X-Hotmart-Signature") || req.headers.get("x-hotmart-signature") || "";
+    const secret = Deno.env.get("HOTMART_WEBHOOK_SECRET") || "";
+
+    if (!signature || !secret) {
+      console.error(`❌ 401 Invalid Hotmart signature (missing header or secret)`);
+      return json({ error: "401 Invalid Hotmart signature" }, 401);
+    }
+
+    // Ler body como texto para validação HMAC
+    const bodyText = await req.text();
+
+    // Calcular HMAC SHA256
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const messageData = encoder.encode(bodyText);
+    const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, messageData);
+
+    // Converter para hex (formato que Hotmart envia)
+    const computedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // Comparar assinaturas (case-insensitive)
+    if (signature.toLowerCase() !== computedSignature.toLowerCase()) {
+      console.error(`❌ 401 Invalid Hotmart signature (mismatch)\nReceived: ${signature}\nComputed: ${computedSignature}`);
+      return json({ error: "401 Invalid Hotmart signature" }, 401);
+    }
+
+    console.log(`✅ Hotmart signature valid`);
+
+    // Parse body como JSON novamente
+    const body = JSON.parse(bodyText) as Record<string, unknown>;
 
     // Hotmart pode enviar em diferentes formatos dependendo do webhook
     // Comum: { subscriber: { email }, transaction: { id } }
