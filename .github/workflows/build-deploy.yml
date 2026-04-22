@@ -38,10 +38,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api --method PATCH /user/packages/container/prevos -f visibility=public || echo "Package visibility update skipped"
+          gh api --method PATCH /user/packages/container/easydrive -f visibility=public || echo "Package visibility update skipped"
 
       - name: Trigger EasyPanel Redeploy
         run: |
-          curl -s "http://187.77.32.172:3000/api/deploy/aa0783ea95b9c773f64fcea9df2ed02b20c460dc88bae5c2" \
+          curl -s "http://187.77.32.172:3000/api/deploy/1cfa9451fed9d34368752f68c1f27a61a65d2bfd1d60a441" \
             && echo "EasyPanel redeploy triggered" \
             || echo "EasyPanel redeploy failed"
