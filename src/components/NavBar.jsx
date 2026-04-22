@@ -1,10 +1,11 @@
-import { Home, Navigation, Clock, BarChart2, MessageSquare, Settings } from 'lucide-react'
+import { Home, Navigation, Clock, BarChart2, TrendingUp, MessageSquare, Settings } from 'lucide-react'
 
 const tabs = [
   { id: 'dashboard', icon: Home,          label: 'Início' },
   { id: 'trip',      icon: Navigation,    label: 'Corrida' },
   { id: 'history',   icon: Clock,         label: 'Histórico' },
   { id: 'stats',     icon: BarChart2,     label: 'Stats' },
+  { id: 'analytics', icon: TrendingUp,    label: 'Analytics' },
   { id: 'chat',      icon: MessageSquare, label: 'Chat' },
   { id: 'settings',  icon: Settings,      label: 'Config' },
 ]

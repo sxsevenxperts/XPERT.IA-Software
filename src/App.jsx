@@ -7,6 +7,7 @@ import ActiveTrip from './pages/ActiveTrip'
 import History from './pages/History'
 import Settings from './pages/Settings'
 import Stats from './pages/Stats'
+import Analytics from './pages/Analytics'
 import Chat from './pages/Chat'
 import Billing from './pages/Billing'
 import AdminPanel from './pages/AdminPanel'
@@ -50,6 +51,7 @@ function MainApp({ sharedRide, user, subscription, onLogout, isAdmin }) {
         {tab === 'notif'     && <NotificacaoAutomatica />}
         {tab === 'history'   && <History />}
         {tab === 'stats'     && <Stats />}
+        {tab === 'analytics' && <Analytics />}
         {tab === 'chat'      && <Chat user={user} />}
         {tab === 'settings'  && <Settings user={user} subscription={subscription} onTab={setTab} onLogout={onLogout} />}
 
