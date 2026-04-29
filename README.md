@@ -1,31 +1,24 @@
-# EasyDrive — Painel do Motorista
+# XPERT.IA — Agente SDR com IA
 
-Aplicativo PWA para motoristas de aplicativo (Uber, 99, inDrive, iFood, etc).
+Agente de vendas automatizado com inteligência artificial para atendimento, qualificação e encaminhamento de leads.
 
-## Funcionalidades
+## Produtos
 
-- **Dashboard** — Ganhos do dia, corridas, km rodados, avaliação média
-- **Corrida ativa** — Registro de corrida com GPS e rota inteligente
-- **Histórico** — Histórico completo de corridas com filtros
-- **Estatísticas** — Relatório de ganhos, despesas e lucro por período
-- **Analytics** — Gráficos de receita e carga de trabalho
-- **Chat** — Chat em tempo real entre motoristas
-- **Configurações** — Perfil, veículo, combustível, manutenções, notificações
-- **Assinatura** — Integração com Hotmart para gestão de planos
+| Produto | Descrição | Repositório |
+|---------|-----------|-------------|
+| **Agente SDR** | Atendimento automatizado + funil de leads | Este repo |
+| **EasyDrive** | App para motoristas de aplicativo | [easydrive](https://github.com/sxsevenxperts/easydrive) |
+| **PrevOS** | Sistema previdenciário para advogados | [prevos](https://github.com/sxsevenxperts/prevos) |
 
-## Stack
+## Workflows n8n
 
-- **Frontend**: React 19 + Vite
-- **Backend**: Supabase (auth + database + edge functions)
-- **Estado**: Zustand
-- **Mapas**: Leaflet + React Leaflet
-- **Gráficos**: Recharts
-- **Deploy**: Docker + Nginx
+| Arquivo | Versão | Descrição |
+|---------|--------|-----------|
+| `workflow-agente-sdr-v2.json` | v2.0 | Agente SDR base |
+| `workflow-agente-sdr-n8n-v2.3.json` | v2.3 | Multi-Agente Dinâmico (versão atual) |
 
-## Configuração
+## Como usar
 
-1. Copie `.env.example` para `.env.local`
-2. Preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`
-3. Execute `npm install && npm run dev`
-
-Ver [DEPLOY.md](DEPLOY.md) para deploy em produção.
+1. Importe o arquivo `.json` no seu n8n
+2. Configure as credenciais (WhatsApp, Claude API, CRM)
+3. Ative o workflow
