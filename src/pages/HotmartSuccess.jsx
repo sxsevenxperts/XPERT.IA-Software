@@ -9,7 +9,7 @@ export default function HotmartSuccess() {
   const phoneFromUrl = params.get('phone') || ''
   const txId         = params.get('transaction_id') || ''
 
-  const [step, setStep]         = useState(emailFromUrl ? 'create_password' : 'no_email')
+  const [step]         = useState(emailFromUrl ? 'create_password' : 'no_email')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm]   = useState('')
   const [showPwd, setShowPwd]   = useState(false)

@@ -1,16 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { CreditCard, Star, CheckCircle, Calendar, ArrowLeft } from 'lucide-react'
 
 export default function Billing({ user, subscription, onBack }) {
   const [history, setHistory] = useState([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadHistory()
-  }, [])
-
-  async function loadHistory() {
+  const loadHistory = useCallback(async () => {
     try {
       const { data } = await supabase.from('payment_history')
         .select('*')
@@ -18,9 +13,12 @@ export default function Billing({ user, subscription, onBack }) {
         .order('created_at', { ascending: false })
         .limit(20)
       setHistory(data || [])
-    } catch {}
-    setLoading(false)
-  }
+    } catch { /* silent */ }
+  }, [user.id])
+
+  useEffect(() => {
+    loadHistory()
+  }, [loadHistory])
 
   const isActive = subscription?.active
   const expiresAt = subscription?.expires_at ? new Date(subscription.expires_at) : null

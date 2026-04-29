@@ -25,7 +25,7 @@ export function useNotificationListener() {
       // 99: "📍 Buscar em X - Levar em Y"
       /levar em ([^-\n\r]+?)(?:\s*[-\n\r]|$)/i,
       // Uber: "Você tem um passageiro em X"
-      /passageiro em ([^\.\n\r]+)/i,
+      /passageiro em ([^.\n\r]+)/i,
       // Genérico: "Destino: X"
       /destino:\s*([^-\n\r]+)/i,
       // Fallback: última entidade com iniciais maiúsculas
@@ -98,7 +98,7 @@ export function useNotificationListener() {
         if (capacitorHandle && typeof capacitorHandle.remove === 'function') {
           capacitorHandle.remove()
         }
-      } catch {}
+      } catch { /* silent */ }
       if (handleTesteRef.current) {
         window.removeEventListener('notificacao-teste', handleTesteRef.current)
         handleTesteRef.current = null
@@ -133,7 +133,7 @@ export function useNotificationListener() {
     )
 
     return () => {
-      try { navigator.geolocation.clearWatch(watchId) } catch {}
+      try { navigator.geolocation.clearWatch(watchId) } catch { /* silent */ }
     }
   }, [])
 

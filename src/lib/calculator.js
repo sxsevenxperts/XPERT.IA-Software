@@ -111,7 +111,7 @@ export function calcularBeneficios(dados) {
 
   const hoje      = new Date()
   const anoAtual  = hoje.getFullYear()
-  const { years: idade, months: totalMeses } = getIdade(birthDate)
+  const { years: idade } = getIdade(birthDate)
   const anosContrib = mesesContrib / 12
   const cenarios = []
 
@@ -212,7 +212,7 @@ export function calcularBeneficios(dados) {
   // ────────────────────────────────────────────────────────────────
   const rendaLimite = SALARIO_MINIMO / 4  // R$ 353
   const elegBPC_Idoso = idade >= 65
-  const elegBPC_Def   = true  // deficiência a ser comprovada por laudo
+  // elegBPC_Def = true  // deficiência a ser comprovada por laudo
 
   if (elegBPC_Idoso || rendaFamiliar <= rendaLimite) {
     cenarios.push({
@@ -241,7 +241,7 @@ export function calcularBeneficios(dados) {
 // ─── Comparador de Cenários ────────────────────────────────────────────────
 
 export function compararCenarios(dados) {
-  const { mesesContrib, genero, mediaSalarial } = dados
+  const { mesesContrib } = dados
   const base = calcularBeneficios(dados)
 
   // Projeção: se contribuir mais 12, 24, 36, 60 meses

@@ -18,7 +18,7 @@ export function useNPSStats() {
           .gte('date', todayStr)
 
         setStats({ npsCount: total || 0, npsToday: today || 0, npsAvg: 0 })
-      } catch {}
+      } catch { /* silent */ }
     }
     load()
   }, [])

@@ -4,7 +4,7 @@
 const CACHE_NAME = 'easydrive-v1'
 
 // ── INSTALAÇÃO ────────────────────────────────────────────────────
-self.addEventListener('install', (e) => {
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 

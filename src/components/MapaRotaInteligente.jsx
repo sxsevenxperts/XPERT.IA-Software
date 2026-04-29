@@ -4,7 +4,7 @@ import { Navigation, AlertCircle, CheckCircle, MapPin, Compass, Clock, TrendingD
 import axios from 'axios'
 
 export default function MapaRotaInteligente({
-  destino, latDest, lngDest, tipoMotorista = 'uber', rotas = null
+  destino, latDest, lngDest, rotas = null
 }) {
   // GPS DO MOTORISTA
   const [gpsMotorista, setGpsMotorista] = useState(null)
@@ -120,7 +120,7 @@ export default function MapaRotaInteligente({
               })
             }
           }
-        } catch (err) {
+        } catch {
           // Silencioso, continua
         }
       }
@@ -132,7 +132,7 @@ export default function MapaRotaInteligente({
           severidade: 'baixa'
         })
       }
-    } catch (err) {
+    } catch {
       console.log('Validação de contramão indisponível')
     }
 

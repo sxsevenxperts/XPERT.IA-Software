@@ -84,7 +84,7 @@ export default AppRouter
 function AppMain() {
   const [auth, setAuth] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [sharedRide, setSharedRide] = useState(null)
+  const [sharedRide] = useState(null)
   const [loading, setLoading] = useState(true)
   const [waitingWebhook, setWaitingWebhook] = useState(false)
 

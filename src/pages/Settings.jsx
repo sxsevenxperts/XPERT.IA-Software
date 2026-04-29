@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useStore } from '../store'
 import { useShallow } from 'zustand/react/shallow'
 import { useTheme } from '../hooks/useTheme'
@@ -323,7 +323,7 @@ export default function Settings({ user, subscription, onTab, onLogout }) {
               { key: 'notifSafety', label: '🚨 Riscos de segurança', defaultOn: true },
               { key: 'notifAchievements', label: '🏆 Conquistas desbloqueadas', defaultOn: true },
               { key: 'notifStreak', label: '🔥 Sequência em risco', defaultOn: true },
-            ].map(({ key, label, defaultOn }) => {
+            ].map(({ key, label }) => {
               const on = form[key] !== false // padrão: ativo
               return (
                 <button
@@ -630,16 +630,6 @@ function NPSHistorySection({ user }) {
     }
   }
 
-  const getActionLabel = (action) => {
-    const labels = {
-      'opened': 'Abriu',
-      'already_rated': 'Já respondeu',
-      'submitted': 'Respondeu',
-      'skipped': 'Pulou',
-    }
-    return labels[action] || action
-  }
-
   const getActionBadgeStyle = (action) => {
     const styles = {
       'opened': { bg: '#3b82f615', text: '#3b82f6', label: 'Abriu' },
@@ -727,9 +717,9 @@ function MaintenanceSection({ maintenances, add, update, del, inputStyle }) {
 
   const pending = maintenances.filter((m) => !m.done)
   const done    = maintenances.filter((m) =>  m.done).slice(0, 5)
-  const now     = Date.now()
 
-  const getDaysLeft = (m) => m.dueDate ? Math.ceil((m.dueDate - now) / 86_400_000) : null
+  const nowTs = useMemo(() => Date.now(), [])
+  const getDaysLeft = (m) => m.dueDate ? Math.ceil((m.dueDate - nowTs) / 86_400_000) : null
 
   const getStatus = (m) => {
     const d = getDaysLeft(m)

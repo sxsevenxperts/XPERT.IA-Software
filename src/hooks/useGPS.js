@@ -18,9 +18,9 @@ export function useGPS() {
             lng: longitude,
             last_seen: new Date().toISOString(),
           }).eq('id', user.id)
-        } catch {}
+        } catch { /* silent GPS update failure */ }
       },
-      () => {},
+      () => { /* geolocation error ignored */ },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
     )
 

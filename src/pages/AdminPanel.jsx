@@ -71,7 +71,7 @@ export default function AdminPanel({ user, onLogout }) {
     await Promise.all([loadStats(), loadSubscriptions()])
   }, [])
 
-  const showMessage = useCallback((msg, isError = false) => {
+  const showMessage = useCallback((msg) => {
     if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current)
     setMessage(msg)
     messageTimeoutRef.current = setTimeout(() => setMessage(''), 5000)

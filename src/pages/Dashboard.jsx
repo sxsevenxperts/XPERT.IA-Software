@@ -103,19 +103,6 @@ export default function Dashboard({ onTab }) {
         <Zap size={20} fill="white" /> Iniciar Corrida
       </button>
 
-      {/* Notification Test Button */}
-      <button
-        onClick={() => onTab('notif')}
-        style={{
-          width: '100%',
-          background: 'rgba(16,185,129,0.1)', border: '1px solid #10B981',
-          color: '#10B981', borderRadius: 14,
-          padding: '14px', fontSize: 14, fontWeight: 600,
-          cursor: 'pointer', marginBottom: 24,
-        }}
-      >
-        📬 Teste: Corrida Automática (GPS + Notificação)
-      </button>
 
       {/* Recent Trips */}
       <div>

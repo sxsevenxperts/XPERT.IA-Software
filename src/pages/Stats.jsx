@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { BarChart2, TrendingUp, DollarSign, Navigation, Clock, Fuel } from 'lucide-react'
+import { BarChart2, TrendingUp, DollarSign, Navigation, Fuel } from 'lucide-react'
 
 export default function Stats() {
   const [data, setData] = useState(null)
   const [period, setPeriod] = useState('week')
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadStats() }, [period])
+  function emptyStats() {
+    return {
+      totalGanhos: 0, totalKm: 0, totalDespesas: 0,
+      avgPerTrip: 0, avgKmPerTrip: 0, avgRating: 0,
+      count: 0, lucroLiquido: 0,
+    }
+  }
 
-  async function loadStats() {
+  const loadStats = useCallback(async () => {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -59,15 +65,9 @@ export default function Stats() {
       setData(emptyStats())
     }
     setLoading(false)
-  }
+  }, [period])
 
-  function emptyStats() {
-    return {
-      totalGanhos: 0, totalKm: 0, totalDespesas: 0,
-      avgPerTrip: 0, avgKmPerTrip: 0, avgRating: 0,
-      count: 0, lucroLiquido: 0,
-    }
-  }
+  useEffect(() => { loadStats() }, [loadStats])
 
   const periodTabs = [
     { id: 'week', label: '7 dias' },
