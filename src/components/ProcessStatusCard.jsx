@@ -8,7 +8,7 @@ export default function ProcessStatusCard({ integrationId }) {
 
   useEffect(() => {
     loadStatus()
-  }, [integrationId])
+  }, [integrationId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadStatus() {
     setLoading(true)

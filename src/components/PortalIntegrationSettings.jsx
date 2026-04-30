@@ -20,10 +20,9 @@ export default function PortalIntegrationSettings({ userId, casoId }) {
     frequencia_sync: 'daily',
   })
 
-  // Carregar integrações
   useEffect(() => {
     loadIntegrations()
-  }, [userId])
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadIntegrations() {
     setLoading(true)

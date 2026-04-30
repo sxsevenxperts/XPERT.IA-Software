@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -7,6 +8,7 @@ import {
   CheckCircle, ArrowUpRight, ArrowDownRight, Brain,
   Calendar, ChevronRight, Bell, Clock, Sparkles, Scale, CheckSquare
 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 const revenueData = [
   { mes: 'Out', receita: 28400, honorarios: 18000 },
@@ -91,6 +93,23 @@ const deadlineColors = {
 }
 
 export default function Dashboard({ onTab }) {
+  const [kpi, setKpi] = useState({ clientes: '—', casos: '—', tarefas: '—', honorarios: '—' })
+
+  useEffect(() => {
+    async function loadKpis() {
+      const [{ count: clientes }, { count: casos }, { count: tarefas }, { data: hon }] = await Promise.all([
+        supabase.from('clientes').select('*', { count: 'exact', head: true }).eq('status', 'ativo'),
+        supabase.from('casos').select('*', { count: 'exact', head: true }).eq('status', 'em_andamento'),
+        supabase.from('tarefas').select('*', { count: 'exact', head: true }).neq('status', 'concluido'),
+        supabase.from('honorarios').select('valor').eq('status', 'pendente'),
+      ])
+      const totalHon = (hon || []).reduce((s, h) => s + (parseFloat(h.valor) || 0), 0)
+      const honLabel = totalHon >= 1000 ? `R$ ${(totalHon / 1000).toFixed(0)}k` : `R$ ${totalHon.toLocaleString('pt-BR')}`
+      setKpi({ clientes: clientes ?? 0, casos: casos ?? 0, tarefas: tarefas ?? 0, honorarios: honLabel })
+    }
+    loadKpis()
+  }, [])
+
   const urgencyStyle = {
     critical: { bg: 'var(--red-dim)',    color: 'var(--red)',    label: 'Crítico' },
     warning:  { bg: 'var(--amber-dim)',  color: 'var(--amber)',  label: 'Urgente' },
@@ -128,10 +147,10 @@ export default function Dashboard({ onTab }) {
 
       {/* ── KPI Row ── */}
       <div style={{ display: 'flex', gap: 14, marginBottom: 22, flexWrap: 'wrap' }}>
-        <KpiCard icon={Users}      label="Clientes Ativos"       value="248"        sub="34 novos este mês"     trend="+16%"  trendUp color="var(--blue)" />
-        <KpiCard icon={Briefcase}  label="Casos em Andamento"    value="137"        sub="28 aguardando prazo"   trend="+8%"   trendUp color="var(--purple)" />
-        <KpiCard icon={CheckSquare} label="Próximas Tarefas"     value="12"         sub="3 hoje, 5 esta semana" trend="+40%" trendUp color="var(--red)" />
-        <KpiCard icon={DollarSign} label="Honorários a Receber"  value="R$ 142k"    sub="51 faturas abertas"    trend="+24%"  trendUp color="var(--green)" />
+        <KpiCard icon={Users}       label="Clientes Ativos"      value={kpi.clientes}   color="var(--blue)" />
+        <KpiCard icon={Briefcase}  label="Casos em Andamento"   value={kpi.casos}      color="var(--purple)" />
+        <KpiCard icon={CheckSquare} label="Tarefas Pendentes"   value={kpi.tarefas}    color="var(--red)" />
+        <KpiCard icon={DollarSign} label="Honorários a Receber" value={kpi.honorarios} color="var(--green)" />
       </div>
 
       {/* ── Row 2: Charts ── */}
