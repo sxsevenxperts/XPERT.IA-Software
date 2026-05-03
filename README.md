@@ -1,6 +1,8 @@
-# XPERT.IA Software — PrevOS
+# PrevOS
 
-Plataforma SaaS para advogados previdenciaristas. Gestão de casos, cálculos de benefícios INSS, petições assistidas por IA, assinatura digital, portais e muito mais.
+Plataforma SaaS para advogados previdenciaristas. Gestão de casos, cálculos de benefícios INSS, petições assistidas por IA, assinatura digital, integração com portais e muito mais.
+
+> ℹ️ **Nota:** Este repositório (historicamente nomeado `XPERT.IA-Software`) contém apenas o **PrevOS**. O Agente SDR XPERT.IA foi separado para o repositório [`XPERT.IA-SDR`](https://github.com/sxsevenxperts/XPERT.IA-SDR). Há também um espelho do PrevOS em [`prevos`](https://github.com/sxsevenxperts/prevos).
 
 ## Stack
 
@@ -8,7 +10,6 @@ Plataforma SaaS para advogados previdenciaristas. Gestão de casos, cálculos de
 - **Backend**: Supabase (Auth, Database, Edge Functions / Deno)
 - **IA**: Claude API (Anthropic)
 - **Pagamentos**: Asaas + Stripe (via Edge Functions)
-- **Automação de leads**: n8n (workflow SDR multi-agente)
 - **Serve (prod)**: Nginx (Docker multi-stage build)
 
 ## Módulos
@@ -36,21 +37,10 @@ Plataforma SaaS para advogados previdenciaristas. Gestão de casos, cálculos de
 
 ## Edge Functions (Supabase)
 
-- `payment-asaas` / `payment-stripe` — checkout e webhooks
-- `validate-lead-auth` — autenticação de leads do funil
-- `auto-onboard-user` — onboarding automático pós-pagamento
-- `predict-conversion-probability` — scoring de conversão via IA
-- `notify-new-lead`, `notify-followup` — notificações de leads
-- `send-email`, `send-whatsapp` — comunicação com clientes
-- E mais (ver `supabase/functions/`)
-
-## Agente SDR (n8n)
-
-Workflow de atendimento automático de leads com IA multi-agente:
-- `workflow-agente-sdr-n8n-v2.3.json` — versão atual com logging
-- `workflow-agente-sdr-v2.json` — versão estável
-
-Importar no n8n via **File → Import Workflow**.
+- `fetch-cases-by-oab` — busca processos via número OAB
+- `sync-portal-status` — sincroniza status de processos nos portais
+- `generate-revenue-forecast` / `generate-workload-forecast` — projeções
+- (ver `supabase/functions/`)
 
 ## Setup local
 
@@ -65,7 +55,10 @@ npm run dev
 
 ```bash
 docker build -t prevos .
-docker run -p 80:80 --env-file .env prevos
+docker run -p 80:80 prevos
 ```
+
+Push em `main` aciona o GitHub Actions que builda e publica
+`ghcr.io/sxsevenxperts/prevos:latest`.
 
 Ver `DEPLOY.md` para detalhes de produção.
