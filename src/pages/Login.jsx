@@ -9,11 +9,13 @@ export default function Login({ onLogin }) {
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!email || !password) { setError('Preencha email e senha.'); return }
+    if (!acceptedTerms) { setError('Você deve aceitar os termos, políticas e LGPD para continuar.'); return }
     setLoading(true)
 
     try {
@@ -146,18 +148,36 @@ export default function Login({ onLogin }) {
               </div>
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10.8, marginTop: 4.8 }}>
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                style={{
+                  width: 18,
+                  height: 18,
+                  marginTop: 3,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              />
+              <label style={{ fontSize: 14.4, color: 'var(--text2)', lineHeight: 1.5, cursor: 'pointer' }}>
+                Concordo com os <a href="#terms" style={{ color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}>Termos de Serviço</a>, <a href="#privacy" style={{ color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}>Política de Privacidade</a> e <a href="#lgpd" style={{ color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}>LGPD</a>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !acceptedTerms}
               style={{
-                marginTop: 4.8,
-                background: loading ? 'var(--bg4)' : 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
+                marginTop: 16.8,
+                background: (loading || !acceptedTerms) ? 'var(--bg4)' : 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
                 color: 'white', border: 'none', borderRadius: 12,
                 padding: '15.6px', fontSize: 16.8, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9.6,
-                boxShadow: loading ? 'none' : '0 4px 16px rgba(59,130,246,0.35)',
+                boxShadow: (loading || !acceptedTerms) ? 'none' : '0 4px 16px rgba(59,130,246,0.35)',
                 transition: 'opacity 0.15s',
-                opacity: loading ? 0.7 : 1,
+                opacity: (loading || !acceptedTerms) ? 0.7 : 1,
               }}
             >
               {loading ? (
