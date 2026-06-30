@@ -35,10 +35,20 @@ export default function CasePredictionCard({ casoId, caso, onAnalyze }) {
         tribunal: caso?.tribunal,
       })
 
-      if (!error && data) {
+      if (error) {
+        // Graceful fallback: serviço indisponível
+        console.warn('Prediction service unavailable:', error)
+        setPrediction({ status: 'unavailable', message: 'Serviço de IA temporariamente indisponível' })
+        return
+      }
+
+      if (data) {
         setPrediction(data.prediction)
         onAnalyze?.()
       }
+    } catch (err) {
+      console.error('Error analyzing case:', err)
+      setPrediction({ status: 'error', message: 'Erro ao analisar caso' })
     } finally {
       setLoading(false)
     }
