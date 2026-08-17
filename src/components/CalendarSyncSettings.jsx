@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Calendar, Link2, Unlink2, Zap, RefreshCw, Trash2 } from 'lucide-react'
-import { fetchCalendarIntegrations, deleteCalendarIntegration } from '../lib/supabase'
+import { deleteCalendarIntegration, fetchCalendarIntegrations, invokeFunction } from '../lib/supabase'
 
 const PROVIDERS = [
   { id: 'google', label: 'Google Calendar', icon: '📅', cor: 'var(--blue)' },
@@ -25,18 +25,11 @@ export default function CalendarSyncSettings({ userId }) {
   }, [userId])
 
   const handleConnectGoogle = async () => {
-    // Simular OAuth flow do Google
-    alert('Conectando ao Google Calendar... (funcionalidade completa no deploy)')
-    
-    // Em produção, aqui haveria:
-    // 1. Redirecionar para Google OAuth
-    // 2. Receber authorization code
-    // 3. Trocar por access token
-    // 4. Salvar em calendar_integrations
+    alert('Configure o OAuth do Google no backend antes de conectar este calendário.')
   }
 
   const handleConnectOutlook = async () => {
-    alert('Conectando ao Outlook... (funcionalidade completa no deploy)')
+    alert('Configure o OAuth da Microsoft no backend antes de conectar este calendário.')
   }
 
   const handleDisconnect = async (integrationId) => {
@@ -49,16 +42,11 @@ export default function CalendarSyncSettings({ userId }) {
   const handleSync = async (integrationId) => {
     setSyncing(true)
     try {
-      // Edge Function para sincronizar
-      const response = await fetch('/functions/v1/sync-calendar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ integration_id: integrationId }),
-      })
-      
-      if (response.ok) {
+      const { data, error } = await invokeFunction('sync-calendar', { integrationId })
+      if (error || data?.error) {
+        alert(data?.error || error.message)
+      } else {
         alert('Sincronização iniciada com sucesso!')
-        // Recarregar dados
         const { data } = await fetchCalendarIntegrations(userId)
         setIntegrations(data || [])
       }

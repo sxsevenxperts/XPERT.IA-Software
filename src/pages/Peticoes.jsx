@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Scroll, Brain, Search, Plus, Download, Zap, CheckCircle, Copy, Edit3, RefreshCw, Star, ExternalLink, X, ChevronRight } from 'lucide-react'
+import { callClaude } from '../lib/claude'
 
 /* ──────────────── ÁREAS DO DIREITO ──────────────── */
 const AREAS = [
@@ -127,68 +128,58 @@ const MELHORIAS = [
   { id: 'formatacao', icon: '📐', label: 'Ajustar Formatação',   desc: 'Estrutura ABNT e normas processuais' },
 ]
 
-/* Mock gerado para o demo */
-const MOCK_PETICAO = `EXCELENTÍSSIMO(A) SENHOR(A) DOUTOR(A) JUIZ(A) FEDERAL DA VARA PREVIDENCIÁRIA
-
-JOÃO CARLOS SILVA, brasileiro, aposentado, portador do CPF nº 123.456.789-00, residente e domiciliado na Rua das Flores, nº 123, Bairro Centro, São Paulo/SP, CEP 01310-100, por intermédio de seu advogado que esta subscreve (procuração em anexo), vem respeitosamente à presença de V. Exª., com fundamento no art. 5º, LXIX, da Constituição Federal, na Lei n.º 8.213/1991 e no Decreto n.º 10.410/2020, propor a presente
-
-AÇÃO DE CONCESSÃO DE APOSENTADORIA POR IDADE
-em face do INSTITUTO NACIONAL DO SEGURO SOCIAL — INSS, autarquia federal, pelos fatos e fundamentos a seguir expostos:
-
-I — DOS FATOS
-
-O(A) requerente nasceu em 15/04/1960, contando atualmente com 65 (sessenta e cinco) anos de idade, e possui 22 (vinte e dois) anos de contribuição comprovados perante o INSS, conforme Cadastro Nacional de Informações Sociais — CNIS em anexo.
-
-Ocorre que, em [DATA], o(a) requerente formulou pedido administrativo junto ao INSS para concessão de Aposentadoria por Idade, o qual foi indeferido sob o fundamento de [MOTIVAÇÃO DO INDEFERIMENTO], o que não se sustenta diante dos documentos colacionados.
-
-II — DO DIREITO
-
-II.1 — DOS REQUISITOS PARA CONCESSÃO
-
-Nos termos do art. 48 da Lei n.º 8.213/1991, com a redação conferida pela Emenda Constitucional n.º 103/2019, a Aposentadoria por Idade possui como requisitos:
-• Para o segurado do sexo masculino: 65 (sessenta e cinco) anos de idade e 20 (vinte) anos de contribuição;
-• Carência mínima de 180 contribuições mensais.
-
-O(A) requerente atende a TODOS os requisitos legais, conforme documentação acostada.
-
-II.2 — DO CÁLCULO DA RENDA MENSAL INICIAL
-
-O salário de benefício corresponde à média aritmética simples de 100% dos salários de contribuição, sendo a RMI calculada na forma do § 5º do art. 26 da EC 103/2019: 60% do salário de benefício acrescido de 2% para cada ano de contribuição acima de 20 anos.
-
-III — DOS PEDIDOS
-
-Ante o exposto, requer seja julgado procedente o pedido, para que:
-a) Seja concedida a Aposentadoria por Idade, com DIB fixada na data do requerimento administrativo;
-b) Sejam pagas as parcelas vencidas desde a DIB até a data da implantação do benefício, devidamente atualizadas pelo INPC + juros de 1% a.m. (Súmula 204/STJ);
-c) Sejam deferidos os benefícios da Justiça Gratuita (declaração em anexo);
-d) Seja determinada a inversão do ônus probatório, nos termos do art. 373, § 1º, do CPC.
-
-Dá-se à causa o valor de R$ [VALOR].
-
-Termos em que pede deferimento.
-
-[Cidade], [Data].
-
-[ADVOGADO]
-OAB/[ESTADO] nº [NÚMERO]`
+const SYSTEM_PETICOES = `Você é um advogado sênior especializado em Direito Brasileiro com 25 anos de experiência.
+Redija peças processuais completas, profissionais e tecnicamente perfeitas.
+Use sempre linguagem jurídica formal e precisa, citando: leis, decretos, portarias, súmulas do STJ/STF/TNU, jurisprudência dos TRFs.
+Estruture a peça com introdução, qualificação, fatos, direito, pedidos e fecho.
+Deixe campos entre [COLCHETES] onde o advogado deve preencher com dados específicos do cliente.
+NÃO invente números de CPF, datas ou valores — use [DADO] como placeholder.`
 
 export default function Peticoes() {
   const [areaAtiva, setAreaAtiva]     = useState('previdenciario')
   const [tipoSelecionado, setTipo]    = useState('')
   const [loading, setLoading]         = useState(false)
+  const [loadingMelhorar, setLoadingMelhorar] = useState(false)
   const [peticaoGerada, setPeticao]   = useState('')
+  const [textoMelhorar, setTextoMelhorar] = useState('')
   const [abaMelhoria, setAbaMelhoria] = useState(null)
-  const [tab, setTab]                 = useState('gerar') // gerar | melhorar | documentos
+  const [tab, setTab]                 = useState('gerar')
+  const [error, setError]             = useState('')
+  const [camposPeticao, setCampos]    = useState({ cliente:'', cpf:'', processo:'', vara:'' })
 
   const area = AREAS.find(a => a.id === areaAtiva)
 
-  function gerarPeticao() {
+  async function gerarPeticao() {
     if (!tipoSelecionado) return
     setLoading(true)
-    setTimeout(() => {
-      setPeticao(MOCK_PETICAO)
+    setError('')
+    try {
+      const areaLabel = area?.label || areaAtiva
+      const campos = Object.entries(camposPeticao).filter(([,v])=>v).map(([k,v])=>`${k}: ${v}`).join(', ')
+      const prompt = `Redija uma peça processual completa do tipo "${tipoSelecionado}" para a área de ${areaLabel}.${campos ? ` Dados disponíveis: ${campos}.` : ''} A peça deve estar completa, com todos os fundamentos legais, pedidos e estrutura processual correta.`
+      const text = await callClaude(prompt, SYSTEM_PETICOES, 'claude-sonnet-4-6')
+      setPeticao(text)
+    } catch (err) {
+      setError(err.message || 'Erro ao gerar. Verifique sua chave da API em Configurações.')
+    } finally {
       setLoading(false)
-    }, 2000)
+    }
+  }
+
+  async function melhorarPeticao() {
+    if (!textoMelhorar.trim() || !abaMelhoria) return
+    setLoadingMelhorar(true)
+    setError('')
+    try {
+      const melhoriaLabel = MELHORIAS.find(m=>m.id===abaMelhoria)?.label || abaMelhoria
+      const prompt = `${melhoriaLabel} nesta peça processual:\n\n${textoMelhorar}\n\nRetorne o texto completo melhorado, mantendo a estrutura original.`
+      const text = await callClaude(prompt, SYSTEM_PETICOES, 'claude-sonnet-4-6')
+      setTextoMelhorar(text)
+    } catch (err) {
+      setError(err.message || 'Erro ao melhorar. Verifique sua chave da API em Configurações.')
+    } finally {
+      setLoadingMelhorar(false)
+    }
   }
 
   function copiarTexto() {
@@ -276,19 +267,22 @@ export default function Peticoes() {
                 {tipoSelecionado && (
                   <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                     {[
-                      { label: 'Nome do cliente', placeholder: 'Ex: João Carlos Silva' },
-                      { label: 'CPF', placeholder: '000.000.000-00' },
-                      { label: 'Número do processo (se houver)', placeholder: 'Ex: 1234567-89.2024.4.03.6183' },
-                      { label: 'Comarca / Vara', placeholder: 'Ex: 1ª Vara Previdenciária SP' },
-                    ].map((f, i) => (
-                      <div key={i}>
+                      { label: 'Nome do cliente', key: 'cliente', placeholder: 'Ex: João Carlos Silva' },
+                      { label: 'CPF', key: 'cpf', placeholder: '000.000.000-00' },
+                      { label: 'Número do processo (se houver)', key: 'processo', placeholder: 'Ex: 1234567-89.2024.4.03.6183' },
+                      { label: 'Comarca / Vara', key: 'vara', placeholder: 'Ex: 1ª Vara Previdenciária SP' },
+                    ].map((f) => (
+                      <div key={f.key}>
                         <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text3)', display: 'block', marginBottom: 5 }}>{f.label}</label>
-                        <input placeholder={f.placeholder} style={{ width: '100%', padding: '9px 11px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text)', outline: 'none' }}
+                        <input value={camposPeticao[f.key]} onChange={e=>setCampos(p=>({...p,[f.key]:e.target.value}))} placeholder={f.placeholder} style={{ width: '100%', padding: '9px 11px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text)', outline: 'none' }}
                           onFocus={e => e.target.style.borderColor = area.cor}
                           onBlur={e => e.target.style.borderColor = 'var(--border)'} />
                       </div>
                     ))}
                   </div>
+                )}
+                {error && tab === 'gerar' && (
+                  <div style={{ background:'var(--red-dim)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:9,padding:'10px 14px',fontSize:12.5,color:'var(--red)',marginBottom:14 }}>{error}</div>
                 )}
 
                 <button
@@ -372,21 +366,25 @@ export default function Peticoes() {
           <div>
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 6 }}>Cole sua peça aqui</label>
-              <textarea placeholder="Insira o texto da peça que deseja melhorar com IA..."
+              <textarea value={textoMelhorar} onChange={e=>setTextoMelhorar(e.target.value)} placeholder="Insira o texto da peça que deseja melhorar com IA..."
                 style={{ width: '100%', height: 400, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px', fontSize: 13, color: 'var(--text)', lineHeight: 1.7, resize: 'vertical', outline: 'none' }}
                 onFocus={e => e.target.style.borderColor = 'var(--purple)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'} />
             </div>
-            <button style={{ padding: '12px 24px', background: 'linear-gradient(135deg, var(--purple), var(--blue))', border: 'none', borderRadius: 9, color: 'white', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(139,92,246,0.3)' }}>
-              <Zap size={15} /> Melhorar com IA
+            {error && tab === 'melhorar' && (
+              <div style={{ background:'var(--red-dim)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:9,padding:'10px 14px',fontSize:12.5,color:'var(--red)',marginBottom:12 }}>{error}</div>
+            )}
+            <button onClick={melhorarPeticao} disabled={!textoMelhorar.trim()||!abaMelhoria||loadingMelhorar}
+              style={{ padding: '12px 24px', background: (!textoMelhorar.trim()||!abaMelhoria||loadingMelhorar)?'var(--bg4)':'linear-gradient(135deg, var(--purple), var(--blue))', border: 'none', borderRadius: 9, color: 'white', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, opacity:(!textoMelhorar.trim()||!abaMelhoria||loadingMelhorar)?0.5:1, cursor:(!textoMelhorar.trim()||!abaMelhoria||loadingMelhorar)?'default':'pointer' }}>
+              {loadingMelhorar
+                ? <><div style={{ width:14,height:14,border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 0.7s linear infinite' }}/> Melhorando...</>
+                : <><Zap size={15} /> Melhorar com IA</>}
             </button>
           </div>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '18px' }}>
             <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Tipos de melhoria</h4>
             {MELHORIAS.map(m => (
-              <button key={m.id} style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg3)', marginBottom: 8, cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--purple)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+              <button key={m.id} onClick={()=>setAbaMelhoria(abaMelhoria===m.id?null:m.id)} style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 9, border: `1px solid ${abaMelhoria===m.id?'var(--purple)':'var(--border)'}`, background: abaMelhoria===m.id?'var(--purple-dim)':'var(--bg3)', marginBottom: 8, cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}>
                 <span style={{ fontSize: 16 }}>{m.icon}</span>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{m.label}</p>

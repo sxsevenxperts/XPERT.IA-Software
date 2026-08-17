@@ -1,7 +1,7 @@
 import { Bell, Search, Plus, Calendar } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import NotificationCenter from './NotificationCenter'
-import { getCurrentUser } from '../lib/supabase'
+import { getCurrentUser, supabase } from '../lib/supabase'
 
 const PAGE_TITLES = {
   dashboard:    { title: 'Dashboard',             subtitle: 'Visão geral do escritório' },
@@ -32,6 +32,7 @@ const today = new Date()
 export default function Header({ tab, onNewAction }) {
   const [notifOpen, setNotifOpen] = useState(false)
   const [searchVal, setSearchVal] = useState('')
+  const [notifs, setNotifs] = useState([])
   const [, setUser] = useState(null)
   const page = PAGE_TITLES[tab] || PAGE_TITLES.dashboard
 
@@ -40,21 +41,16 @@ export default function Header({ tab, onNewAction }) {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
       if (currentUser) {
-        // TODO: Carregar contagem de notificações não lidas quando migration for aplicada
-        // const { data } = await fetchNotificationLog(currentUser.id)
-        // setUnreadCount(data?.filter(n => !n.lido_em).length || 0)
+        const [{ data: alerts }, { data: log }] = await Promise.all([
+          supabase.from('alertas').select('id,titulo,data_alerta,notificacao_lida').eq('notificacao_lida', false).order('data_alerta').limit(5),
+          supabase.from('notification_log').select('id,titulo,mensagem,created_at,lido_em').is('lido_em', null).order('created_at', { ascending: false }).limit(5),
+        ])
+        setNotifs([...(alerts || []).map((item) => ({ id: `a-${item.id}`, type: 'warning', text: item.titulo, time: item.data_alerta || 'sem prazo' })), ...(log || []).map((item) => ({ id: `n-${item.id}`, type: 'info', text: item.titulo || item.mensagem, time: new Date(item.created_at).toLocaleDateString('pt-BR') }))])
       }
     }
     loadUser()
   }, [])
 
-  const NOTIFS = [
-    { id: 1, type: 'warning', text: 'Prazo em 2 dias: Caso #2341 – João Silva', time: 'há 1h' },
-    { id: 2, type: 'success', text: 'Honorários recebidos: R$ 4.200 – Maria Gomes', time: 'há 3h' },
-    { id: 3, type: 'info',    text: 'Intimação recebida: TRF5 – Proc. 0005432-12', time: 'há 4h' },
-    { id: 4, type: 'warning', text: 'Audiência amanhã 14h: Pedro Santos – Trabalhista', time: 'há 5h' },
-    { id: 5, type: 'info',    text: 'Laudo analisado IA: CID G35 – 94% confiança', time: 'ontem' },
-  ]
   const notifColors = { warning: 'var(--amber)', success: 'var(--green)', info: 'var(--blue)' }
 
   return (
@@ -128,7 +124,7 @@ export default function Header({ tab, onNewAction }) {
               <span style={{ fontSize: 13, fontWeight: 600 }}>Notificações</span>
               <span style={{ fontSize: 10, color: 'var(--blue)', cursor: 'pointer', fontWeight: 500 }}>Marcar todas como lidas</span>
             </div>
-            {NOTIFS.map(n => (
+            {notifs.length === 0 ? <div style={{ padding: 16, color: 'var(--text3)', fontSize: 12 }}>Nenhuma notificação pendente.</div> : notifs.map(n => (
               <div key={n.id} style={{ padding: '11px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}

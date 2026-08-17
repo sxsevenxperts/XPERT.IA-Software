@@ -9,25 +9,15 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
-import { supabase } from './supabase'
+import { invokeFunction } from './supabase'
 
 /**
  * Recupera a chave Claude API do perfil do usuário logado.
  */
 async function getClaudeKey() {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado.')
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('claude_api_key')
-    .eq('id', user.id)
-    .single()
-
-  if (error || !data?.claude_api_key) {
-    throw new Error('Chave da API Claude não configurada. Acesse Configurações → Integrações para adicionar.')
-  }
-  return data.claude_api_key
+  const { data, error } = await invokeFunction('integration-credentials', { action: 'status', provider: 'anthropic' })
+  if (error) throw new Error('Não foi possível consultar a configuração da Anthropic.')
+  return data?.configured === true
 }
 
 /**
@@ -39,39 +29,41 @@ async function getClaudeKey() {
  * @returns {Promise<string>}
  */
 export async function callClaude(userMessage, system = '', model = 'claude-3-5-sonnet-20241022') {
-  const apiKey = await getClaudeKey()
+  const { data, error } = await invokeFunction('ai-assistant', {
+    action: 'message', prompt: userMessage, system, model, maxTokens: 4096,
+  })
+  if (error) throw new Error(error.message || 'Erro ao chamar o assistente de IA.')
+  if (data?.error) throw new Error(data.error)
+  return data?.text || ''
+}
 
-  const systemPrompt = system || `Você é um assistente jurídico especializado em Direito Brasileiro.
-Responda sempre em português, com linguagem técnica e precisa.
-Cite sempre os diplomas legais, súmulas e jurisprudências pertinentes.
-NÃO faça promessas de resultado — informe apenas o estado atual da legislação e jurisprudência.
-Siga rigorosamente o Código de Ética e Disciplina da OAB e a Constituição Federal.`
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type':            'application/json',
-      'x-api-key':               apiKey,
-      'anthropic-version':       '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    }),
+/**
+ * Envia um arquivo (imagem ou PDF) + prompt para o Claude e retorna o texto.
+ * Lê o arquivo como base64 e usa a API de visão/documentos.
+ *
+ * @param {File} file
+ * @param {string} userPrompt
+ * @param {string} [system]
+ * @returns {Promise<string>}
+ */
+export async function callClaudeWithFile(file, userPrompt, system = '') {
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
   })
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    if (response.status === 401) throw new Error('Chave da API Claude inválida. Verifique em Configurações → Integrações.')
-    if (response.status === 429) throw new Error('Limite de requisições da API atingido. Aguarde alguns instantes.')
-    throw new Error(err?.error?.message || `Erro na API Claude (${response.status}).`)
-  }
-
-  const result = await response.json()
-  return result.content?.[0]?.text || ''
+  const { data, error } = await invokeFunction('ai-assistant', {
+    action: 'message',
+    prompt: userPrompt,
+    system,
+    model: 'claude-3-5-sonnet-20241022',
+    file: { mediaType: file.type, data: base64 },
+  })
+  if (error) throw new Error(error.message || 'Erro ao analisar o arquivo.')
+  if (data?.error) throw new Error(data.error)
+  return data?.text || ''
 }
 
 /**
@@ -79,8 +71,7 @@ Siga rigorosamente o Código de Ética e Disciplina da OAB e a Constituição Fe
  */
 export async function hasClaudeKey() {
   try {
-    await getClaudeKey()
-    return true
+    return await getClaudeKey()
   } catch {
     return false
   }
@@ -92,39 +83,20 @@ export async function hasClaudeKey() {
  * @param {string} apiKey
  */
 export async function saveClaudeKey(apiKey) {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Usuário não autenticado.')
-
-  const { error } = await supabase
-    .from('profiles')
-    .upsert({ id: user.id, claude_api_key: apiKey })
-
-  if (error) throw new Error('Erro ao salvar a chave API.')
-  return true
+  const { data, error } = await invokeFunction('integration-credentials', {
+    action: 'set', provider: 'anthropic', value: apiKey,
+  })
+  if (error || data?.error) throw new Error(data?.error || error?.message || 'Erro ao salvar a chave API.')
+  return data?.configured === true
 }
 
 /**
  * Testa a chave API enviando uma mensagem simples.
  */
 export async function testClaudeKey(apiKey) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type':            'application/json',
-      'x-api-key':               apiKey,
-      'anthropic-version':       '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model:      'claude-3-haiku-20240307',
-      max_tokens: 10,
-      messages:   [{ role: 'user', content: 'Ok' }],
-    }),
+  const { data, error } = await invokeFunction('integration-credentials', {
+    action: 'test', provider: 'anthropic', value: apiKey,
   })
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}))
-    throw new Error(err?.error?.message || 'Chave inválida ou sem créditos.')
-  }
-  return true
+  if (error || data?.error) throw new Error(data?.error || error?.message || 'Chave inválida ou sem créditos.')
+  return data?.valid === true
 }

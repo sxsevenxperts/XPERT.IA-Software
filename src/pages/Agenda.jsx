@@ -1,199 +1,46 @@
-import { useState } from 'react'
-import { Calendar, Clock, Plus, ChevronLeft, ChevronRight, MapPin, Video, AlertTriangle, CheckCircle, Filter } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Calendar, Plus, Trash2 } from 'lucide-react'
+import { getCurrentUser, supabase } from '../lib/supabase'
 
-const DAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-
-const events = [
-  { id: 1, date: '2026-03-29', time: '09:00', type: 'audiencia',  title: 'Audiência Trabalhista',      client: 'Fernanda Oliveira',  local: 'TRT – Sala 3',             area: 'Trabalhista',    color: '#EF4444' },
-  { id: 2, date: '2026-03-29', time: '14:30', type: 'reuniao',    title: 'Reunião com cliente',         client: 'João Carlos Silva',  local: 'Escritório / Zoom',        area: 'Previdenciário', color: '#3B82F6' },
-  { id: 3, date: '2026-03-30', time: '10:00', type: 'prazo',      title: 'Prazo – Recurso Ordinário',   client: 'Ana Lima',           local: 'TRF-5',                    area: 'Previdenciário', color: '#F59E0B' },
-  { id: 4, date: '2026-04-01', time: '15:00', type: 'pericia',    title: 'Perícia Médica INSS',         client: 'Pedro Alves Rocha',  local: 'Agência INSS Centro',      area: 'Previdenciário', color: '#8B5CF6' },
-  { id: 5, date: '2026-04-02', time: '09:30', type: 'audiencia',  title: 'Audiência de Conciliação',    client: 'Carlos Melo',        local: 'CEJUSC – Sala 1',          area: 'Cível',          color: '#EF4444' },
-  { id: 6, date: '2026-04-03', time: '11:00', type: 'prazo',      title: 'Prazo – Manifestação',        client: 'Maria Gomes',        local: 'e-SAJ SP',                 area: 'Família',        color: '#F59E0B' },
-  { id: 7, date: '2026-04-05', time: '08:00', type: 'protocolo',  title: 'Protocolo de Petição',        client: 'Roberto Dias',       local: 'TJSP – Digital',           area: 'Consumidor',     color: '#10B981' },
-  { id: 8, date: '2026-04-07', time: '16:00', type: 'reuniao',    title: 'Reunião com perito',          client: 'Sandra Costa',       local: 'Consultório Dr. Lima',     area: 'Trabalhista',    color: '#3B82F6' },
-]
-
-const typeConfig = {
-  audiencia:  { label: 'Audiência',   color: '#EF4444', bg: 'var(--red-dim)',   icon: '⚖️' },
-  prazo:      { label: 'Prazo',       color: '#F59E0B', bg: 'var(--amber-dim)', icon: '⏰' },
-  reuniao:    { label: 'Reunião',     color: '#3B82F6', bg: 'var(--blue-dim)',  icon: '💬' },
-  pericia:    { label: 'Perícia',     color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)', icon: '🏥' },
-  protocolo:  { label: 'Protocolo',  color: '#10B981', bg: 'var(--green-dim)', icon: '📤' },
-}
+const types = { audiencia: ['Audiência', 'var(--red)'], prazo: ['Prazo', 'var(--amber)'], reuniao: ['Reunião', 'var(--blue)'], pericia: ['Perícia', 'var(--purple)'], protocolo: ['Protocolo', 'var(--green)'], outro: ['Outro', 'var(--text3)'] }
 
 export default function Agenda() {
-  const [viewMode, setViewMode] = useState('semana')
-  const [filterArea, setFilterArea] = useState('todas')
-  const [, setShowModal] = useState(false)
-  const today = new Date()
+  const [events, setEvents] = useState([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ titulo: '', tipo: 'reuniao', data_inicio: '', local: '', descricao: '' })
+  const [loading, setLoading] = useState(true)
 
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
-  const todayEvents = events.filter(e => e.date === todayStr)
-  const _upcomingEvents = events.filter(e => e.date > todayStr).slice(0, 6)
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase.from('agenda_eventos').select('*').order('data_inicio', { ascending: true })
+    setEvents(data || [])
+    setLoading(false)
+  }, [])
+  useEffect(() => { load() }, [load])
 
-  const allEvents = events.sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
+  const upcoming = useMemo(() => events.filter((event) => event.status !== 'cancelado'), [events])
 
-  return (
-    <div className="fade-in" style={{ padding: 24, maxWidth: 1400 }}>
+  async function addEvent(event) {
+    event.preventDefault()
+    if (!form.titulo || !form.data_inicio) return
+    const user = await getCurrentUser()
+    if (!user) return alert('Sua sessão expirou. Entre novamente.')
+    const { data, error } = await supabase.from('agenda_eventos').insert({ ...form, user_id: user.id, data_inicio: new Date(form.data_inicio).toISOString() }).select().single()
+    if (error) return alert(error.message)
+    setEvents((current) => [...current, data].sort((a, b) => a.data_inicio.localeCompare(b.data_inicio)))
+    setForm({ titulo: '', tipo: 'reuniao', data_inicio: '', local: '', descricao: '' })
+    setShowForm(false)
+  }
 
-      {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {['semana','lista'].map(v => (
-            <button key={v} onClick={() => setViewMode(v)} style={{
-              padding: '7px 16px', borderRadius: 8, border: '1px solid var(--border)',
-              background: viewMode === v ? 'var(--blue)' : 'var(--bg2)',
-              color: viewMode === v ? 'white' : 'var(--text2)',
-              fontSize: 12.5, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-            }}>
-              {v === 'semana' ? '📅 Semana' : '📋 Lista'}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <select value={filterArea} onChange={e => setFilterArea(e.target.value)} style={{
-            padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)',
-            background: 'var(--bg2)', color: 'var(--text2)', fontSize: 12.5,
-          }}>
-            <option value="todas">Todas as áreas</option>
-            <option value="Previdenciário">Previdenciário</option>
-            <option value="Trabalhista">Trabalhista</option>
-            <option value="Cível">Cível</option>
-            <option value="Família">Família</option>
-            <option value="Consumidor">Consumidor</option>
-          </select>
-          <button onClick={() => setShowModal(true)} style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            padding: '7px 16px', background: 'linear-gradient(135deg, var(--blue), var(--purple))',
-            border: 'none', borderRadius: 8, color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}>
-            <Plus size={15} /> Novo Compromisso
-          </button>
-        </div>
-      </div>
+  async function removeEvent(id) {
+    if (!window.confirm('Cancelar este compromisso?')) return
+    await supabase.from('agenda_eventos').update({ status: 'cancelado' }).eq('id', id)
+    setEvents((current) => current.map((event) => event.id === id ? { ...event, status: 'cancelado' } : event))
+  }
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 18 }}>
-
-        {/* Main content */}
-        <div>
-          {/* Hoje */}
-          {todayEvents.length > 0 && (
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)' }} />
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)' }}>HOJE — {today.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}</h3>
-              </div>
-              {todayEvents.map(ev => <EventCard key={ev.id} ev={ev} />)}
-            </div>
-          )}
-
-          {/* Próximos eventos */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <Calendar size={14} color="var(--text3)" />
-              <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)' }}>PRÓXIMOS COMPROMISSOS</h3>
-            </div>
-            {allEvents.filter(e => e.date >= todayStr).filter(e => filterArea === 'todas' || e.area === filterArea).map(ev => <EventCard key={ev.id} ev={ev} />)}
-          </div>
-        </div>
-
-        {/* Mini calendar + stats */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-          {/* Mini stats */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Resumo da Semana</h4>
-            {[
-              { icon: '⚖️', label: 'Audiências',  value: 2, color: 'var(--red)' },
-              { icon: '⏰', label: 'Prazos',       value: 3, color: 'var(--amber)' },
-              { icon: '💬', label: 'Reuniões',     value: 2, color: 'var(--blue)' },
-              { icon: '🏥', label: 'Perícias',     value: 1, color: 'var(--purple)' },
-            ].map(s => (
-              <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 15 }}>{s.icon}</span>
-                  <span style={{ fontSize: 12.5, color: 'var(--text2)' }}>{s.label}</span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 800, color: s.color }}>{s.value}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick add types */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Adicionar Rápido</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {Object.entries(typeConfig).map(([key, cfg]) => (
-                <button key={key} style={{
-                  display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px',
-                  background: cfg.bg, border: `1px solid ${cfg.color}30`,
-                  borderRadius: 9, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-                }}>
-                  <span style={{ fontSize: 15 }}>{cfg.icon}</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 600, color: cfg.color }}>{cfg.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Integrações */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 18 }}>
-            <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Sincronizar com</h4>
-            {[
-              { name: 'Google Calendar', icon: '📅', status: 'Conectar' },
-              { name: 'Outlook',         icon: '📧', status: 'Conectar' },
-              { name: 'iCal',            icon: '🍎', status: 'Conectar' },
-            ].map(s => (
-              <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  <span>{s.icon}</span>
-                  <span style={{ fontSize: 12.5, color: 'var(--text2)' }}>{s.name}</span>
-                </div>
-                <button style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>{s.status}</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function EventCard({ ev }) {
-  const cfg = typeConfig[ev.type] || typeConfig.reuniao
-  return (
-    <div style={{
-      display: 'flex', gap: 14, padding: '14px 16px',
-      background: 'var(--bg2)', border: '1px solid var(--border)',
-      borderLeft: `3px solid ${cfg.color}`,
-      borderRadius: '0 12px 12px 0',
-      marginBottom: 8, cursor: 'pointer', transition: 'all 0.15s',
-    }}
-      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'var(--bg2)'}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 52, paddingTop: 2 }}>
-        <span style={{ fontSize: 18 }}>{cfg.icon}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: cfg.color, marginTop: 3 }}>{ev.time}</span>
-      </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700 }}>{ev.title}</span>
-          <span style={{ fontSize: 10, padding: '1.5px 7px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text3)' }}>{ev.area}</span>
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--text3)' }}>👤 {ev.client}</div>
-        <div style={{ fontSize: 11.5, color: 'var(--text4)', marginTop: 3 }}>📍 {ev.local}</div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, alignItems: 'flex-end' }}>
-        <span style={{ fontSize: 10.5, padding: '2px 8px', background: cfg.bg, color: cfg.color, borderRadius: 5, fontWeight: 600 }}>
-          {cfg.label}
-        </span>
-        <span style={{ fontSize: 10.5, color: 'var(--text4)' }}>
-          {new Date(ev.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
-        </span>
-      </div>
-    </div>
-  )
+  return <div className="fade-in" style={{ padding: 24, maxWidth: 1100 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}><div><h1 style={{ fontSize: 24 }}>Agenda</h1><p style={{ color: 'var(--text3)', fontSize: 13 }}>Compromissos e prazos do escritório</p></div><button onClick={() => setShowForm((value) => !value)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 15px', border: 'none', borderRadius: 9, background: 'linear-gradient(135deg,var(--blue),var(--purple))', color: 'white', fontWeight: 700, cursor: 'pointer' }}><Plus size={15} /> Novo compromisso</button></div>
+    {showForm && <form onSubmit={addEvent} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginBottom: 18 }}><input required placeholder="Título" value={form.titulo} onChange={(event) => setForm({ ...form, titulo: event.target.value })} /><select value={form.tipo} onChange={(event) => setForm({ ...form, tipo: event.target.value })}>{Object.keys(types).map((type) => <option key={type} value={type}>{types[type][0]}</option>)}</select><input required type="datetime-local" value={form.data_inicio} onChange={(event) => setForm({ ...form, data_inicio: event.target.value })} /><input placeholder="Local ou link" value={form.local} onChange={(event) => setForm({ ...form, local: event.target.value })} /><input placeholder="Descrição" value={form.descricao} onChange={(event) => setForm({ ...form, descricao: event.target.value })} /><button type="submit" style={{ background: 'var(--blue)', color: 'white', border: 0, borderRadius: 8, fontWeight: 700 }}>Salvar</button></form>}
+    {loading ? <div style={{ padding: 40, color: 'var(--text3)' }}>Carregando agenda...</div> : upcoming.length === 0 ? <div style={{ padding: 50, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, textAlign: 'center', color: 'var(--text3)' }}><Calendar size={34} style={{ marginBottom: 10 }} /><div>Nenhum compromisso cadastrado.</div></div> : <div style={{ display: 'grid', gap: 9 }}>{upcoming.map((event) => { const [label, color] = types[event.tipo] || types.outro; return <div key={event.id} style={{ display: 'flex', gap: 15, alignItems: 'center', padding: 15, background: 'var(--bg2)', border: '1px solid var(--border)', borderLeft: `3px solid ${color}`, borderRadius: '0 10px 10px 0' }}><div style={{ minWidth: 88, color, fontWeight: 700, fontSize: 12 }}>{new Date(event.data_inicio).toLocaleDateString('pt-BR')}<br />{new Date(event.data_inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div><div style={{ flex: 1 }}><div style={{ fontWeight: 700 }}>{event.titulo}</div><div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>{label} · {event.local || 'Local não informado'}{event.descricao ? ` · ${event.descricao}` : ''}</div></div><button onClick={() => removeEvent(event.id)} title="Cancelar" style={{ background: 'none', border: 0, color: 'var(--text4)', cursor: 'pointer' }}><Trash2 size={15} /></button></div> })}</div>}
+  </div>
 }

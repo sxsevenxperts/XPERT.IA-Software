@@ -1,4 +1,4 @@
-// EasyDrive — Relatório PDF Mensal
+// PrevOS — utilitários de relatório PDF
 // Gera relatório formatado para impressão/PDF
 
 export function getMonthYear(date = new Date()) {

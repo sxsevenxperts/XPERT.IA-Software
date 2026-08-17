@@ -10,46 +10,9 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
-const revenueData = [
-  { mes: 'Out', receita: 28400, honorarios: 18000 },
-  { mes: 'Nov', receita: 34200, honorarios: 22800 },
-  { mes: 'Dez', receita: 29800, honorarios: 19200 },
-  { mes: 'Jan', receita: 41500, honorarios: 29000 },
-  { mes: 'Fev', receita: 38700, honorarios: 25400 },
-  { mes: 'Mar', receita: 52200, honorarios: 36800 },
-]
+const MONTHS_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
-const areaDistrib = [
-  { name: 'Previdenciário', value: 34, color: '#3B82F6' },
-  { name: 'Trabalhista',    value: 22, color: '#8B5CF6' },
-  { name: 'Cível',          value: 16, color: '#10B981' },
-  { name: 'Família',        value: 11, color: '#F59E0B' },
-  { name: 'Consumidor',     value: 9,  color: '#06B6D4' },
-  { name: 'Outros',         value: 8,  color: '#6B7280' },
-]
-
-const urgentCases = [
-  { id: 'PRV-0342', client: 'João Carlos Silva',     type: 'Aposentadoria por Idade',   area: 'Previdenciário', status: 'Prazo 2 dias',      urgency: 'critical', valor: 'R$ 4.200' },
-  { id: 'TRB-0189', client: 'Fernanda Oliveira',     type: 'Reclamação Trabalhista',    area: 'Trabalhista',    status: 'Audiência amanhã',  urgency: 'critical', valor: 'R$ 8.500' },
-  { id: 'CVL-0401', client: 'Pedro Alves Rocha',     type: 'Indenização por Danos',     area: 'Cível',          status: 'Aguardando laudo',  urgency: 'warning',  valor: 'R$ 12.000' },
-  { id: 'FAM-0378', client: 'Ana Beatriz Lima',      type: 'Divórcio Litigioso',        area: 'Família',        status: 'Mediação marcada',  urgency: 'info',     valor: 'R$ 3.800' },
-  { id: 'PRV-0355', client: 'Carlos Eduardo Melo',   type: 'Aposent. Especial',         area: 'Previdenciário', status: 'Documentação ok',   urgency: 'success',  valor: 'R$ 3.700' },
-]
-
-const recentActivity = [
-  { icon: '🧠', text: 'Laudo analisado com IA — CID G35.0 — 94% viabilidade BPC', time: 'há 40min' },
-  { icon: '🔔', text: 'Intimação recebida: TRF5 Proc. 0005432-12 — Prazo 5 dias', time: 'há 1h' },
-  { icon: '✅', text: 'Sentença favorável: Fernanda Oliveira — Trabalhista #0189', time: 'há 2h' },
-  { icon: '💰', text: 'Honorários recebidos: R$ 8.500 — Maria Gomes', time: 'há 3h' },
-  { icon: '📄', text: 'Petição gerada automaticamente — Divórcio #FAM-0378', time: 'há 5h' },
-]
-
-const deadlines = [
-  { date: 'Hoje',    text: 'Audiência – TRT – Fernanda Oliveira', type: 'audiencia' },
-  { date: 'Amanhã',  text: 'Prazo recursal – TRF5 – João Silva', type: 'prazo' },
-  { date: '01 Abr',  text: 'Protocolo petição – INSS – Ana Lima', type: 'protocolo' },
-  { date: '03 Abr',  text: 'Pericia médica – Pedro Rocha – INSS', type: 'pericia' },
-]
+const AREA_COLORS = { Previdenciário: '#3B82F6', Trabalhista: '#8B5CF6', Cível: '#10B981', Família: '#F59E0B', Consumidor: '#06B6D4', Outros: '#6B7280' }
 
 function KpiCard({ icon: Icon, label, value, sub, trend, trendUp, color }) {
   return (
@@ -93,7 +56,12 @@ const deadlineColors = {
 }
 
 export default function Dashboard({ onTab }) {
-  const [kpi, setKpi] = useState({ clientes: '—', casos: '—', tarefas: '—', honorarios: '—' })
+  const [kpi, setKpi] = useState({ clientes: '—', casos: '—', tarefas: '—', honorarios: '—', prazos: 0, intimacoes: 0 })
+  const [revenueData, setRevenueData] = useState([])
+  const [areaDistrib, setAreaDistrib] = useState([])
+  const [urgentCases, setUrgentCases] = useState([])
+  const [recentActivity, setRecentActivity] = useState([])
+  const [deadlines, setDeadlines] = useState([])
 
   useEffect(() => {
     async function loadKpis() {
@@ -105,9 +73,51 @@ export default function Dashboard({ onTab }) {
       ])
       const totalHon = (hon || []).reduce((s, h) => s + (parseFloat(h.valor) || 0), 0)
       const honLabel = totalHon >= 1000 ? `R$ ${(totalHon / 1000).toFixed(0)}k` : `R$ ${totalHon.toLocaleString('pt-BR')}`
-      setKpi({ clientes: clientes ?? 0, casos: casos ?? 0, tarefas: tarefas ?? 0, honorarios: honLabel })
+      const { count: intimacoes } = await supabase.from('intimacoes').select('*', { count: 'exact', head: true }).eq('lida', false)
+      const { count: prazos } = await supabase.from('agenda_eventos').select('*', { count: 'exact', head: true }).gte('data_inicio', new Date().toISOString()).lte('data_inicio', new Date(Date.now() + 7 * 86400000).toISOString())
+      setKpi({ clientes: clientes ?? 0, casos: casos ?? 0, tarefas: tarefas ?? 0, honorarios: honLabel, prazos: prazos ?? 0, intimacoes: intimacoes ?? 0 })
     }
     loadKpis()
+  }, [])
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      const now = new Date()
+      const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString()
+      const [{ data: honors }, { data: cases }, { data: clients }, { data: events }, { data: alerts }] = await Promise.all([
+        supabase.from('honorarios').select('valor,status,created_at,descricao').gte('created_at', sixMonthsAgo),
+        supabase.from('casos').select('id,titulo,area,status,prioridade,data_prazo,cliente_id,valor_honorario'),
+        supabase.from('clientes').select('id,nome'),
+        supabase.from('agenda_eventos').select('id,titulo,tipo,data_inicio,local').gte('data_inicio', now.toISOString()).order('data_inicio').limit(5),
+        supabase.from('alertas').select('id,titulo,data_alerta,created_at').order('created_at', { ascending: false }).limit(5),
+      ])
+
+      const months = Array.from({ length: 6 }, (_, index) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1)
+        return { key: date.toISOString().slice(0, 7), mes: MONTHS_PT[date.getMonth()], receita: 0, honorarios: 0 }
+      })
+      ;(honors || []).forEach((honor) => {
+        const month = months.find((item) => item.key === String(honor.created_at).slice(0, 7))
+        if (month) {
+          const value = Number(honor.valor) || 0
+          month.receita += value
+          if (honor.status === 'recebido') month.honorarios += value
+        }
+      })
+      setRevenueData(months)
+
+      const areaCount = {}
+      ;(cases || []).forEach((item) => { const area = item.area || 'Outros'; areaCount[area] = (areaCount[area] || 0) + 1 })
+      const totalCases = (cases || []).length || 1
+      setAreaDistrib(Object.entries(areaCount).map(([name, value]) => ({ name, value: Math.round((value / totalCases) * 100), color: AREA_COLORS[name] || AREA_COLORS.Outros })))
+
+      const clientById = Object.fromEntries((clients || []).map((client) => [client.id, client.nome]))
+      const deadlineCases = (cases || []).filter((item) => item.data_prazo && new Date(`${item.data_prazo}T23:59:59`) >= now).sort((a, b) => String(a.data_prazo).localeCompare(String(b.data_prazo))).slice(0, 5)
+      setUrgentCases(deadlineCases.map((item) => ({ id: item.id, client: clientById[item.cliente_id] || item.titulo, type: item.area || 'Caso', area: item.area || 'Outros', status: `Prazo ${item.data_prazo}`, urgency: item.prioridade === 'alta' ? 'critical' : 'warning', valor: item.valor_honorario ? `R$ ${Number(item.valor_honorario).toLocaleString('pt-BR')}` : '—' })))
+      setDeadlines((events || []).map((event) => ({ date: new Date(event.data_inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }), text: event.titulo, type: event.tipo })))
+      setRecentActivity((alerts || []).map((alert) => ({ icon: '🔔', text: alert.titulo, time: new Date(alert.created_at).toLocaleDateString('pt-BR') })))
+    }
+    loadDashboardData()
   }, [])
 
   const urgencyStyle = {
@@ -133,7 +143,7 @@ export default function Dashboard({ onTab }) {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 15, fontWeight: 700 }}>Bom dia, Advogado! <span style={{ fontSize: 14 }}>👋</span></div>
-          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>Você tem <strong style={{ color: 'var(--amber)' }}>3 prazos críticos</strong> esta semana e <strong style={{ color: 'var(--blue)' }}>2 intimações novas</strong> não lidas.</div>
+          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>Você tem <strong style={{ color: 'var(--amber)' }}>{kpi.prazos} prazos</strong> esta semana e <strong style={{ color: 'var(--blue)' }}>{kpi.intimacoes} intimações</strong> não lidas.</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => onTab('agenda')} style={{ padding: '7px 14px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text2)', cursor: 'pointer', fontWeight: 500 }}>

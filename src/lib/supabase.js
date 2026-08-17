@@ -1,9 +1,32 @@
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://kyefzktzhviahsodyayd.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5ZWZ6a3R6aHZpYWhzb2R5YXlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MDU4NTAsImV4cCI6MjA5MDM4MTg1MH0.htprONYYNUmOQAtw5dF0C8Huk4pND2y0PhjJKB2-nN0'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  throw new Error('Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY.')
+}
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+})
+
+export async function invokeFunction(name, body = {}) {
+  const { data, error } = await supabase.functions.invoke(name, { body })
+  return { data, error }
+}
+
+export async function saveIntegrationCredential(provider, value) {
+  return invokeFunction('integration-credentials', { action: 'set', provider, value })
+}
+
+export async function testIntegrationCredential(provider, value) {
+  return invokeFunction('integration-credentials', { action: 'test', provider, value })
+}
 
 /**
  * Autenticar com email/senha
@@ -25,6 +48,13 @@ export async function signUp(email, password) {
     password,
   })
   return { data, error }
+}
+
+export async function resetPassword(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  })
+  return { error }
 }
 
 /**
@@ -133,7 +163,7 @@ export async function updateProfile(userId, profileData) {
 export async function getProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id,email,name,display_name,oab,escritorio,areas_atuacao,avatar_url,telefone,preferences,role,ativo,created_at,updated_at')
     .eq('id', userId)
     .single()
   return { data, error }
@@ -525,22 +555,7 @@ export async function saveCasePrediction(casoId, userId, predictionData) {
  * Analisar caso com IA (chama Edge Function)
  */
 export async function analyzeCaseWithAI(casoData) {
-  try {
-    const response = await fetch('/functions/v1/analyze-case-ai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(casoData),
-    })
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-    
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
+  return invokeFunction('analyze-case-ai', casoData)
 }
 
 
@@ -662,24 +677,5 @@ export async function logPortalSync(syncData, userId) {
  * Iniciar sincronização de portal (chama Edge Function)
  */
 export async function syncPortalProcess(integrationId, portalTipo, numeroProcesso) {
-  try {
-    const response = await fetch('/functions/v1/sync-portal-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        integrationId,
-        portalTipo,
-        numeroProcesso
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
+  return invokeFunction('sync-portal-status', { integrationId, portalTipo, numeroProcesso })
 }

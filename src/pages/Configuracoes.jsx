@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Settings, Key, Eye, EyeOff, Check, X, Plus, Trash2, AlertTriangle, Shield, Zap, CheckCircle, Lock, Briefcase } from 'lucide-react'
 import { saveClaudeKey, testClaudeKey } from '../lib/claude'
 import { mudarSenhaPainel } from '../lib/auth-auto'
-import { supabase, getProfile, updateProfile } from '../lib/supabase'
+import { supabase, getProfile, updateProfile, saveIntegrationCredential, testIntegrationCredential } from '../lib/supabase'
 
 const INTEGRACOES = [
   {
@@ -165,8 +165,9 @@ export default function Configuracoes() {
         await saveClaudeKey(chave.trim())
         setTestResult(p => ({ ...p, [id]: { ok: true, msg: 'Chave Claude salva com sucesso!' } }))
       } else {
-        // Para outros serviços, salvar no perfil (expandir conforme necessidade)
-        setTestResult(p => ({ ...p, [id]: { ok: true, msg: 'Chave salva! Configure o backend para processar.' } }))
+        const { data, error } = await saveIntegrationCredential(id, chave.trim())
+        if (error || data?.error) throw new Error(data?.error || error?.message || 'Erro ao salvar a credencial.')
+        setTestResult(p => ({ ...p, [id]: { ok: true, msg: 'Credencial salva com segurança no backend.' } }))
       }
     } catch (err) {
       setTestResult(p => ({ ...p, [id]: { ok: false, msg: err.message } }))
@@ -186,7 +187,9 @@ export default function Configuracoes() {
         await testClaudeKey(chave.trim())
         setTestResult(p => ({ ...p, [id]: { ok: true, msg: '✓ Chave válida! Claude pronto para uso.' } }))
       } else {
-        setTestResult(p => ({ ...p, [id]: { ok: true, msg: '✓ Conexão estabelecida com sucesso.' } }))
+        const { data, error } = await testIntegrationCredential(id, chave.trim())
+        if (error || data?.error) throw new Error(data?.error || error?.message || 'Não foi possível testar esta integração.')
+        setTestResult(p => ({ ...p, [id]: { ok: true, msg: '✓ Credencial aceita pelo backend.' } }))
       }
     } catch (err) {
       setTestResult(p => ({ ...p, [id]: { ok: false, msg: err.message } }))
