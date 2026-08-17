@@ -1,30 +1,40 @@
 import { useState } from 'react'
 import { Scale, Eye, EyeOff, ArrowRight, Lock, Mail } from 'lucide-react'
-import { signIn } from '../lib/supabase'
+import { signIn, signUp, resetPassword } from '../lib/supabase'
 import Footer from '../components/Footer'
 
 export default function Login({ onLogin }) {
-  const [email, setEmail]       = useState('demo@prevos.com.br')
-  const [password, setPassword] = useState('123456')
+  const [email, setEmail]       = useState('')
+  const [password, setPassword] = useState('')
+  const [mode, setMode]         = useState('login')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!email || !password) { setError('Preencha email e senha.'); return }
+    if (!acceptedTerms) { setError('Você deve aceitar os termos, políticas e LGPD para continuar.'); return }
     setLoading(true)
 
     try {
-      const { data, error: signInError } = await signIn(email, password)
+      const { data, error: signInError } = mode === 'login'
+        ? await signIn(email, password)
+        : await signUp(email, password)
 
       if (signInError) {
-        setError(signInError.message || 'Credenciais inválidas.')
+        setError(signInError.message || (mode === 'login' ? 'Credenciais inválidas.' : 'Não foi possível criar a conta.'))
         setLoading(false)
         return
       }
 
+      if (mode === 'signup' && !data?.session) {
+        setError('Conta criada. Confirme seu e-mail para entrar.')
+        setLoading(false)
+        return
+      }
       if (data?.user) {
         onLogin(data.user)
       }
@@ -32,6 +42,12 @@ export default function Login({ onLogin }) {
       setError(err.message || 'Erro ao fazer login.')
       setLoading(false)
     }
+  }
+
+  async function handleResetPassword() {
+    if (!email) { setError('Informe seu e-mail para recuperar a senha.'); return }
+    const { error: resetError } = await resetPassword(email)
+    setError(resetError ? resetError.message : 'Enviamos as instruções para seu e-mail.')
   }
 
   return (
@@ -74,8 +90,8 @@ export default function Login({ onLogin }) {
           borderRadius: 21.6, padding: '38.4px',
           boxShadow: 'var(--shadow)',
         }}>
-          <h2 style={{ fontSize: 21.6, fontWeight: 700, marginBottom: 4.8 }}>Bem-vindo de volta</h2>
-          <p style={{ fontSize: 15.6, color: 'var(--text3)', marginBottom: 28.8 }}>Acesse o painel do seu escritório</p>
+          <h2 style={{ fontSize: 21.6, fontWeight: 700, marginBottom: 4.8 }}>{mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}</h2>
+          <p style={{ fontSize: 15.6, color: 'var(--text3)', marginBottom: 28.8 }}>{mode === 'login' ? 'Acesse o painel do seu escritório' : 'Comece seu espaço jurídico no PrevOS'}</p>
 
           {error && (
             <div style={{
@@ -115,7 +131,7 @@ export default function Login({ onLogin }) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7.2 }}>
                 <label style={{ fontSize: 14.4, fontWeight: 600, color: 'var(--text2)' }}>Senha</label>
-                <button type="button" style={{ fontSize: 13.8, color: 'var(--blue)', fontWeight: 500, background: 'none', border: 'none' }}>
+                <button type="button" onClick={handleResetPassword} style={{ fontSize: 13.8, color: 'var(--blue)', fontWeight: 500, background: 'none', border: 'none' }}>
                   Esqueceu a senha?
                 </button>
               </div>
@@ -146,18 +162,36 @@ export default function Login({ onLogin }) {
               </div>
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10.8, marginTop: 4.8 }}>
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={e => setAcceptedTerms(e.target.checked)}
+                style={{
+                  width: 18,
+                  height: 18,
+                  marginTop: 3,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              />
+              <label style={{ fontSize: 14.4, color: 'var(--text2)', lineHeight: 1.5, cursor: 'pointer' }}>
+                Concordo com os <a href="#terms" style={{ color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}>Termos de Serviço</a>, <a href="#privacy" style={{ color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}>Política de Privacidade</a> e <a href="#lgpd" style={{ color: 'var(--blue)', fontWeight: 600, textDecoration: 'none' }}>LGPD</a>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !acceptedTerms}
               style={{
-                marginTop: 4.8,
-                background: loading ? 'var(--bg4)' : 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
+                marginTop: 16.8,
+                background: (loading || !acceptedTerms) ? 'var(--bg4)' : 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
                 color: 'white', border: 'none', borderRadius: 12,
                 padding: '15.6px', fontSize: 16.8, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9.6,
-                boxShadow: loading ? 'none' : '0 4px 16px rgba(59,130,246,0.35)',
+                boxShadow: (loading || !acceptedTerms) ? 'none' : '0 4px 16px rgba(59,130,246,0.35)',
                 transition: 'opacity 0.15s',
-                opacity: loading ? 0.7 : 1,
+                opacity: (loading || !acceptedTerms) ? 0.7 : 1,
               }}
             >
               {loading ? (
@@ -166,15 +200,15 @@ export default function Login({ onLogin }) {
                   Entrando...
                 </>
               ) : (
-                <>Entrar no PrevOS <ArrowRight size={18} /></>
-              )}
-            </button>
+              <>{mode === 'login' ? 'Entrar no PrevOS' : 'Criar conta'} <ArrowRight size={18} /></>
+            )}
+          </button>
           </form>
-        </div>
 
-        <p style={{ textAlign: 'center', fontSize: 13.2, color: 'var(--text4)', marginTop: 24 }}>
-          Demo mode: qualquer e-mail + senha funciona
-        </p>
+          <button type="button" onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError('') }} style={{ width: '100%', marginTop: 16, background: 'none', border: 'none', color: 'var(--blue)', fontSize: 13.5, cursor: 'pointer' }}>
+            {mode === 'login' ? 'Ainda não tenho uma conta' : 'Já tenho uma conta'}
+          </button>
+        </div>
       </div>
 
       <Footer />

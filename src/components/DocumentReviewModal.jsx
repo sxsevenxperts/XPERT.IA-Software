@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, MessageSquare, CheckCircle, X, Send, ThumbsUp } from 'lucide-react'
+import { X, Send, ThumbsUp } from 'lucide-react'
 
 const REVIEW_STATUSES = [
   { id: 'pending', label: 'Pendente', color: 'var(--amber)', bg: 'var(--amber-dim)' },
@@ -11,9 +11,7 @@ const REVIEW_STATUSES = [
 
 export default function DocumentReviewModal({ document, onClose, onStatusChange }) {
   const [status, setStatus] = useState('pending')
-  const [comments, setComments] = useState([
-    { id: 1, author: 'Ana Silva', avatar: '👨‍⚖️', text: 'Revisar cláusula 5, ponto 2', time: '2h atrás', resolved: false },
-  ])
+  const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
   const [activeTab, setActiveTab] = useState('document')
 
@@ -49,7 +47,7 @@ export default function DocumentReviewModal({ document, onClose, onStatusChange 
           justifyContent: 'space-between', alignItems: 'center'
         }}>
           <div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Revisão: {document?.titulo}</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Revisão: {document?.titulo || document?.nome || 'Documento'}</h3>
             <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
               <span style={{
                 padding: '4px 10px', background: statusInfo?.bg, color: statusInfo?.color,
@@ -57,7 +55,7 @@ export default function DocumentReviewModal({ document, onClose, onStatusChange 
               }}>
                 {statusInfo?.label}
               </span>
-              <span style={{ fontSize: 11, color: 'var(--text4)' }}>Versão 1 · Criado há 3 dias</span>
+              <span style={{ fontSize: 11, color: 'var(--text4)' }}>{document?.created_at ? `Criado em ${new Date(document.created_at).toLocaleDateString('pt-BR')}` : 'Sem data registrada'}</span>
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer' }}>
@@ -75,14 +73,7 @@ export default function DocumentReviewModal({ document, onClose, onStatusChange 
             {activeTab === 'document' && (
               <div>
                 <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 16px 0' }}>Conteúdo do Documento</h4>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                <p style={{ marginTop: 12 }}>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-                <div style={{
-                  background: 'var(--bg2)', border: '2px solid var(--amber)', borderRadius: 8,
-                  padding: 12, marginTop: 16, color: 'var(--amber)'
-                }}>
-                  <strong>Comentário:</strong> Revisar esta seção
-                </div>
+                {document?.conteudo ? <p style={{ whiteSpace: 'pre-wrap' }}>{document.conteudo}</p> : <p>Este documento ainda não possui conteúdo salvo.</p>}
               </div>
             )}
 
@@ -91,12 +82,8 @@ export default function DocumentReviewModal({ document, onClose, onStatusChange 
                 <h4 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 16px 0' }}>Histórico de Versões</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div style={{ padding: '10px', background: 'var(--bg2)', borderRadius: 8 }}>
-                    <div style={{ fontWeight: 600 }}>Versão 1 (Atual)</div>
-                    <div style={{ fontSize: 11, color: 'var(--text4)' }}>Criado por você há 3 dias</div>
-                  </div>
-                  <div style={{ padding: '10px', background: 'var(--bg2)', borderRadius: 8, opacity: 0.6 }}>
-                    <div style={{ fontWeight: 600 }}>Versão 0 (Draft)</div>
-                    <div style={{ fontSize: 11, color: 'var(--text4)' }}>Criado por você há 4 dias</div>
+                    <div style={{ fontWeight: 600 }}>Versão atual</div>
+                    <div style={{ fontSize: 11, color: 'var(--text4)' }}>{document?.updated_at ? `Atualizado em ${new Date(document.updated_at).toLocaleDateString('pt-BR')}` : 'Sem histórico de versões salvo.'}</div>
                   </div>
                 </div>
               </div>

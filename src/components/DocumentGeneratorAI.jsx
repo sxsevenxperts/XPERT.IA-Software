@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Wand2, FileText, Copy, Download, RefreshCw } from 'lucide-react'
+import { invokeFunction, supabase } from '../lib/supabase'
 
 const DOCUMENT_TYPES = [
   { id: 'peticao', label: 'Petição Inicial', descricao: 'Documento de abertura do caso' },
@@ -8,7 +9,7 @@ const DOCUMENT_TYPES = [
   { id: 'memorando', label: 'Memorando Interno', descricao: 'Documentação interna' },
 ]
 
-export default function DocumentGeneratorAI({ userId, casoData, onClose }) {
+export default function DocumentGeneratorAI({ casoData, onClose }) {
   const [selectedType, setSelectedType] = useState('peticao')
   const [generatedContent, setGeneratedContent] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -17,23 +18,15 @@ export default function DocumentGeneratorAI({ userId, casoData, onClose }) {
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      // Chamar Edge Function para gerar documento com IA
-      const response = await fetch('/functions/v1/generate-document-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          document_type: selectedType,
-          caso_data: casoData,
-        }),
+      const { data, error } = await invokeFunction('ai-assistant', {
+        action: 'message',
+        prompt: `Gere um documento jurídico do tipo ${selectedType} com base nestes dados: ${JSON.stringify(casoData || {})}`,
       })
-
-      if (response.ok) {
-        const data = await response.json()
-        setGeneratedContent(data.content)
+      if (!error && data?.text) {
+        setGeneratedContent(data.text)
         setEditing(true)
       } else {
-        alert('Erro ao gerar documento')
+        alert(data?.error || error?.message || 'Erro ao gerar documento')
       }
     } finally {
       setGenerating(false)
@@ -41,7 +34,17 @@ export default function DocumentGeneratorAI({ userId, casoData, onClose }) {
   }
 
   const handleSave = async () => {
-    // TODO: Salvar documento na tabela documents
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return alert('Sessão expirada. Entre novamente.')
+    const { error } = await supabase.from('peticoes').insert({
+      user_id: user.id,
+      caso_id: casoData?.id || null,
+      tipo: selectedType,
+      dados: casoData || {},
+      conteudo: generatedContent,
+      status: 'gerada',
+    })
+    if (error) return alert(error.message)
     alert('Documento salvo com sucesso!')
     onClose?.()
   }

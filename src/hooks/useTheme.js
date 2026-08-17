@@ -1,7 +1,7 @@
-// EasyDrive — Gerenciamento de tema: dark | light | system
+// PrevOS — gerenciamento de tema: dark | light | system
 import { useEffect, useState } from 'react'
 
-const KEY = 'easydrive_theme'
+const KEY = 'prevos_theme'
 
 function applyTheme(pref) {
   const resolved =

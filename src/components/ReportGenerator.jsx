@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FileText, Download, Calendar, BarChart3, Zap } from 'lucide-react'
+import { invokeFunction } from '../lib/supabase'
 
 const REPORT_TYPES = [
   { id: 'prazos', label: 'Relatório de Prazos', icon: Calendar, descricao: 'Prazos críticos do mês', cor: 'var(--red)' },
@@ -8,48 +9,38 @@ const REPORT_TYPES = [
 ]
 
 const FORMATOS = [
-  { id: 'pdf', label: 'PDF', descricao: 'Documento portável (arquivo PDF)' },
-  { id: 'excel', label: 'Excel', descricao: 'Planilha (arquivo XLSX)' },
-  { id: 'email', label: 'Enviar por Email', descricao: 'Receber automaticamente' },
+  { id: 'csv', label: 'CSV', descricao: 'Arquivo compatível com Excel' },
 ]
 
 export default function ReportGenerator({ userId, onClose }) {
   const [selectedReport, setSelectedReport] = useState('prazos')
-  const [selectedFormat, setSelectedFormat] = useState('pdf')
+  const [selectedFormat, setSelectedFormat] = useState('csv')
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().split('T')[0].slice(0, 7))
   const [generating, setGenerating] = useState(false)
 
   const handleGenerateReport = async () => {
     setGenerating(true)
     try {
-      // Chamar Edge Function para gerar relatório
-      const response = await fetch('/functions/v1/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          report_type: selectedReport,
-          format: selectedFormat,
-          month: selectedMonth,
-        }),
+      void userId
+      const { data, error } = await invokeFunction('generate-report', {
+        reportType: selectedReport,
+        format: selectedFormat,
+        month: selectedMonth,
       })
-
-      if (response.ok) {
-        const blob = await response.blob()
-        
-        // Download do arquivo
+      if (error || data?.error) {
+        throw new Error(data?.error || error.message)
+      }
+      if (data?.content) {
+        const blob = new Blob([data.content], { type: data.mimeType || 'text/csv;charset=utf-8' })
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `relatorio-${selectedReport}-${selectedMonth}.${selectedFormat === 'excel' ? 'xlsx' : 'pdf'}`
+        a.download = data.filename || `relatorio-${selectedReport}-${selectedMonth}.csv`
         document.body.appendChild(a)
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
-
         alert('Relatório gerado com sucesso!')
-      } else {
-        alert('Erro ao gerar relatório')
       }
     } catch (err) {
       alert('Erro: ' + err.message)

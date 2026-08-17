@@ -3,7 +3,7 @@
  * Machine learning models for revenue and workload forecasting
  */
 
-import { supabase } from './supabase'
+import { invokeFunction, supabase } from './supabase'
 
 // ===== REVENUE ACTUALS =====
 
@@ -55,22 +55,8 @@ export async function fetchRevenuePredictions(userId, months = 6) {
  * Gerar previsões de receita com IA
  */
 export async function generateRevenueForecast(userId) {
-  try {
-    const response = await fetch('/functions/v1/generate-revenue-forecast', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
+  void userId
+  return invokeFunction('generate-revenue-forecast')
 }
 
 /**
@@ -137,22 +123,8 @@ export async function fetchWorkloadPredictions(userId, months = 6) {
  * Gerar previsões de carga de trabalho
  */
 export async function generateWorkloadForecast(userId) {
-  try {
-    const response = await fetch('/functions/v1/generate-workload-forecast', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
+  void userId
+  return invokeFunction('generate-workload-forecast')
 }
 
 // ===== ANALYTICS DASHBOARD =====
@@ -189,20 +161,6 @@ export async function updateAnalyticsDashboard(userId, dashboardData) {
  * Obter insights gerados por IA
  */
 export async function generateAnalyticsInsights(userId) {
-  try {
-    const response = await fetch('/functions/v1/generate-analytics-insights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    })
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return { data, error: null }
-  } catch (error) {
-    return { data: null, error }
-  }
+  void userId
+  return invokeFunction('generate-analytics-insights')
 }

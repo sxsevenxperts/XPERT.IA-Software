@@ -1,225 +1,57 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { corsHeaders, json, requireUser, serviceClient } from "../_shared/auth.ts"
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-
-interface SyncRequest {
-  integrationId: string
-  portalTipo: 'trf' | 'inss' | 'cnj' | 'outro'
-  numeroProcesso: string
-}
-
-interface PortalStatus {
+type PortalData = {
   status_atual: string
-  ultima_movimentacao: string
-  data_ultima_movimentacao: string
-  fase_processual: string
-  juizo_atual: string
-  partes: string[]
-  advogados: string[]
-  eventos_ultimos_30_dias: number
+  ultima_movimentacao?: string
+  data_ultima_movimentacao?: string
+  fase_processual?: string
+  juizo_atual?: string
+  partes?: string[]
+  advogados?: string[]
+  eventos_ultimos_30_dias?: number
 }
 
-/**
- * Simula scraping de dados do portal judicial
- * Em produção, usaria bibliotecas como cheerio/puppeteer para web scraping real
- */
-async function fetchPortalData(
-  portalTipo: string,
-  numeroProcesso: string
-): Promise<PortalStatus> {
-  // Simulação realista de dados de diferentes portais
-  const mockData: Record<string, PortalStatus> = {
-    trf: {
-      status_atual: 'em andamento',
-      ultima_movimentacao: 'Sentença proferida - aguardando cumprimento',
-      data_ultima_movimentacao: new Date().toISOString(),
-      fase_processual: '1ª Instância - Execução',
-      juizo_atual: 'Tribunal Regional Federal - 1ª Região',
-      partes: ['Autor/Empresa X', 'Réu/Empresa Y'],
-      advogados: ['OAB/SP 123456', 'OAB/RJ 789012'],
-      eventos_ultimos_30_dias: 3,
-    },
-    inss: {
-      status_atual: 'em andamento',
-      ultima_movimentacao: 'Recurso administrativo registrado',
-      data_ultima_movimentacao: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      fase_processual: 'Recurso Administrativo',
-      juizo_atual: 'INSS - Gerência de Benefícios',
-      partes: ['Segurado/CPF XXX', 'INSS'],
-      advogados: ['OAB/SP 123456'],
-      eventos_ultimos_30_dias: 1,
-    },
-    cnj: {
-      status_atual: 'concluso',
-      ultima_movimentacao: 'Processo arquivado - Decisão transitada em julgado',
-      data_ultima_movimentacao: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      fase_processual: 'Arquivado',
-      juizo_atual: 'Superior Tribunal de Justiça',
-      partes: ['Autor', 'Réu'],
-      advogados: ['OAB/SP 123456'],
-      eventos_ultimos_30_dias: 0,
-    },
-  }
-
-  return (
-    mockData[portalTipo] || {
-      status_atual: 'em andamento',
-      ultima_movimentacao: 'Aguardando nova movimentação',
-      data_ultima_movimentacao: new Date().toISOString(),
-      fase_processual: 'Pendente',
-      juizo_atual: 'Tribunal competente',
-      partes: [],
-      advogados: [],
-      eventos_ultimos_30_dias: 0,
-    }
-  )
-}
-
-/**
- * Main handler para sincronizar status de processo
- */
-Deno.serve(async (req: Request) => {
-  // CORS headers
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } })
-  }
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
+  const startedAt = new Date().toISOString()
 
   try {
-    const { integrationId, portalTipo, numeroProcesso }: SyncRequest = await req.json()
+    const { user } = await requireUser(req)
+    const { integrationId, portalTipo, numeroProcesso } = await req.json()
+    if (!integrationId || !portalTipo || !numeroProcesso) return json({ error: "Integração, portal e processo são obrigatórios." }, 400)
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const admin = serviceClient()
+    const { data: integration, error: integrationError } = await admin.from("portal_integrations")
+      .select("id,user_id,caso_id,numero_processo").eq("id", integrationId).eq("user_id", user.id).eq("ativo", true).single()
+    if (integrationError || !integration) return json({ error: "Integração não encontrada para este usuário." }, 404)
 
-    // 1. Registrar início da sincronização
-    const syncLogId = crypto.randomUUID()
-    const syncStartTime = new Date().toISOString()
-
-    // 2. Buscar dados do portal (simulated)
-    console.log(`Sincronizando ${portalTipo}:${numeroProcesso}...`)
-    const portalData = await fetchPortalData(portalTipo, numeroProcesso)
-
-    // 3. Buscar integração para obter user_id
-    const { data: integration, error: integrationError } = await supabase
-      .from('portal_integrations')
-      .select('user_id, caso_id')
-      .eq('id', integrationId)
-      .single()
-
-    if (integrationError || !integration) {
-      throw new Error('Integração não encontrada')
+    const providerUrl = Deno.env.get("PORTAL_STATUS_API_URL")
+    if (!providerUrl) {
+      await admin.from("portal_sync_log").insert({ user_id: user.id, integration_id: integrationId, portal_tipo: portalTipo, numero_processo: numeroProcesso, data_inicio: startedAt, data_fim: new Date().toISOString(), status: "falha", mensagem_erro: "PORTAL_STATUS_API_URL não configurada." })
+      return json({ error: "Integração externa de portal ainda não configurada no backend." }, 503)
     }
 
-    // 4. Buscar status anterior para detectar mudanças
-    const { data: previousStatus } = await supabase
-      .from('processo_status')
-      .select('status_atual, ultima_movimentacao')
-      .eq('integration_id', integrationId)
-      .order('sincronizado_em', { ascending: false })
-      .limit(1)
-      .single()
+    const response = await fetch(providerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ portalTipo, numeroProcesso }),
+    })
+    const portalData = await response.json().catch(() => ({})) as PortalData
+    if (!response.ok || !portalData.status_atual) throw new Error("A fonte externa não retornou um status processual válido.")
 
-    // 5. Atualizar ou criar processo_status
-    const { error: updateError } = await supabase
-      .from('processo_status')
-      .upsert([
-        {
-          integration_id: integrationId,
-          user_id: integration.user_id,
-          caso_id: integration.caso_id,
-          portal_tipo: portalTipo,
-          numero_processo: numeroProcesso,
-          status_atual: portalData.status_atual,
-          ultima_movimentacao: portalData.ultima_movimentacao,
-          data_ultima_movimentacao: portalData.data_ultima_movimentacao,
-          fase_processual: portalData.fase_processual,
-          juizo_atual: portalData.juizo_atual,
-          partes: portalData.partes,
-          advogados: portalData.advogados,
-          eventos_ultimos_30_dias: portalData.eventos_ultimos_30_dias,
-          sincronizado_em: syncStartTime,
-          notificacao_enviada: false,
-        },
-      ])
+    const { data: previous } = await admin.from("processo_status").select("status_atual,ultima_movimentacao").eq("integration_id", integrationId).order("sincronizado_em", { ascending: false }).limit(1).maybeSingle()
+    const { error: statusError } = await admin.from("processo_status").upsert({ integration_id: integrationId, user_id: user.id, caso_id: integration.caso_id, portal_tipo: portalTipo, numero_processo: numeroProcesso, ...portalData, sincronizado_em: new Date().toISOString(), notificacao_enviada: false })
+    if (statusError) throw statusError
 
-    if (updateError) throw updateError
-
-    // 6. Detectar mudanças e criar alerta se necessário
-    let movimentacoesEncontradas = 0
-    let notificacoesGeradas = 0
-
-    if (
-      previousStatus &&
-      previousStatus.status_atual !== portalData.status_atual
-    ) {
-      movimentacoesEncontradas = 1
-
-      // Criar alerta de mudança de status
-      const { error: alertError } = await supabase
-        .from('alertas')
-        .insert([
-          {
-            user_id: integration.user_id,
-            caso_id: integration.caso_id,
-            titulo: `Mudança de Status: ${portalTipo.toUpperCase()}`,
-            tipo: 'prazo',
-            data_alerta: new Date().toISOString().split('T')[0],
-            notificacao_lida: false,
-          },
-        ])
-
-      if (!alertError) {
-        notificacoesGeradas = 1
-      }
+    let notifications = 0
+    if (previous && (previous.status_atual !== portalData.status_atual || previous.ultima_movimentacao !== portalData.ultima_movimentacao)) {
+      const { error } = await admin.from("alertas").insert({ user_id: user.id, caso_id: integration.caso_id, titulo: `Nova movimentação em ${numeroProcesso}`, tipo: "prazo", data_alerta: new Date().toISOString().slice(0, 10) })
+      if (!error) notifications = 1
     }
-
-    // 7. Registrar resultado da sincronização
-    const { error: logError } = await supabase
-      .from('portal_sync_log')
-      .insert([
-        {
-          user_id: integration.user_id,
-          integration_id: integrationId,
-          portal_tipo: portalTipo,
-          numero_processo: numeroProcesso,
-          data_inicio: syncStartTime,
-          data_fim: new Date().toISOString(),
-          status: 'sucesso',
-          movimentacoes_encontradas: movimentacoesEncontradas,
-          notificacoes_geradas: notificacoesGeradas,
-        },
-      ])
-
-    if (logError) console.error('Erro ao registrar log:', logError)
-
-    // 8. Responder com sucesso
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processoSync: {
-          portal: portalTipo,
-          numero: numeroProcesso,
-          status: portalData.status_atual,
-          movimentacoes: movimentacoesEncontradas,
-          notificacoes: notificacoesGeradas,
-        },
-      }),
-      {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
+    await admin.from("portal_sync_log").insert({ user_id: user.id, integration_id: integrationId, portal_tipo: portalTipo, numero_processo: numeroProcesso, data_inicio: startedAt, data_fim: new Date().toISOString(), status: "sucesso", movimentacoes_encontradas: previous ? 1 : 0, notificacoes_geradas: notifications })
+    return json({ success: true, status: portalData.status_atual, movimentacoes: previous ? 1 : 0, notificacoes: notifications })
   } catch (error) {
-    console.error('Erro na sincronização:', error)
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-      }),
-      {
-        headers: { 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    )
+    return json({ error: error instanceof Error ? error.message : "Erro desconhecido." }, 500)
   }
 })

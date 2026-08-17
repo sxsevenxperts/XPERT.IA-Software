@@ -1,11 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
-
-interface ForecastRequest {
-  userId: string
-}
+import { corsHeaders, json, requireUser, serviceClient } from '../_shared/auth.ts'
 
 /**
  * Simple linear regression for revenue forecasting
@@ -53,14 +46,12 @@ function calculateConfidenceInterval(
  * Generate revenue forecast for next 6 months
  */
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { userId }: ForecastRequest = await req.json()
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const { user } = await requireUser(req)
+    const userId = user.id
+    const supabase = serviceClient()
 
     // 1. Fetch historical revenue data (12 months)
     const { data: revenueHistory, error: historyError } = await supabase
@@ -72,13 +63,10 @@ Deno.serve(async (req: Request) => {
 
     if (historyError || !revenueHistory || revenueHistory.length < 3) {
       console.log('Insufficient data for forecasting')
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Dados históricos insuficientes. Mínimo 3 meses necessário.',
-        }),
-        { headers: { 'Content-Type': 'application/json' }, status: 400 }
-      )
+      return json({
+        success: false,
+        message: 'Dados históricos insuficientes. Mínimo 3 meses necessário.',
+      }, 400)
     }
 
     // 2. Extract revenue values and calculate trend
@@ -149,26 +137,20 @@ Deno.serve(async (req: Request) => {
     }
 
     // 7. Return success response
-    return new Response(
-      JSON.stringify({
-        success: true,
-        forecasts: forecasts.length,
-        insights,
-        nextForecastDate: new Date(baseMonth.getTime() + 7 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      }),
-      { headers: { 'Content-Type': 'application/json' }, status: 200 }
-    )
+    return json({
+      success: true,
+      forecasts: forecasts.length,
+      insights,
+      nextForecastDate: new Date(baseMonth.getTime() + 7 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0],
+    })
   } catch (error) {
     console.error('Erro na previsão de receita:', error)
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido',
-      }),
-      { headers: { 'Content-Type': 'application/json' }, status: 500 }
-    )
+    return json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Erro desconhecido',
+    }, 500)
   }
 })
